@@ -58,6 +58,7 @@ public class DetectionView extends View {
     private float threshold = 0.5f;
     private boolean showBoxes = true;
     private boolean live = true;
+    private boolean compact;
     private OnDetectionsChangedListener listener;
 
     private final Runnable tick = new Runnable() {
@@ -127,6 +128,12 @@ public class DetectionView extends View {
         invalidate();
     }
 
+    /** Compact mode (thumbnails): boxes without text labels. */
+    public void setCompact(boolean compact) {
+        this.compact = compact;
+        invalidate();
+    }
+
     public void setShowBoxes(boolean showBoxes) {
         this.showBoxes = showBoxes;
         invalidate();
@@ -180,6 +187,7 @@ public class DetectionView extends View {
                 boxPaint.setColor(d.color);
                 canvas.drawRect(rect, boxPaint);
 
+                if (compact) continue;
                 String text = String.format(Locale.US, "%s %.2f", d.label, d.confidence);
                 float tw = labelText.measureText(text) + 8 * dp;
                 float th = 16 * dp;

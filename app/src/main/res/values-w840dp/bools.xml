@@ -2,4 +2,5 @@
 <resources>
     <!-- wide screens (landscape tablets): hero/grid and page sections side by side -->
     <bool name="two_columns">true</bool>
+    <integer name="home_grid_columns">3</integer>
 </resources>

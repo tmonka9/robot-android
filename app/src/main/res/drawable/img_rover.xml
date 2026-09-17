@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="100dp"
+    android:viewportWidth="120"
+    android:viewportHeight="100">
+    <path
+        android:pathData="M88,14a10,10 0,0 1,10 10M88,6a18,18 0,0 1,18 18"
+        android:strokeWidth="3"
+        android:strokeColor="#FF4FA8FF"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M57,18V8"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FF8E99AB" />
+    <path
+        android:fillColor="#FF4FD8FF"
+        android:pathData="M57,7m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#FFDCE3EC"
+        android:pathData="M40,18h34a6,6 0,0 1,6 6v14a6,6 0,0 1,-6 6h-34a6,6 0,0 1,-6 -6v-14a6,6 0,0 1,6 -6z" />
+    <path
+        android:fillColor="#FF0A1428"
+        android:pathData="M39,22h36v18h-36z" />
+    <path
+        android:fillColor="#FF4FD8FF"
+        android:pathData="M49,31m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0M65,31m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path
+        android:fillColor="#FF1A2230"
+        android:pathData="M50,44h14v8h-14z" />
+    <path
+        android:fillColor="#FF2A3446"
+        android:pathData="M26,52h62a6,6 0,0 1,6 6v18h-74v-18a6,6 0,0 1,6 -6z" />
+    <path
+        android:fillColor="#FFBFC8D6"
+        android:pathData="M34,58h24v10h-24z" />
+    <path
+        android:fillColor="#FF2F80FF"
+        android:pathData="M66,60h18v3h-18zM66,65h12v3h-12z" />
+    <path
+        android:fillColor="#FF12161E"
+        android:strokeWidth="4"
+        android:strokeColor="#FF3A4456"
+        android:pathData="M28,82m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0M57,84m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0M86,82m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0" />
+    <path
+        android:fillColor="#FF8E99AB"
+        android:pathData="M28,82m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0M57,84m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0M86,82m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>

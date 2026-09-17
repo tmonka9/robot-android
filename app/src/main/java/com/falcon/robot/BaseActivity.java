@@ -37,8 +37,8 @@ import android.widget.Toast;
 public abstract class BaseActivity extends Activity {
 
     private static final int[] NAV_IDS = {
-            R.id.nav_home, R.id.nav_robot, R.id.nav_remote, R.id.nav_face,
-            R.id.nav_voice, R.id.nav_object, R.id.nav_settings,
+            R.id.nav_home, R.id.nav_robot, R.id.nav_face, R.id.nav_voice,
+            R.id.nav_object, R.id.nav_lidar, R.id.nav_remote, R.id.nav_settings,
     };
 
     /** Simulated connection delay; replace with the real handshake. */
@@ -138,6 +138,7 @@ public abstract class BaseActivity extends Activity {
         if (navId == R.id.nav_face) return FaceRecognitionActivity.class;
         if (navId == R.id.nav_voice) return VoiceRecognitionActivity.class;
         if (navId == R.id.nav_object) return ObjectDetectionActivity.class;
+        if (navId == R.id.nav_lidar) return LidarSlamActivity.class;
         if (navId == R.id.nav_settings) return SettingsActivity.class;
         return MainActivity.class;
     }
@@ -145,33 +146,40 @@ public abstract class BaseActivity extends Activity {
     /** Updates the in-app Wi-Fi / battery indicators (the system status bar is hidden). */
     @SuppressWarnings("deprecation")
     private void refreshSystemStatus() {
-        // These indicators are cosmetic: never let a platform/permission error crash the page.
         TextView battery = findViewById(R.id.status_battery);
         if (battery != null) {
-            try {
-                Intent status = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-                if (status != null) {
-                    int level = status.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-                    int scale = status.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
-                    if (level >= 0 && scale > 0) {
-                        battery.setText(getString(R.string.percent, Math.round(level * 100f / scale)));
-                    }
-                }
-            } catch (RuntimeException ignored) {
-                battery.setText(R.string.placeholder_value);
-            }
+            int percent = readBatteryPercent();
+            if (percent >= 0) battery.setText(getString(R.string.percent, percent));
+            else battery.setText(R.string.placeholder_value);
         }
         View wifi = findViewById(R.id.status_wifi);
         if (wifi != null) {
-            boolean onWifi = false;
-            try {
-                ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-                NetworkInfo info = cm != null ? cm.getActiveNetworkInfo() : null;
-                onWifi = info != null && info.isConnected() && info.getType() == ConnectivityManager.TYPE_WIFI;
-            } catch (RuntimeException ignored) {
-                // e.g. SecurityException when ACCESS_NETWORK_STATE is missing
-            }
-            wifi.setAlpha(onWifi ? 1f : 0.3f);
+            wifi.setAlpha(activeNetworkType() == ConnectivityManager.TYPE_WIFI ? 1f : 0.3f);
+        }
+    }
+
+    /** Device battery level 0..100, or -1 if unavailable. Never throws (the indicators are cosmetic). */
+    protected int readBatteryPercent() {
+        try {
+            Intent status = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (status == null) return -1;
+            int level = status.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+            int scale = status.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
+            return level >= 0 && scale > 0 ? Math.round(level * 100f / scale) : -1;
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
+    /** ConnectivityManager.TYPE_* of the connected network, or -1 when offline/unknown. Never throws. */
+    @SuppressWarnings("deprecation")
+    protected int activeNetworkType() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo info = cm != null ? cm.getActiveNetworkInfo() : null;
+            return info != null && info.isConnected() ? info.getType() : -1;
+        } catch (RuntimeException e) {
+            return -1; // e.g. SecurityException when ACCESS_NETWORK_STATE is missing
         }
     }
 

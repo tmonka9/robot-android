@@ -62,6 +62,9 @@ public class LidarMapView extends View {
     private float originY;
     private float phase;
     private ValueAnimator animator;
+    private boolean scanning = true;
+    private boolean mapVisible = true;
+    private boolean showRoute = true;
 
     public LidarMapView(Context context) {
         this(context, null);
@@ -212,14 +215,16 @@ public class LidarMapView extends View {
 
         canvas.drawLines(gridLines, gridPaint);
 
-        int boxes = BOXES.length;
-        for (int i = boxes; i < pointClouds.size(); i++) { // floor first
+        int boxes = mapVisible ? BOXES.length : 0;
+        for (int i = BOXES.length; mapVisible && i < pointClouds.size(); i++) { // floor first
             pointPaint.setColor(colors.get(i));
             canvas.drawPoints(pointClouds.get(i), pointPaint);
         }
 
-        routePaint.setAlpha(255);
-        canvas.drawPath(routePath, routePaint);
+        if (showRoute) {
+            routePaint.setAlpha(255);
+            canvas.drawPath(routePath, routePaint);
+        }
 
         for (int i = 0; i < boxes; i++) {
             int color = colors.get(i);
@@ -251,6 +256,38 @@ public class LidarMapView extends View {
         canvas.drawRect(robotX - 4 * dp, robotY - 16 * dp, robotX + 4 * dp, robotY - 9 * dp, fillPaint);
     }
 
+    /** Pauses/resumes the scan animation (rings and shimmer). */
+    public void setScanning(boolean scanning) {
+        this.scanning = scanning;
+        if (animator == null) return;
+        if (scanning && !animator.isStarted()) animator.start();
+        else if (!scanning) animator.cancel();
+    }
+
+    /** Shows or hides the mapped buildings and point cloud (e.g. after "clear map"). */
+    public void setMapVisible(boolean mapVisible) {
+        this.mapVisible = mapVisible;
+        invalidate();
+    }
+
+    public void setShowRoute(boolean showRoute) {
+        this.showRoute = showRoute;
+        invalidate();
+    }
+
+    /** Number of points currently drawn. */
+    public int getPointCount() {
+        if (!mapVisible) return 0;
+        int count = 0;
+        for (float[] cloud : pointClouds) count += cloud.length / 2;
+        return count;
+    }
+
+    /** Mapped area in square world units (1 unit ≈ 1 m). */
+    public float getMapArea() {
+        return mapVisible ? WORLD * WORLD : 0f;
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
@@ -262,7 +299,7 @@ public class LidarMapView extends View {
             phase = (float) a.getAnimatedValue();
             invalidate();
         });
-        animator.start();
+        if (scanning) animator.start();
     }
 
     @Override

@@ -19,14 +19,57 @@
     <!-- Home -->
     <string name="hero_tagline">Smarter  •  Safer  •  Together</string>
     <string name="card_robot_desc">Control the robot\'s movement and actions.</string>
-    <string name="card_remote_desc">Use the virtual controller to operate the robot.</string>
+    <string name="card_remote_desc">Control the robot via remote device.</string>
     <string name="card_face_desc">Detect, identify and manage faces.</string>
     <string name="card_object_desc">Detect and recognize objects in real time.</string>
     <string name="card_voice_desc">Recognize and process voice commands.</string>
     <string name="nav_lidar">LiDAR SLAM</string>
-    <string name="card_lidar_desc">Build maps, localize and navigate using LiDAR.</string>
+    <string name="card_lidar_desc">Map, localize and navigate using LiDAR.</string>
     <string name="lidar_subtitle">Mapping  •  Localization  •  Navigation</string>
-    <string name="home_slogan">AI MAKES\nA BETTER FUTURE</string>
+    <string name="home_footer">//   AI Powers a Smarter Future   //</string>
+    <string name="system_online">System Online</string>
+    <string name="robot_offline">Robot Offline · tap to connect</string>
+    <string name="network">Network</string>
+    <string name="network_connected">Connected</string>
+    <string name="network_offline">Offline</string>
+    <string name="quick_status">Quick Status</string>
+    <string name="qs_robot">Robot</string>
+    <string name="qs_camera">Camera</string>
+    <string name="qs_lidar">LiDAR</string>
+    <string name="qs_ai_model">AI Model</string>
+    <string name="value_ready">Ready</string>
+    <string name="value_online">Online</string>
+    <string name="value_loaded">Loaded</string>
+    <string name="value_offline">Offline</string>
+    <string name="date_format">yyyy-MM-dd  EEE</string>
+
+    <!-- LiDAR SLAM -->
+    <string name="lidar_mapping">Mapping</string>
+    <string name="lidar_localization">Localization</string>
+    <string name="lidar_navigation">Navigation</string>
+    <string name="scan_data">Scan Data</string>
+    <string name="scan_rate">Scan Rate</string>
+    <string name="scan_rate_value">10 Hz</string>
+    <string name="point_count">Points</string>
+    <string name="map_area">Map Area</string>
+    <string name="map_area_value">%.1f m²</string>
+    <string name="robot_pose">Robot Pose</string>
+    <string name="pose_value">x %1$.2f  y %2$.2f  θ %3$d°</string>
+    <string name="controls">Controls</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="stop_scan">Stop Scan</string>
+    <string name="save_map">Save Map</string>
+    <string name="clear_map">Clear Map</string>
+    <string name="map_saved">Map saved</string>
+    <string name="map_cleared">Map cleared</string>
+    <string name="nav_goals">Navigation Goals</string>
+    <string name="goal_dock">Charging Dock</string>
+    <string name="goal_entrance">Entrance</string>
+    <string name="goal_kitchen">Kitchen</string>
+    <string name="goal_office">Office</string>
+    <string name="lidar_scanning">Scanning · %s</string>
+    <string name="lidar_paused">Paused · %s</string>
+    <string name="navigating_to">Navigating to %s</string>
 
     <!-- Common status -->
     <string name="status_disconnected">Disconnected · tap to connect</string>

@@ -19,6 +19,7 @@ public class WaveformView extends View {
     private final float barGap;
 
     private boolean active = true;
+    private int barColor = 0x8A6DFF;
 
     public WaveformView(Context context) {
         this(context, null);
@@ -29,6 +30,12 @@ public class WaveformView extends View {
         float dp = getResources().getDisplayMetrics().density;
         barWidth = 3 * dp;
         barGap = 3.5f * dp;
+    }
+
+    /** Sets the bar color (RGB; alpha is applied per bar). */
+    public void setBarColor(int rgb) {
+        barColor = rgb & 0xFFFFFF;
+        invalidate();
     }
 
     public void setActive(boolean active) {
@@ -60,7 +67,7 @@ public class WaveformView extends View {
             float barH = Math.max(barWidth, h * level);
 
             int alpha = (int) (110 + 145 * envelope);
-            barPaint.setColor((alpha << 24) | (active ? 0x8A6DFF : 0x5D6A82));
+            barPaint.setColor((alpha << 24) | (active ? barColor : 0x5D6A82));
 
             bar.set(x, cy - barH / 2f, x + barWidth, cy + barH / 2f);
             canvas.drawRoundRect(bar, barWidth / 2f, barWidth / 2f, barPaint);

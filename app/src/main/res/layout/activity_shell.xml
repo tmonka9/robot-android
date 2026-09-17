@@ -35,12 +35,6 @@
                 android:text="@string/nav_robot" />
 
             <TextView
-                android:id="@+id/nav_remote"
-                style="@style/NavRailItem"
-                android:drawableTop="@drawable/ic_gamepad"
-                android:text="@string/nav_remote" />
-
-            <TextView
                 android:id="@+id/nav_face"
                 style="@style/NavRailItem"
                 android:drawableTop="@drawable/ic_face_id"
@@ -55,8 +49,20 @@
             <TextView
                 android:id="@+id/nav_object"
                 style="@style/NavRailItem"
-                android:drawableTop="@drawable/ic_scan"
+                android:drawableTop="@drawable/ic_cube"
                 android:text="@string/nav_object" />
+
+            <TextView
+                android:id="@+id/nav_lidar"
+                style="@style/NavRailItem"
+                android:drawableTop="@drawable/ic_lidar"
+                android:text="@string/nav_lidar" />
+
+            <TextView
+                android:id="@+id/nav_remote"
+                style="@style/NavRailItem"
+                android:drawableTop="@drawable/ic_gamepad"
+                android:text="@string/nav_remote" />
 
             <TextView
                 android:id="@+id/nav_settings"

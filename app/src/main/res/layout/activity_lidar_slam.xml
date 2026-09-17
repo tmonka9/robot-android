@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_page_header" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/columns"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/screen_padding">
+
+            <!-- Column 1: mode + map -->
+            <LinearLayout
+                style="@style/Panel"
+                android:tag="1.8">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_segment_group"
+                    android:orientation="horizontal"
+                    android:padding="4dp">
+
+                    <TextView
+                        android:id="@+id/mode_mapping"
+                        style="@style/Segment"
+                        android:text="@string/lidar_mapping" />
+
+                    <TextView
+                        android:id="@+id/mode_localization"
+                        style="@style/Segment"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/lidar_localization" />
+
+                    <TextView
+                        android:id="@+id/mode_navigation"
+                        style="@style/Segment"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/lidar_navigation" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/lidar_status"
+                    style="@style/StatusText"
+                    android:layout_marginTop="12dp"
+                    android:drawableStart="@drawable/dot_teal"
+                    android:textColor="@color/text_primary" />
+
+                <com.falcon.robot.widget.LidarMapView
+                    android:id="@+id/lidar_map"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/preview_height"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_status_box" />
+            </LinearLayout>
+
+            <!-- Column 2: data, controls, goals -->
+            <LinearLayout
+                style="@style/Column"
+                android:tag="1">
+
+                <LinearLayout style="@style/Panel">
+
+                    <TextView
+                        style="@style/SectionTitle"
+                        android:text="@string/scan_data" />
+
+                    <View style="@style/PanelDivider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/FieldLabel"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/scan_rate"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/stat_rate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/FieldLabel"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/point_count"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/stat_points"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/FieldLabel"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/map_area"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/stat_area"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/FieldLabel"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/robot_pose"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/stat_pose"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/cyan"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    style="@style/Panel"
+                    android:layout_marginTop="@dimen/gap">
+
+                    <TextView
+                        style="@style/SectionTitle"
+                        android:text="@string/controls" />
+
+                    <TextView
+                        android:id="@+id/btn_scan_toggle"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_stop"
+                        android:text="@string/stop_scan" />
+
+                    <TextView
+                        android:id="@+id/btn_save_map"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_save"
+                        android:text="@string/save_map" />
+
+                    <TextView
+                        android:id="@+id/btn_clear_map"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_delete"
+                        android:text="@string/clear_map" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/goals_panel"
+                    style="@style/Panel"
+                    android:layout_marginTop="@dimen/gap"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/SectionTitle"
+                        android:text="@string/nav_goals" />
+
+                    <TextView
+                        android:id="@+id/goal_dock"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_place"
+                        android:text="@string/goal_dock" />
+
+                    <TextView
+                        android:id="@+id/goal_entrance"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_place"
+                        android:text="@string/goal_entrance" />
+
+                    <TextView
+                        android:id="@+id/goal_kitchen"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_place"
+                        android:text="@string/goal_kitchen" />
+
+                    <TextView
+                        android:id="@+id/goal_office"
+                        style="@style/ListAction"
+                        android:drawableStart="@drawable/ic_place"
+                        android:text="@string/goal_office" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

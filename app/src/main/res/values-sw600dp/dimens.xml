@@ -5,12 +5,12 @@
     <dimen name="sidebar_width">100dp</dimen>
     <dimen name="title_text">20sp</dimen>
 
-    <dimen name="hero_min_height">400dp</dimen>
-    <dimen name="hero_robot">400dp</dimen>
-    <dimen name="hero_ai">96sp</dimen>
-    <dimen name="hero_title">34sp</dimen>
+    <dimen name="hero_min_height">300dp</dimen>
+    <dimen name="hero_robot">340dp</dimen>
+    <dimen name="hero_ai">88sp</dimen>
+    <dimen name="hero_title">44sp</dimen>
     <dimen name="hero_tagline">20sp</dimen>
-    <dimen name="home_card_height">190dp</dimen>
+    <dimen name="home_card_height">200dp</dimen>
 
     <dimen name="dpad_size">200dp</dimen>
     <dimen name="joystick_size">200dp</dimen>

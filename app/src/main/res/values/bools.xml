@@ -2,5 +2,5 @@
 <resources>
     <!-- true = pages lay their sections out in side-by-side columns (see values-w840dp) -->
     <bool name="two_columns">false</bool>
-    <integer name="home_grid_columns">2</integer>
+    <integer name="home_grid_columns">1</integer>
 </resources>
