@@ -301,15 +301,169 @@
     </string-array>
 
     <!-- Voice Recognition -->
-    <string name="listening_hint">Speak your command</string>
-    <string name="recognized_command">Recognized Command</string>
-    <string name="no_command_yet">No command yet</string>
+    <string name="voice_subtitle">Recognize and process voice commands</string>
     <string name="stop">Stop</string>
-    <string name="start">Start</string>
-    <string name="try_saying">Try Saying</string>
-    <string name="voice_settings">Voice Settings</string>
-    <string name="opt_wake_word">Wake word “Hey Robot”</string>
-    <string name="opt_voice_feedback">Voice feedback</string>
+    <string name="speak_now">Speak now…</string>
+    <string name="tap_mic_to_listen">Tap the microphone to listen</string>
+    <string name="microphone">Microphone</string>
+    <string-array name="microphones">
+        <item>Default Device</item>
+        <item>Microphone Array</item>
+        <item>USB Microphone</item>
+        <item>Bluetooth Headset</item>
+    </string-array>
+    <string name="recognition_result">Recognition Result</string>
+    <string name="quoted">“%s”</string>
+    <string name="text">Text</string>
+    <string name="confidence">Confidence</string>
+    <string name="language">Language</string>
+    <string name="command_action">Command Action</string>
+    <string name="execute_label">Execute: </string>
+    <string name="voice_database">Voice Database</string>
+    <string name="add_voice">Add Voice</string>
+    <string name="search_by_name">Search by name…</string>
+    <string name="id_value">ID: %s</string>
+    <string name="voice_control">Voice Control</string>
+    <string name="vc_command">Voice Command Control</string>
+    <string name="vc_command_sub">Enable voice commands for the robot</string>
+    <string name="vc_wake">Wake Word (Hey Robot)</string>
+    <string name="vc_wake_sub">Activate listening mode with wake word</string>
+    <string name="vc_continuous">Continuous Listening</string>
+    <string name="vc_continuous_sub">Keep listening all the time</string>
+    <string name="vc_noise">Noise Reduction</string>
+    <string name="vc_noise_sub">Improve recognition in noisy environment</string>
+    <string name="wake_word">Wake Word</string>
+    <string name="wake_word_title">Wake Word (%s)</string>
+    <string name="voice_history">Voice Command History</string>
+    <string name="command">Command</string>
+    <string name="result">Result</string>
+    <string name="result_executed">Executed</string>
+    <string name="result_answered">Answered</string>
+    <string name="result_not_sent">Not sent</string>
+    <string name="advanced_settings">Advanced Settings</string>
+    <string name="tab_speech_model">Speech Model</string>
+    <string name="tab_language">Language</string>
+    <string name="tab_hotword">Hotword</string>
+    <string name="tab_audio">Audio</string>
+    <string name="apply_settings">Apply Settings</string>
+    <string name="settings_applied">Settings applied</string>
+    <string name="time_answer">It is %s</string>
+    <string name="voice_profile_removed">Removed voice profile %s</string>
+    <string name="voice_profile_added">Added voice profile %s</string>
+    <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
+    <string-array name="voice_phrases">
+        <item>Go to home</item>
+        <item>Move forward</item>
+        <item>Turn left</item>
+        <item>Stop</item>
+        <item>What time is it</item>
+        <item>Open door</item>
+        <item>Start mapping</item>
+        <item>Wave hello</item>
+    </string-array>
+    <string-array name="voice_actions">
+        <item>Go Home</item>
+        <item>Move Forward</item>
+        <item>Turn Left</item>
+        <item>Stop</item>
+        <item>Tell Time</item>
+        <item>Open Door</item>
+        <item>Start Mapping</item>
+        <item>Wave</item>
+    </string-array>
+    <string-array name="voice_action_descriptions">
+        <item>Robot will return to the home position.</item>
+        <item>Robot will move forward.</item>
+        <item>Robot will turn left.</item>
+        <item>Robot will stop all movement.</item>
+        <item>Robot will tell the current time.</item>
+        <item>Robot will open the door.</item>
+        <item>Robot will start building a map.</item>
+        <item>Robot will wave hello.</item>
+    </string-array>
+    <!-- Advanced settings rows: label + options, grouped by tab -->
+    <string name="adv_model_type">Model Type</string>
+    <string-array name="adv_model_type_options">
+        <item>DeepSpeech (Local)</item>
+        <item>Whisper (Local)</item>
+        <item>Cloud ASR</item>
+    </string-array>
+    <string name="adv_engine">Recognition Engine</string>
+    <string-array name="adv_engine_options">
+        <item>ONNX Runtime</item>
+        <item>TensorFlow Lite</item>
+        <item>NNAPI</item>
+    </string-array>
+    <string name="adv_sample_rate">Sample Rate</string>
+    <string-array name="adv_sample_rate_options">
+        <item>16 kHz</item>
+        <item>22.05 kHz</item>
+        <item>44.1 kHz</item>
+    </string-array>
+    <string name="adv_audio_input">Audio Input</string>
+    <string-array name="adv_audio_input_options">
+        <item>Microphone Array</item>
+        <item>Built-in Microphone</item>
+        <item>USB Microphone</item>
+    </string-array>
+    <string name="adv_recognition_language">Recognition Language</string>
+    <string name="adv_response_language">Response Language</string>
+    <string-array name="adv_language_options">
+        <item>English (US)</item>
+        <item>English (UK)</item>
+        <item>Chinese (Mandarin)</item>
+        <item>Korean</item>
+        <item>Japanese</item>
+    </string-array>
+    <string name="adv_auto_detect">Auto Detect Language</string>
+    <string-array name="adv_on_off_options">
+        <item>Off</item>
+        <item>On</item>
+    </string-array>
+    <string name="adv_punctuation">Auto Punctuation</string>
+    <string name="adv_hotword_engine">Wake Word Engine</string>
+    <string-array name="adv_hotword_engine_options">
+        <item>Porcupine</item>
+        <item>Snowboy</item>
+        <item>Built-in</item>
+    </string-array>
+    <string name="adv_sensitivity">Sensitivity</string>
+    <string-array name="adv_sensitivity_options">
+        <item>Medium</item>
+        <item>High</item>
+        <item>Low</item>
+    </string-array>
+    <string name="adv_timeout">Listening Timeout</string>
+    <string-array name="adv_timeout_options">
+        <item>5 s</item>
+        <item>10 s</item>
+        <item>30 s</item>
+    </string-array>
+    <string name="adv_confirm_sound">Confirmation Sound</string>
+    <string-array name="adv_confirm_sound_options">
+        <item>Beep</item>
+        <item>Voice</item>
+        <item>None</item>
+    </string-array>
+    <string name="adv_noise_suppression">Noise Suppression</string>
+    <string-array name="adv_noise_options">
+        <item>Standard</item>
+        <item>Aggressive</item>
+        <item>Off</item>
+    </string-array>
+    <string name="adv_echo_cancel">Echo Cancellation</string>
+    <string name="adv_gain">Input Gain</string>
+    <string-array name="adv_gain_options">
+        <item>Auto</item>
+        <item>Low</item>
+        <item>High</item>
+    </string-array>
+    <string name="adv_output_volume">Output Volume</string>
+    <string-array name="adv_volume_options">
+        <item>70%</item>
+        <item>50%</item>
+        <item>100%</item>
+    </string-array>
 
     <!-- Object Detection -->
     <string name="detection_mode">Detection Mode</string>
