@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel_blue"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_robot" />
+
+        <TextView
+            style="@style/PanelTitle"
+            android:text="@string/robot_control" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_panel_divider" />
+
+    <TextView
+        android:id="@+id/robot_status"
+        style="@style/StatusText"
+        android:layout_marginTop="10dp"
+        android:drawableStart="@drawable/dot_teal"
+        android:text="@string/status_connected"
+        android:textColor="@color/text_primary" />
+
+    <com.falcon.robot.widget.DPadView
+        android:id="@+id/dpad"
+        android:layout_width="@dimen/dpad_size"
+        android:layout_height="@dimen/dpad_size"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="18dp" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/pose_stand"
+            style="@style/PoseButton"
+            android:drawableTop="@drawable/ic_pose_stand"
+            android:text="@string/pose_stand" />
+
+        <TextView
+            android:id="@+id/pose_sit"
+            style="@style/PoseButton"
+            android:layout_marginStart="8dp"
+            android:drawableTop="@drawable/ic_pose_sit"
+            android:text="@string/pose_sit" />
+
+        <TextView
+            android:id="@+id/pose_wave"
+            style="@style/PoseButton"
+            android:layout_marginStart="8dp"
+            android:drawableTop="@drawable/ic_pose_wave"
+            android:text="@string/pose_wave" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:text="@string/speed"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <SeekBar
+            android:id="@+id/speed_seek"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="100"
+            android:maxHeight="4dp"
+            android:minHeight="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="12dp"
+            android:progress="60"
+            android:progressDrawable="@drawable/progress_loading"
+            android:splitTrack="false"
+            android:thumb="@drawable/seekbar_thumb" />
+
+        <TextView
+            android:id="@+id/speed_value"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+    </LinearLayout>
+</LinearLayout>

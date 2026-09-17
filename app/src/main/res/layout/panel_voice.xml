@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_panel_purple"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_mic" />
+
+        <TextView
+            style="@style/PanelTitle"
+            android:text="@string/voice_recognition" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_panel_divider" />
+
+    <TextView
+        android:id="@+id/voice_status"
+        style="@style/StatusText"
+        android:layout_marginTop="10dp"
+        android:drawableStart="@drawable/dot_purple"
+        android:text="@string/status_listening"
+        android:textColor="@color/text_primary" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <FrameLayout
+        android:id="@+id/btn_mic"
+        android:layout_width="@dimen/mic_ring_size"
+        android:layout_height="@dimen/mic_ring_size"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="24dp"
+        android:clickable="true"
+        android:contentDescription="@string/voice_recognition"
+        android:focusable="true">
+
+        <View
+            android:id="@+id/mic_pulse"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_mic_ring_outer" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="16dp"
+            android:background="@drawable/bg_mic_ring_inner" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="34dp"
+            android:background="@drawable/bg_mic_core">
+
+            <ImageView
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_mic_large" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <com.falcon.robot.widget.WaveformView
+        android:id="@+id/waveform"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="24dp" />
+
+    <TextView
+        android:id="@+id/voice_hint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="6dp"
+        android:text="@string/tap_to_stop"
+        android:textColor="@color/text_primary"
+        android:textSize="14sp" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_splash">
+
+    <!-- floor glow -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="-110dp"
+        android:background="@drawable/bg_glow_blue" />
+
+    <LinearLayout
+        android:id="@+id/splash_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+
+            <View
+                android:layout_width="@dimen/splash_robot"
+                android:layout_height="@dimen/splash_robot"
+                android:layout_gravity="center"
+                android:background="@drawable/bg_glow_blue" />
+
+            <ImageView
+                android:id="@+id/splash_robot"
+                android:layout_width="@dimen/splash_robot"
+                android:layout_height="@dimen/splash_robot"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/img_robot" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="@string/title_ai"
+                android:textColor="@color/blue"
+                android:textSize="@dimen/splash_title" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:fontFamily="sans-serif-light"
+                android:letterSpacing="0.04"
+                android:singleLine="true"
+                android:text="@string/title_rest"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/splash_title" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:letterSpacing="0.3"
+            android:text="@string/splash_tagline"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+
+        <ProgressBar
+            android:id="@+id/splash_progress"
+            style="@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="220dp"
+            android:layout_height="6dp"
+            android:layout_marginTop="72dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/progress_loading" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/loading"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
+    </LinearLayout>
+</FrameLayout>

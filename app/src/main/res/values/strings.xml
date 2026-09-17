@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Robot Control</string>
+    <string name="title_ai">AI</string>
+    <string name="title_rest">ROBOT CONTROL</string>
+    <string name="splash_tagline">FACE  •  VOICE  •  ROBOT</string>
+    <string name="loading">Loading…</string>
+
+    <string name="robot_control">Robot Control</string>
+    <string name="robot_control_sub">Move / Pose / Action</string>
+    <string name="facial_recognition">Facial Recognition</string>
+    <string name="facial_recognition_sub">Detect / Identify / Database</string>
+    <string name="voice_recognition">Voice Recognition</string>
+    <string name="voice_recognition_sub">Listen / Recognize / Command</string>
+
+    <string name="status_connected">Connected</string>
+    <string name="status_ready">Ready</string>
+    <string name="status_scanning">Scanning…</string>
+    <string name="status_listening">Listening…</string>
+    <string name="status_idle">Idle</string>
+    <string name="moving_forward">Moving forward</string>
+    <string name="moving_backward">Moving backward</string>
+    <string name="turning_left">Turning left</string>
+    <string name="turning_right">Turning right</string>
+    <string name="stopped">Stopped</string>
+    <string name="status_with_pose">Connected · %s</string>
+
+    <string name="pose_stand">Stand</string>
+    <string name="pose_sit">Sit</string>
+    <string name="pose_wave">Wave</string>
+    <string name="speed">Speed</string>
+    <string name="percent">%d%%</string>
+
+    <string name="scan_face">Scan Face</string>
+    <string name="recognized">Recognized</string>
+    <string name="demo_user">User_001</string>
+    <string name="match_label">Match: </string>
+    <string name="match_value">98.7%</string>
+
+    <string name="tap_to_stop">Tap to stop</string>
+    <string name="tap_to_start">Tap to start</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_log">Log</string>
+    <string name="nav_settings">Settings</string>
+    <string name="menu">Menu</string>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="screen_padding">20dp</dimen>
+    <dimen name="gap">14dp</dimen>
+    <dimen name="feature_icon">96dp</dimen>
+    <dimen name="feature_title">19sp</dimen>
+    <dimen name="feature_subtitle">13sp</dimen>
+    <dimen name="feature_padding">18dp</dimen>
+    <dimen name="title_text">22sp</dimen>
+    <dimen name="panel_title">15sp</dimen>
+    <dimen name="dpad_size">160dp</dimen>
+    <dimen name="mic_ring_size">160dp</dimen>
+    <dimen name="splash_title">44sp</dimen>
+    <dimen name="splash_robot">380dp</dimen>
+</resources>

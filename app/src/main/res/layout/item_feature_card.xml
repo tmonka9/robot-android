@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Content (colors, icons, text) is bound in MainActivity#bindFeatureCard. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="@dimen/feature_padding">
+
+        <ImageView
+            android:id="@+id/feature_icon"
+            android:layout_width="@dimen/feature_icon"
+            android:layout_height="@dimen/feature_icon"
+            android:layout_marginTop="6dp"
+            android:contentDescription="@null"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            android:id="@+id/feature_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/feature_title" />
+
+        <TextView
+            android:id="@+id/feature_subtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:maxLines="2"
+            android:textSize="@dimen/feature_subtitle" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageView
+            android:id="@+id/feature_arrow"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="4dp"
+            android:contentDescription="@null"
+            android:padding="8dp"
+            android:src="@drawable/ic_arrow_right" />
+    </LinearLayout>
+
+    <View
+        android:id="@+id/feature_accent_top"
+        android:layout_width="72dp"
+        android:layout_height="3dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="12dp" />
+
+    <View
+        android:id="@+id/feature_accent_bottom"
+        android:layout_width="72dp"
+        android:layout_height="3dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="12dp"
+        android:scaleX="-1" />
+</FrameLayout>
