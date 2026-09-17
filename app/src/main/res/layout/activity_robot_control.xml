@@ -9,7 +9,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/columns"
@@ -22,11 +23,14 @@
                 style="@style/Column"
                 android:tag="1.3">
 
-                <LinearLayout style="@style/Panel">
+                <LinearLayout style="@style/Panel"
+                    android:layout_weight="1">
 
                     <FrameLayout
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/robot_preview_height"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:minHeight="@dimen/robot_preview_height"
                         android:background="@drawable/bg_preview">
 
                         <View
@@ -170,7 +174,8 @@
 
                 <LinearLayout
                     style="@style/Panel"
-                    android:layout_marginTop="@dimen/gap">
+                    android:layout_marginTop="@dimen/gap"
+                    android:layout_weight="1">
 
                     <TextView
                         style="@style/SectionTitle"
@@ -199,6 +204,12 @@
                         style="@style/ListAction"
                         android:drawableStart="@drawable/ic_music"
                         android:text="@string/pose_dance" />
+
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
 
                     <TextView
                         android:id="@+id/robot_status"

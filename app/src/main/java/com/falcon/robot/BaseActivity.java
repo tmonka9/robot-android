@@ -289,9 +289,13 @@ public abstract class BaseActivity extends Activity {
     // ---- layout ------------------------------------------------------------------------
 
     /**
-     * Arranges the children of {@code R.id.columns} side by side on tablets
-     * ({@code R.bool.two_columns}, landscape tablets) or stacked on phones. A child's {@code android:tag}
-     * may hold its column weight (default 1). Fixed heights are kept.
+     * Arranges the children of {@code R.id.columns} side by side on wide screens
+     * ({@code R.bool.two_columns}) or stacked on narrow ones. A child's {@code android:tag}
+     * may hold its column width weight (default 1).
+     *
+     * <p>Pages fill the screen height: side by side, every column takes the full height; stacked,
+     * the columns share any leftover height. Pages sit in a {@code ScrollView} with
+     * {@code fillViewport}, so they only scroll when the screen is too small for the content.
      */
     protected void setupColumns() {
         LinearLayout columns = findViewById(R.id.columns);
@@ -300,8 +304,6 @@ public abstract class BaseActivity extends Activity {
         columns.setOrientation(side ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         for (int i = 0; i < columns.getChildCount(); i++) {
             View child = columns.getChildAt(i);
-            ViewGroup.LayoutParams old = child.getLayoutParams();
-            int fixedHeight = old != null && old.height > 0 ? old.height : 0;
             LinearLayout.LayoutParams lp;
             if (side) {
                 float weight = 1f;
@@ -312,12 +314,11 @@ public abstract class BaseActivity extends Activity {
                         // keep default weight
                     }
                 }
-                lp = new LinearLayout.LayoutParams(0,
-                        fixedHeight > 0 ? fixedHeight : ViewGroup.LayoutParams.MATCH_PARENT, weight);
+                lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, weight);
                 if (i > 0) lp.setMarginStart(gap);
             } else {
                 lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                        fixedHeight > 0 ? fixedHeight : ViewGroup.LayoutParams.WRAP_CONTENT);
+                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
                 if (i > 0) lp.topMargin = gap;
             }
             child.setLayoutParams(lp);

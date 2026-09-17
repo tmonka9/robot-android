@@ -11,7 +11,6 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
-import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.falcon.robot.widget.DetectionView;
@@ -90,8 +89,6 @@ public class MainActivity extends BaseActivity {
         systemStatus = findViewById(R.id.home_system_status);
         systemStatus.setOnClickListener(v -> showConnectionDialog());
 
-        final ScrollView scroll = findViewById(R.id.home_scroll);
-        findViewById(R.id.home_footer_home).setOnClickListener(v -> scroll.smoothScrollTo(0, 0));
     }
 
     @Override
@@ -178,14 +175,15 @@ public class MainActivity extends BaseActivity {
                 row = new LinearLayout(this);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
                 if (i > 0) rowLp.topMargin = gap;
                 grid.addView(row, rowLp);
             }
             View view = inflater.inflate(R.layout.item_home_card, row, false);
             bindCard(view, CARDS[i]);
+            // cards fill their row; rows share the grid height (min height from item_home_card)
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
-                    view.getLayoutParams().height, 1f);
+                    LinearLayout.LayoutParams.MATCH_PARENT, 1f);
             if (i % columns > 0) lp.setMarginStart(gap);
             row.addView(view, lp);
         }

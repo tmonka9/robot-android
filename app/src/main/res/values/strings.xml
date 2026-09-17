@@ -29,7 +29,6 @@
     <string name="card_voice_desc">Recognize and process voice commands.</string>
     <string name="nav_lidar">LiDAR SLAM</string>
     <string name="card_lidar_desc">Map, localize and navigate using LiDAR.</string>
-    <string name="home_footer">//   AI Powers a Smarter Future   //</string>
     <string name="system_online">System Online</string>
     <string name="robot_offline">Robot Offline · tap to connect</string>
     <string name="network">Network</string>

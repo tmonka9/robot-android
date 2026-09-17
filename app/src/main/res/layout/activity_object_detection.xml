@@ -9,7 +9,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/columns"
@@ -25,7 +26,9 @@
                 <com.falcon.robot.widget.DetectionView
                     android:id="@+id/detection_view"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/preview_height" />
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:minHeight="@dimen/preview_height" />
 
                 <Switch
                     android:id="@+id/show_boxes"

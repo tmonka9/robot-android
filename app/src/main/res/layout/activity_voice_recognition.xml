@@ -9,7 +9,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/columns"
@@ -21,7 +22,7 @@
             <LinearLayout
                 style="@style/Panel"
                 android:background="@drawable/bg_panel_purple"
-                android:gravity="center_horizontal"
+                android:gravity="center"
                 android:tag="1.2">
 
                 <FrameLayout
@@ -161,7 +162,8 @@
                 <LinearLayout
                     style="@style/Panel"
                     android:layout_marginTop="@dimen/gap"
-                    android:background="@drawable/bg_panel_purple">
+                    android:background="@drawable/bg_panel_purple"
+                    android:layout_weight="1">
 
                     <TextView
                         style="@style/SectionTitle"

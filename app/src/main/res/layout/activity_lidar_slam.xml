@@ -9,7 +9,8 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
 
         <LinearLayout
             android:id="@+id/columns"
@@ -57,7 +58,9 @@
                 <com.falcon.robot.widget.LidarMapView
                     android:id="@+id/lidar_map"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/preview_height"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:minHeight="@dimen/preview_height"
                     android:layout_marginTop="8dp"
                     android:background="@drawable/bg_status_box" />
             </LinearLayout>
@@ -162,7 +165,8 @@
 
                 <LinearLayout
                     style="@style/Panel"
-                    android:layout_marginTop="@dimen/gap">
+                    android:layout_marginTop="@dimen/gap"
+                    android:layout_weight="1">
 
                     <TextView
                         style="@style/SectionTitle"

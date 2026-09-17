@@ -55,8 +55,9 @@ public class SettingsActivity extends BaseActivity {
         ((TextView) row.findViewById(R.id.row_title)).setText(title);
         ((TextView) row.findViewById(R.id.row_subtitle)).setText(subtitle);
         row.setOnClickListener(onClick);
+        // rows share the page height (min 72dp each) so the list fills the screen
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
         if (list.getChildCount() > 0) lp.topMargin = getResources().getDimensionPixelSize(R.dimen.gap);
         list.addView(row, lp);
         return row;

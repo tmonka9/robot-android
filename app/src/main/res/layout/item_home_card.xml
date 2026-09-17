@@ -2,7 +2,8 @@
 <!-- Home feature card; bound in MainActivity#buildCardGrid. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/home_card_height"
+    android:layout_height="match_parent"
+    android:minHeight="@dimen/home_card_height"
     android:foreground="?android:attr/selectableItemBackground">
 
     <!-- Illustration on the right ~55% of the card -->
