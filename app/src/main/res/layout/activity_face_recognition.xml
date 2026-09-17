@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Face Recognition page, following design/face-rec.png.
+  Top row: Live Camera | Recognized | Face Database.
+  Bottom row: Recognition History | Detection Statistics | Face Detection Settings.
+  Rows sit side by side on wide screens and stack otherwise (BaseActivity#setupColumns).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <include layout="@layout/view_page_header" />
+    <include layout="@layout/view_page_header_rich" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -18,185 +24,974 @@
             android:orientation="vertical"
             android:padding="@dimen/screen_padding">
 
+            <!-- ======================= Top row ======================= -->
             <LinearLayout
                 android:id="@+id/columns"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:layout_weight="1.1">
 
-                <!-- Camera preview placeholder; swap for a TextureView when the camera is wired up. -->
-                <FrameLayout
-                    android:id="@+id/face_preview"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="@dimen/preview_height"
-                    android:background="@drawable/bg_face_preview"
-                    android:tag="1.6">
-
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:layout_marginTop="48dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_person" />
-
-                    <ImageView
-                        android:layout_width="180dp"
-                        android:layout_height="180dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@null"
-                        android:src="@drawable/face_frame" />
-
-                    <View
-                        android:id="@+id/face_scan_line"
-                        android:layout_width="match_parent"
-                        android:layout_height="2dp"
-                        android:layout_marginLeft="16dp"
-                        android:layout_marginRight="16dp"
-                        android:background="@drawable/bg_scan_line"
-                        android:visibility="invisible" />
-                </FrameLayout>
-
+                <!-- Live camera -->
                 <LinearLayout
-                    style="@style/Column"
-                    android:tag="1">
-
-                    <LinearLayout style="@style/Panel">
-
-                        <TextView
-                            style="@style/FieldLabel"
-                            android:text="@string/status" />
-
-                        <TextView
-                            android:id="@+id/face_status"
-                            style="@style/StatusText"
-                            android:layout_marginTop="6dp"
-                            android:drawableStart="@drawable/dot_teal"
-                            android:text="@string/status_ready"
-                            android:textColor="@color/teal" />
-                    </LinearLayout>
+                    android:id="@+id/panel_camera"
+                    style="@style/RobotPanel"
+                    android:tag="1.55">
 
                     <LinearLayout
-                        style="@style/Panel"
-                        android:layout_marginTop="@dimen/gap"
-                        android:layout_weight="1">
+                        android:layout_width="match_parent"
+                        android:layout_height="36dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingLeft="6dp">
+
+                        <View
+                            android:id="@+id/feed_dot"
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:background="@drawable/dot_teal" />
 
                         <TextView
-                            style="@style/FieldLabel"
-                            android:text="@string/last_result" />
+                            android:id="@+id/feed_source"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="12dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:drawableEnd="@drawable/ic_dropdown"
+                            android:drawablePadding="6dp"
+                            android:gravity="center_vertical"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp" />
+
+                        <Space
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:id="@+id/feed_resolution"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+
+                        <ImageButton
+                            android:id="@+id/feed_fullscreen"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="8dp"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@null"
+                            android:padding="8dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_fullscreen" />
+                    </LinearLayout>
+
+                    <!-- Feed placeholder (design artwork); replace with the camera stream. -->
+                    <FrameLayout
+                        android:id="@+id/feed_frame"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_table_box"
+                        android:minHeight="240dp">
+
+                        <com.falcon.robot.widget.CoverImageView
+                            android:id="@+id/face_feed"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/nav_face"
+                            android:src="@drawable/face_camera_feed" />
+
+                        <View
+                            android:id="@+id/face_scan_line"
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:background="@drawable/bg_scan_line"
+                            android:visibility="invisible" />
+
+                        <!-- Live labels, positioned over the artwork's face box in code -->
+                        <TextView
+                            android:id="@+id/feed_chip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_feed_chip_green"
+                            android:gravity="center"
+                            android:includeFontPadding="false"
+                            android:singleLine="true"
+                            android:textColor="@color/white" />
+
+                        <TextView
+                            android:id="@+id/feed_id_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_feed_chip_green"
+                            android:gravity="center_vertical"
+                            android:includeFontPadding="false"
+                            android:singleLine="true"
+                            android:textColor="@color/teal" />
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="12dp"
+                            android:background="@drawable/bg_tool_strip"
+                            android:orientation="vertical"
+                            android:padding="4dp">
+
+                            <ImageButton
+                                android:id="@+id/tool_capture"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/snapshot_saved"
+                                android:padding="10dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_camera" />
+
+                            <ImageButton
+                                android:id="@+id/tool_rescan"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/recognized"
+                                android:padding="10dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_refresh" />
+
+                            <ImageButton
+                                android:id="@+id/tool_source"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/camera"
+                                android:padding="10dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_settings" />
+
+                            <ImageButton
+                                android:id="@+id/tool_fullscreen"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@null"
+                                android:padding="10dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_fullscreen" />
+                        </LinearLayout>
+                    </FrameLayout>
+                </LinearLayout>
+
+                <!-- Recognition result -->
+                <LinearLayout
+                    android:id="@+id/panel_result"
+                    style="@style/RobotPanel"
+                    android:tag="1.05">
+
+                    <TextView
+                        android:id="@+id/result_title"
+                        style="@style/RobotPanelTitle"
+                        android:textSize="19sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:id="@+id/result_photo"
+                            android:layout_width="104dp"
+                            android:layout_height="122dp"
+                            android:background="@drawable/bg_avatar_rounded"
+                            android:contentDescription="@null"
+                            android:padding="2dp"
+                            android:scaleType="centerCrop" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/SettingLabel"
+                                android:text="@string/name" />
+
+                            <TextView
+                                android:id="@+id/result_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:singleLine="true"
+                                android:textColor="@color/white"
+                                android:textSize="16sp" />
+
+                            <TextView
+                                style="@style/SettingLabel"
+                                android:layout_marginTop="6dp"
+                                android:text="@string/id_label" />
+
+                            <TextView
+                                android:id="@+id/result_id"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/blue_light"
+                                android:textSize="15sp" />
+
+                            <TextView
+                                style="@style/SettingLabel"
+                                android:layout_marginTop="6dp"
+                                android:text="@string/similarity" />
+
+                            <TextView
+                                android:id="@+id/result_similarity"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/white"
+                                android:textSize="15sp" />
+
+                            <ProgressBar
+                                android:id="@+id/result_similarity_bar"
+                                style="@android:style/Widget.ProgressBar.Horizontal"
+                                android:layout_width="match_parent"
+                                android:layout_height="8dp"
+                                android:layout_marginTop="4dp"
+                                android:max="1000"
+                                android:progressDrawable="@drawable/progress_similarity" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
                             android:gravity="center_vertical"
+                            android:minHeight="32dp"
                             android:orientation="horizontal">
 
-                            <ImageView
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:background="@drawable/bg_avatar"
-                                android:contentDescription="@null"
-                                android:padding="7dp"
-                                android:src="@drawable/ic_person" />
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
+                            <TextView
+                                android:layout_width="120dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="12dp"
-                                android:orientation="vertical">
+                                android:text="@string/department"
+                                android:textColor="@color/blue_light"
+                                android:textSize="13sp" />
 
-                                <TextView
-                                    android:id="@+id/result_name"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/placeholder_value"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="14sp" />
-
-                                <TextView
-                                    android:id="@+id/result_match"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="2dp"
-                                    android:fontFamily="sans-serif-medium"
-                                    android:textColor="@color/teal"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
+                            <TextView
+                                android:id="@+id/result_department"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:singleLine="true"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
                         </LinearLayout>
 
-                        <TextView
-                            style="@style/FieldLabel"
-                            android:layout_marginTop="12dp"
-                            android:text="@string/time" />
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/divider" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:minHeight="32dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="120dp"
+                                android:layout_height="wrap_content"
+                                android:text="@string/position_title"
+                                android:textColor="@color/blue_light"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/result_position"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:singleLine="true"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="@color/divider" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:minHeight="32dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="120dp"
+                                android:layout_height="wrap_content"
+                                android:text="@string/access_time"
+                                android:textColor="@color/blue_light"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/result_access_time"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:singleLine="true"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/result_time"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/btn_open_door"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1.3"
+                            android:background="@drawable/bg_button_primary"
+                            android:clickable="true"
+                            android:drawablePadding="8dp"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingLeft="10dp"
+                            android:paddingRight="10dp"
+                            android:singleLine="true"
+                            android:text="@string/open_door"
+                            android:textColor="@color/white"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/btn_add_log"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1.1"
+                            android:background="@drawable/bg_control_button"
+                            android:clickable="true"
+                            android:drawablePadding="6dp"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingLeft="8dp"
+                            android:paddingRight="8dp"
+                            android:singleLine="true"
+                            android:text="@string/add_to_log"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/btn_more"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="0.8"
+                            android:background="@drawable/bg_control_button"
+                            android:clickable="true"
+                            android:drawablePadding="6dp"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:singleLine="true"
+                            android:text="@string/more"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Face database -->
+                <LinearLayout
+                    android:id="@+id/panel_database"
+                    style="@style/RobotPanel"
+                    android:tag="0.9">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/db_title"
+                            style="@style/RobotPanelTitle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/face_database"
+                            android:textColor="@color/blue_light" />
+
+                        <ImageButton
+                            android:id="@+id/db_add"
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_icon_box"
+                            android:contentDescription="@string/add_face"
+                            android:padding="7dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_add" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/db_search"
+                        style="@style/Input"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="8dp"
+                        android:drawablePadding="10dp"
+                        android:hint="@string/search_faces"
+                        android:imeOptions="actionSearch"
+                        android:importantForAutofill="no"
+                        android:inputType="text"
+                        android:textSize="13sp" />
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
+                        android:minHeight="200dp"
+                        android:nestedScrollingEnabled="true"
+                        android:scrollbars="none">
+
+                        <!-- Filled by FaceRecognitionActivity#renderDatabase -->
+                        <LinearLayout
+                            android:id="@+id/db_list"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/placeholder_value"
+                            android:orientation="vertical" />
+                    </ScrollView>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ======================= Bottom row ======================= -->
+            <LinearLayout
+                android:id="@+id/columns_bottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/gap"
+                android:layout_weight="1">
+
+                <!-- Recognition history -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1.25">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/history_title"
+                            style="@style/RobotPanelTitle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/recognition_history" />
+
+                        <TextView
+                            android:id="@+id/btn_view_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_control_button"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingLeft="14dp"
+                            android:paddingRight="14dp"
+                            android:text="@string/view_all"
                             android:textColor="@color/text_primary"
                             android:textSize="13sp" />
                     </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/btn_scan_face"
-                        style="@style/PrimaryButton"
-                        android:layout_width="match_parent"
-                        android:layout_marginTop="@dimen/gap"
-                        android:drawableStart="@drawable/ic_scan"
-                        android:text="@string/scan_face" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                style="@style/Panel"
-                android:layout_marginTop="@dimen/gap">
-
-                <TextView
-                    style="@style/SectionTitle"
-                    android:text="@string/face_database" />
-
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:scrollbars="none">
-
-                    <!-- Filled by FaceRecognitionActivity#renderDatabase -->
                     <LinearLayout
-                        android:id="@+id/face_db_row"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal" />
-                </HorizontalScrollView>
+                        android:layout_width="match_parent"
+                        android:layout_height="32dp"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_table_box"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="8dp">
 
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.55"
+                            android:text="@string/time"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="0.7"
+                            android:text="@string/image"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.25"
+                            android:text="@string/name"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="0.9"
+                            android:text="@string/similarity"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.2"
+                            android:text="@string/status"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Filled by FaceRecognitionActivity#renderHistory -->
+                    <LinearLayout
+                        android:id="@+id/history_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical" />
+                </LinearLayout>
+
+                <!-- Detection statistics -->
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
+                    style="@style/RobotPanel"
+                    android:tag="0.8">
 
                     <TextView
-                        android:id="@+id/btn_add_user"
-                        style="@style/ActionButton"
-                        android:drawableTop="@drawable/ic_person_add"
-                        android:text="@string/add_user" />
+                        android:id="@+id/stats_title"
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/detection_statistics" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:minHeight="140dp"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="124dp"
+                            android:layout_height="124dp">
+
+                            <com.falcon.robot.widget.DonutChartView
+                                android:id="@+id/stats_donut"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center"
+                                android:gravity="center_horizontal"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/total_faces"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="12sp" />
+
+                                <TextView
+                                    android:id="@+id/stats_total"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:textColor="@color/white"
+                                    android:textSize="22sp" />
+                            </LinearLayout>
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="14dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/StatusText"
+                                android:drawableStart="@drawable/dot_teal"
+                                android:text="@string/recognized"
+                                android:textColor="@color/text_primary" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/stats_recognized"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="16dp"
+                                    android:layout_weight="1"
+                                    android:textColor="@color/white"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:id="@+id/stats_recognized_pct"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                style="@style/StatusText"
+                                android:layout_marginTop="14dp"
+                                android:drawableStart="@drawable/dot_red"
+                                android:text="@string/unrecognized"
+                                android:textColor="@color/text_primary" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/stats_unrecognized"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="16dp"
+                                    android:layout_weight="1"
+                                    android:textColor="@color/white"
+                                    android:textSize="15sp" />
+
+                                <TextView
+                                    android:id="@+id/stats_unrecognized_pct"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@drawable/bg_table_box"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+                        <TextView
+                            android:id="@+id/today_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/todays_records"
+                            android:textColor="@color/text_primary"
+                            android:textSize="15sp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="58dp"
+                            android:layout_marginTop="6dp"
+                            android:orientation="horizontal">
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:background="@drawable/bg_table_box"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:paddingLeft="10dp">
+
+                                <ImageView
+                                    android:id="@+id/today_recognized_icon"
+                                    android:layout_width="28dp"
+                                    android:layout_height="28dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_person" />
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="10dp"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/recognitions"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+
+                                    <TextView
+                                        android:id="@+id/today_recognized"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:fontFamily="sans-serif-medium"
+                                        android:textColor="@color/blue_light"
+                                        android:textSize="17sp" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/bg_table_box"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:paddingLeft="10dp">
+
+                                <ImageView
+                                    android:layout_width="28dp"
+                                    android:layout_height="28dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_warning" />
+
+                                <LinearLayout
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="10dp"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/unrecognized"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+
+                                    <TextView
+                                        android:id="@+id/today_unrecognized"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:fontFamily="sans-serif-medium"
+                                        android:textColor="@color/red"
+                                        android:textSize="17sp" />
+                                </LinearLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Face detection settings -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1.05">
 
                     <TextView
-                        android:id="@+id/btn_manage"
-                        style="@style/ActionButton"
-                        android:layout_marginStart="8dp"
-                        android:drawableTop="@drawable/ic_database"
-                        android:text="@string/manage" />
+                        android:id="@+id/settings_title"
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/face_detection_settings" />
 
-                    <TextView
-                        android:id="@+id/btn_face_settings"
-                        style="@style/ActionButton"
-                        android:layout_marginStart="8dp"
-                        android:drawableTop="@drawable/ic_settings"
-                        android:text="@string/nav_settings" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <ImageView
+                                android:id="@+id/icon_detection"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_icon_box"
+                                android:contentDescription="@null"
+                                android:padding="6dp"
+                                android:src="@drawable/ic_refresh" />
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:layout_marginStart="12dp"
+                                android:text="@string/face_detection" />
+
+                            <Switch
+                                android:id="@+id/sw_face_detection"
+                                style="@style/FaceSwitch" />
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <ImageView
+                                android:id="@+id/icon_recognition"
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_icon_box"
+                                android:contentDescription="@null"
+                                android:padding="6dp"
+                                android:src="@drawable/ic_scan" />
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:layout_marginStart="12dp"
+                                android:text="@string/face_recognition_toggle" />
+
+                            <Switch
+                                android:id="@+id/sw_face_recognition"
+                                style="@style/FaceSwitch" />
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/recognition_mode" />
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.1">
+
+                                <Spinner
+                                    android:id="@+id/spinner_mode"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/similarity_threshold" />
+
+                            <SeekBar
+                                android:id="@+id/seek_threshold"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="0.85"
+                                android:max="49"
+                                android:maxHeight="4dp"
+                                android:minHeight="4dp"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="8dp"
+                                android:progress="30"
+                                android:progressDrawable="@drawable/progress_loading"
+                                android:splitTrack="false"
+                                android:thumb="@drawable/seekbar_thumb" />
+
+                            <TextView
+                                android:id="@+id/value_threshold"
+                                android:layout_width="40dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="end"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/database" />
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.1">
+
+                                <Spinner
+                                    android:id="@+id/spinner_database"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/camera" />
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.1">
+
+                                <Spinner
+                                    android:id="@+id/spinner_camera"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

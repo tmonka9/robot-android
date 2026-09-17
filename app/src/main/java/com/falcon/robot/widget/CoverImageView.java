@@ -32,6 +32,17 @@ public class CoverImageView extends ImageView {
         updateMatrix();
     }
 
+    /**
+     * Maps a rectangle given in image pixels to view coordinates (for placing overlays on the
+     * artwork). Returns false until the view is laid out.
+     */
+    public boolean mapImageRect(RectF imageRect, RectF out) {
+        if (getDrawable() == null || getWidth() == 0 || getHeight() == 0) return false;
+        out.set(imageRect);
+        matrix.mapRect(out);
+        return true;
+    }
+
     @Override
     protected boolean setFrame(int l, int t, int r, int b) {
         boolean changed = super.setFrame(l, t, r, b);

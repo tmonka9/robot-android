@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="24dp"
+    android:paddingTop="12dp"
+    android:paddingRight="24dp">
+
+    <TextView
+        style="@style/FieldLabel"
+        android:text="@string/name" />
+
+    <EditText
+        android:id="@+id/input_name"
+        style="@style/Input"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:importantForAutofill="no"
+        android:inputType="textPersonName|textCapWords" />
+
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_marginTop="12dp"
+        android:text="@string/department" />
+
+    <EditText
+        android:id="@+id/input_department"
+        style="@style/Input"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:importantForAutofill="no"
+        android:inputType="textCapWords" />
+
+    <TextView
+        style="@style/FieldLabel"
+        android:layout_marginTop="12dp"
+        android:text="@string/position_title" />
+
+    <EditText
+        android:id="@+id/input_position"
+        style="@style/Input"
+        android:layout_width="match_parent"
+        android:layout_marginTop="4dp"
+        android:importantForAutofill="no"
+        android:inputType="textCapWords" />
+</LinearLayout>
