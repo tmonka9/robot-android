@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Object Detection page, following design/robot_ui_all_pages_psd/PNG/06_Object_Detection.png.
+  Top row: camera with detections | Detection Result.
+  Bottom row: Detection Settings | Detected Objects.
+  Rows sit side by side on wide screens and stack otherwise (BaseActivity#setupColumns).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <include layout="@layout/view_page_header" />
+    <include layout="@layout/view_page_header_rich" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -13,109 +19,253 @@
         android:fillViewport="true">
 
         <LinearLayout
-            android:id="@+id/columns"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:padding="@dimen/screen_padding">
 
-            <!-- Column 1: camera with detections -->
+            <!-- ======================= Top row ======================= -->
             <LinearLayout
-                style="@style/Panel"
-                android:tag="1.8">
+                android:id="@+id/columns"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.35">
 
-                <com.falcon.robot.widget.DetectionView
-                    android:id="@+id/detection_view"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:minHeight="@dimen/preview_height" />
-
-                <Switch
-                    android:id="@+id/show_boxes"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="8dp"
-                    android:checked="true"
-                    android:text="@string/show_boxes"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <LinearLayout
+                <!-- Camera frame with detections -->
+                <FrameLayout
+                    android:id="@+id/feed_panel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:background="@drawable/bg_panel_robot"
+                    android:minHeight="300dp"
+                    android:padding="6dp"
+                    android:tag="1.64">
+
+                    <com.falcon.robot.widget.DetectionView
+                        android:id="@+id/detection_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
 
                     <TextView
-                        style="@style/FieldLabel"
-                        android:text="@string/confidence_threshold" />
-
-                    <SeekBar
-                        android:id="@+id/threshold_seek"
-                        android:layout_width="0dp"
+                        android:id="@+id/feed_live"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:max="100"
-                        android:maxHeight="4dp"
-                        android:minHeight="4dp"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="12dp"
-                        android:progress="50"
-                        android:progressDrawable="@drawable/progress_loading"
-                        android:splitTrack="false"
-                        android:thumb="@drawable/seekbar_thumb" />
-
-                    <TextView
-                        android:id="@+id/threshold_value"
-                        android:layout_width="40dp"
-                        android:layout_height="wrap_content"
-                        android:gravity="end"
-                        android:textColor="@color/text_secondary"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="12dp"
+                        android:background="@drawable/bg_feed_label"
+                        android:drawablePadding="6dp"
+                        android:gravity="center_vertical"
+                        android:paddingLeft="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingRight="10dp"
+                        android:paddingBottom="4dp"
+                        android:text="@string/live"
+                        android:textColor="@color/white"
                         android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/feed_info"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|start"
+                        android:layout_margin="12dp"
+                        android:background="@drawable/bg_feed_label"
+                        android:paddingLeft="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingRight="10dp"
+                        android:paddingBottom="4dp"
+                        android:textColor="@color/white"
+                        android:textSize="12sp" />
+                </FrameLayout>
+
+                <!-- Detection result -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1">
+
+                    <TextView
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/detection_result"
+                        android:textColor="@color/cyan"
+                        android:textSize="17sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <!-- Filled by ObjectDetectionActivity#renderResults -->
+                    <LinearLayout
+                        android:id="@+id/result_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="4dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Column 2: mode + detected objects -->
+            <!-- ======================= Bottom row ======================= -->
             <LinearLayout
-                style="@style/Panel"
-                android:tag="1">
+                android:id="@+id/columns_bottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/gap"
+                android:layout_weight="1">
 
-                <TextView
-                    style="@style/FieldLabel"
-                    android:text="@string/detection_mode" />
-
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp">
-
-                    <Spinner
-                        android:id="@+id/detection_mode"
-                        style="@style/Dropdown" />
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:layout_gravity="end|center_vertical"
-                        android:layout_marginEnd="8dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_dropdown" />
-                </FrameLayout>
-
-                <View style="@style/PanelDivider" />
-
-                <TextView
-                    style="@style/FieldLabel"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/detected_objects" />
-
-                <!-- Filled by ObjectDetectionActivity#buildObjectList -->
+                <!-- Detection settings -->
                 <LinearLayout
-                    android:id="@+id/detected_list"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:orientation="vertical" />
+                    style="@style/RobotPanel"
+                    android:tag="1.23">
+
+                    <TextView
+                        android:id="@+id/settings_title"
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/detection_settings"
+                        android:textColor="@color/cyan"
+                        android:textSize="17sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <!-- Filled by ObjectDetectionActivity#addToggle -->
+                    <LinearLayout
+                        android:id="@+id/toggle_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        style="@style/FaceSettingRow"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0">
+
+                        <TextView
+                            style="@style/FaceSettingLabel"
+                            android:text="@string/model" />
+
+                        <FrameLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.4">
+
+                            <Spinner
+                                android:id="@+id/spinner_model"
+                                style="@style/Dropdown"
+                                android:layout_height="38dp" />
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="end|center_vertical"
+                                android:layout_marginEnd="8dp"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_dropdown" />
+                        </FrameLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        style="@style/FaceSettingRow"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0">
+
+                        <TextView
+                            style="@style/FaceSettingLabel"
+                            android:text="@string/confidence_threshold" />
+
+                        <FrameLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.4">
+
+                            <Spinner
+                                android:id="@+id/spinner_threshold"
+                                style="@style/Dropdown"
+                                android:layout_height="38dp" />
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_gravity="end|center_vertical"
+                                android:layout_marginEnd="8dp"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_dropdown" />
+                        </FrameLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Detected objects -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1">
+
+                    <TextView
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/detected_objects"
+                        android:textColor="@color/cyan"
+                        android:textSize="17sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingLeft="8dp"
+                        android:paddingRight="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/total"
+                            android:textColor="@color/white"
+                            android:textSize="17sp" />
+
+                        <TextView
+                            android:id="@+id/total_count"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="28dp"
+                            android:layout_weight="1"
+                            android:fontFamily="sans-serif-medium"
+                            android:textColor="@color/white"
+                            android:textSize="24sp" />
+
+                        <TextView
+                            android:id="@+id/total_trend"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider" />
+
+                    <!-- Filled by ObjectDetectionActivity#renderCounts -->
+                    <LinearLayout
+                        android:id="@+id/count_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

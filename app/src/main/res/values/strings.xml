@@ -492,14 +492,39 @@
     </string-array>
 
     <!-- Object Detection -->
-    <string name="detection_mode">Detection Mode</string>
-    <string-array name="detection_modes">
-        <item>Real-time</item>
-        <item>Paused</item>
-    </string-array>
+    <string name="object_subtitle">Detect and recognize objects in real time</string>
+    <string name="detection_result">Detection Result</string>
+    <string name="detection_settings">Detection Settings</string>
     <string name="detected_objects">Detected Objects</string>
+    <string name="enable_detection">Enable Detection</string>
     <string name="show_boxes">Show Bounding Boxes</string>
+    <string name="show_labels">Show Labels</string>
+    <string name="realtime_inference">Real-time Inference</string>
+    <string name="model">Model</string>
     <string name="confidence_threshold">Confidence Threshold</string>
+    <string name="total">Total</string>
+    <string name="no_detections">No objects above the threshold</string>
+    <string name="detection_disabled">Detection is off</string>
+    <string name="live">LIVE</string>
+    <string name="inference_info">%1$s  ·  %2$d ms</string>
+    <string name="confidence_value">%.2f</string>
+    <string-array name="object_models">
+        <item>YOLOv8 (COCO)</item>
+        <item>YOLOv8-Nano (COCO)</item>
+        <item>SSD MobileNet v2</item>
+    </string-array>
+    <string-array name="confidence_thresholds">
+        <item>0.3</item>
+        <item>0.4</item>
+        <item>0.5</item>
+        <item>0.6</item>
+        <item>0.7</item>
+        <item>0.8</item>
+    </string-array>
+    <string name="cls_robot">Robot</string>
+    <string name="cls_plant">Potted plant</string>
+    <string name="cls_desk">Desk</string>
+    <string name="cls_door">Door</string>
 
     <!-- Settings -->
     <string name="settings_connection">Robot Connection</string>
