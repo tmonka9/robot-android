@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wi-Fi / battery / clock row; the system status bar is hidden in full-screen mode. Updated by BaseActivity. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <ImageView
+        android:id="@+id/status_wifi"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:contentDescription="@string/wifi"
+        android:src="@drawable/ic_wifi" />
+
+    <ImageView
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginStart="14dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_battery_h" />
+
+    <TextView
+        android:id="@+id/status_battery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp" />
+
+    <TextClock
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="14dp"
+        android:format12Hour="h:mm"
+        android:format24Hour="HH:mm"
+        android:textColor="@color/text_primary"
+        android:textSize="12sp" />
+</LinearLayout>

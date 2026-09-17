@@ -1,143 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Home page content (inside the shell). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg"
-    android:orientation="vertical">
+    android:fillViewport="true">
 
-    <!-- Top bar -->
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
-        android:paddingLeft="8dp"
-        android:paddingRight="8dp">
-
-        <ImageButton
-            android:id="@+id/btn_menu"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="start|center_vertical"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/menu"
-            android:src="@drawable/ic_menu" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:orientation="horizontal">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/title_ai"
-                android:textColor="@color/blue"
-                android:textSize="@dimen/title_text" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:letterSpacing="0.03"
-                android:text="@string/title_rest"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/title_text" />
-        </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/btn_settings"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="end|center_vertical"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/nav_settings"
-            android:src="@drawable/ic_settings" />
-    </FrameLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@drawable/bg_top_divider" />
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/screen_padding">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="@dimen/screen_padding">
+            android:layout_height="28dp"
+            android:gravity="end|center_vertical"
+            android:orientation="horizontal">
 
-            <!-- Feature cards -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <include
-                    android:id="@+id/card_robot"
-                    layout="@layout/item_feature_card"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1" />
-
-                <include
-                    android:id="@+id/card_face"
-                    layout="@layout/item_feature_card"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="@dimen/gap"
-                    android:layout_weight="1" />
-
-                <include
-                    android:id="@+id/card_voice"
-                    layout="@layout/item_feature_card"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginStart="@dimen/gap"
-                    android:layout_weight="1" />
-            </LinearLayout>
-
-            <include
-                layout="@layout/panels_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/gap" />
+            <include layout="@layout/view_system_status" />
         </LinearLayout>
-    </ScrollView>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@color/divider" />
+        <!-- Hero and card grid: side by side on tablets, stacked on phones (BaseActivity#setupColumns). -->
+        <LinearLayout
+            android:id="@+id/columns"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp">
 
-    <!-- Bottom navigation -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="68dp"
-        android:background="@drawable/bg_bottom_nav"
-        android:orientation="horizontal">
+            <FrameLayout
+                android:id="@+id/hero"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_hero"
+                android:minHeight="@dimen/hero_min_height"
+                android:tag="1.1">
 
-        <TextView
-            android:id="@+id/nav_home"
-            style="@style/NavItem"
-            android:drawableTop="@drawable/ic_home"
-            android:text="@string/nav_home" />
+                <ImageView
+                    android:layout_width="@dimen/hero_robot"
+                    android:layout_height="@dimen/hero_robot"
+                    android:layout_gravity="end|bottom"
+                    android:contentDescription="@null"
+                    android:scaleType="fitEnd"
+                    android:src="@drawable/img_robot" />
 
-        <TextView
-            android:id="@+id/nav_log"
-            style="@style/NavItem"
-            android:drawableTop="@drawable/ic_log"
-            android:text="@string/nav_log" />
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="start|center_vertical"
+                    android:orientation="vertical"
+                    android:paddingStart="28dp"
+                    android:paddingEnd="16dp">
 
-        <TextView
-            android:id="@+id/nav_settings"
-            style="@style/NavItem"
-            android:drawableTop="@drawable/ic_nav_settings"
-            android:text="@string/nav_settings" />
+                    <TextView
+                        android:id="@+id/hero_ai"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-black"
+                        android:includeFontPadding="false"
+                        android:text="@string/title_ai"
+                        android:textColor="@color/blue"
+                        android:textSize="@dimen/hero_ai" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.08"
+                        android:text="@string/title_rest"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/hero_title" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/hero_tagline"
+                        android:textColor="@color/blue_light"
+                        android:textSize="@dimen/hero_tagline" />
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- Filled by MainActivity#buildCardGrid -->
+            <LinearLayout
+                android:id="@+id/home_grid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:tag="1" />
+        </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</ScrollView>

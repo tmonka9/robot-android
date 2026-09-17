@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- wide screens (landscape tablets): hero/grid and page sections side by side -->
+    <bool name="two_columns">true</bool>
+</resources>

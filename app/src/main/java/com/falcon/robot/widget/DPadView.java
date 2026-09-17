@@ -144,6 +144,8 @@ public class DPadView extends View {
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
+                getParent().requestDisallowInterceptTouchEvent(true); // don't let the ScrollView steal drags
+                // fall through
             case MotionEvent.ACTION_MOVE:
                 setPressedDirection(hitTest(event.getX(), event.getY()));
                 return true;

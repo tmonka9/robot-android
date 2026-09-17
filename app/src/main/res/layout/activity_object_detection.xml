@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <include layout="@layout/view_page_header" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:id="@+id/columns"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/screen_padding">
+
+            <!-- Column 1: camera with detections -->
+            <LinearLayout
+                style="@style/Panel"
+                android:tag="1.8">
+
+                <com.falcon.robot.widget.DetectionView
+                    android:id="@+id/detection_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/preview_height" />
+
+                <Switch
+                    android:id="@+id/show_boxes"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:checked="true"
+                    android:text="@string/show_boxes"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/FieldLabel"
+                        android:text="@string/confidence_threshold" />
+
+                    <SeekBar
+                        android:id="@+id/threshold_seek"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="100"
+                        android:maxHeight="4dp"
+                        android:minHeight="4dp"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="12dp"
+                        android:progress="50"
+                        android:progressDrawable="@drawable/progress_loading"
+                        android:splitTrack="false"
+                        android:thumb="@drawable/seekbar_thumb" />
+
+                    <TextView
+                        android:id="@+id/threshold_value"
+                        android:layout_width="40dp"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Column 2: mode + detected objects -->
+            <LinearLayout
+                style="@style/Panel"
+                android:tag="1">
+
+                <TextView
+                    style="@style/FieldLabel"
+                    android:text="@string/detection_mode" />
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp">
+
+                    <Spinner
+                        android:id="@+id/detection_mode"
+                        style="@style/Dropdown" />
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="end|center_vertical"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_dropdown" />
+                </FrameLayout>
+
+                <View style="@style/PanelDivider" />
+
+                <TextView
+                    style="@style/FieldLabel"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/detected_objects" />
+
+                <!-- Filled by ObjectDetectionActivity#buildObjectList -->
+                <LinearLayout
+                    android:id="@+id/detected_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

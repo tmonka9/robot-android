@@ -3,45 +3,138 @@
     <string name="app_name">AI Robot Control</string>
     <string name="title_ai">AI</string>
     <string name="title_rest">ROBOT CONTROL</string>
-    <string name="splash_tagline">FACE  •  VOICE  •  ROBOT</string>
+    <string name="splash_tagline">SMARTER  •  SAFER  •  TOGETHER</string>
     <string name="loading">Loading…</string>
 
-    <string name="robot_control">Robot Control</string>
-    <string name="robot_control_sub">Move / Pose / Action</string>
-    <string name="facial_recognition">Facial Recognition</string>
-    <string name="facial_recognition_sub">Detect / Identify / Database</string>
-    <string name="voice_recognition">Voice Recognition</string>
-    <string name="voice_recognition_sub">Listen / Recognize / Command</string>
+    <!-- Sidebar -->
+    <string name="nav_home">Home</string>
+    <string name="nav_robot">Robot Control</string>
+    <string name="nav_remote">Remote Control</string>
+    <string name="nav_face">Face Recognition</string>
+    <string name="nav_voice">Voice Recognition</string>
+    <string name="nav_object">Object Detection</string>
+    <string name="nav_settings">Settings</string>
+    <string name="back">Back</string>
 
-    <string name="status_connected">Connected</string>
+    <!-- Home -->
+    <string name="hero_tagline">Smarter  •  Safer  •  Together</string>
+    <string name="card_robot_desc">Control the robot\'s movement and actions.</string>
+    <string name="card_remote_desc">Use the virtual controller to operate the robot.</string>
+    <string name="card_face_desc">Detect, identify and manage faces.</string>
+    <string name="card_object_desc">Detect and recognize objects in real time.</string>
+    <string name="card_voice_desc">Recognize and process voice commands.</string>
+    <string name="home_slogan">AI MAKES\nA BETTER FUTURE</string>
+
+    <!-- Common status -->
+    <string name="status_disconnected">Disconnected · tap to connect</string>
+    <string name="status_connecting">Connecting…</string>
     <string name="status_ready">Ready</string>
-    <string name="status_scanning">Scanning…</string>
+    <string name="status_recognizing">Recognizing…</string>
     <string name="status_listening">Listening…</string>
+    <string name="status_paused">Paused</string>
     <string name="status_idle">Idle</string>
+    <string name="not_connected">Connect to the robot first</string>
+    <string name="sent_command">Sent: %s</string>
+    <string name="placeholder_value">--</string>
+    <string name="percent">%d%%</string>
+
+    <!-- Robot Control -->
+    <string name="movement_control">Movement Control</string>
+    <string name="actions">Actions</string>
+    <string name="speed">Speed</string>
+    <string name="battery">Battery</string>
+    <string name="mode">Mode</string>
+    <string-array name="robot_modes">
+        <item>Standby</item>
+        <item>Manual</item>
+        <item>Autonomous</item>
+    </string-array>
+    <string name="pose_stand">Stand</string>
+    <string name="pose_sit">Sit</string>
+    <string name="pose_wave">Wave</string>
+    <string name="pose_dance">Dance</string>
     <string name="moving_forward">Moving forward</string>
     <string name="moving_backward">Moving backward</string>
     <string name="turning_left">Turning left</string>
     <string name="turning_right">Turning right</string>
     <string name="stopped">Stopped</string>
-    <string name="status_with_pose">Connected · %s</string>
 
-    <string name="pose_stand">Stand</string>
-    <string name="pose_sit">Sit</string>
-    <string name="pose_wave">Wave</string>
-    <string name="speed">Speed</string>
-    <string name="percent">%d%%</string>
+    <!-- Remote Control -->
+    <string name="tab_joystick">Joystick</string>
+    <string name="tab_buttons">Buttons</string>
+    <string name="quick_actions">Quick Actions</string>
+    <string name="joystick_move">Move</string>
+    <string name="joystick_turn">Turn</string>
+    <string name="joystick_value">%1$s  x %2$.1f  y %3$.1f</string>
+    <string name="act_forward">Forward</string>
+    <string name="act_backward">Backward</string>
+    <string name="act_left">Left</string>
+    <string name="act_right">Right</string>
+    <string name="act_stop">Stop</string>
+    <string name="act_home">Home</string>
+    <string name="act_turbo">Turbo</string>
 
+    <!-- Face Recognition -->
+    <string name="status">Status</string>
+    <string name="last_result">Last Result</string>
+    <string name="time">Time</string>
+    <string name="match_fmt">Match: %s</string>
+    <string name="face_database">Face Database</string>
     <string name="scan_face">Scan Face</string>
-    <string name="recognized">Recognized</string>
-    <string name="demo_user">User_001</string>
-    <string name="match_label">Match: </string>
-    <string name="match_value">98.7%</string>
+    <string name="add">Add</string>
+    <string name="add_user">Add User</string>
+    <string name="manage">Manage</string>
+    <string name="done">Done</string>
+    <string name="face_registered">Registered %s</string>
+    <string name="face_removed">Removed %s</string>
+    <string name="manage_hint">Tap a face to remove it</string>
+    <string name="face_settings">Face Recognition Settings</string>
+    <string name="opt_greet_known">Greet known faces</string>
+    <string name="opt_save_unknown">Save unknown faces</string>
 
-    <string name="tap_to_stop">Tap to stop</string>
-    <string name="tap_to_start">Tap to start</string>
+    <!-- Voice Recognition -->
+    <string name="listening_hint">Speak your command</string>
+    <string name="recognized_command">Recognized Command</string>
+    <string name="no_command_yet">No command yet</string>
+    <string name="stop">Stop</string>
+    <string name="start">Start</string>
+    <string name="try_saying">Try Saying</string>
+    <string name="voice_settings">Voice Settings</string>
+    <string name="opt_wake_word">Wake word “Hey Robot”</string>
+    <string name="opt_voice_feedback">Voice feedback</string>
 
-    <string name="nav_home">Home</string>
-    <string name="nav_log">Log</string>
-    <string name="nav_settings">Settings</string>
-    <string name="menu">Menu</string>
+    <!-- Object Detection -->
+    <string name="detection_mode">Detection Mode</string>
+    <string-array name="detection_modes">
+        <item>Real-time</item>
+        <item>Paused</item>
+    </string-array>
+    <string name="detected_objects">Detected Objects</string>
+    <string name="show_boxes">Show Bounding Boxes</string>
+    <string name="confidence_threshold">Confidence Threshold</string>
+
+    <!-- Settings -->
+    <string name="settings_connection">Robot Connection</string>
+    <string name="settings_camera">Camera Settings</string>
+    <string name="settings_camera_sub">Webcam / RTSP Camera</string>
+    <string name="settings_ai">AI Model Settings</string>
+    <string name="settings_ai_sub">Models / Performance</string>
+    <string name="settings_db">Database Management</string>
+    <string name="settings_db_sub">Face Database / Object Database</string>
+    <string name="settings_system">System Settings</string>
+    <string name="settings_system_sub">Language / Device / About</string>
+    <string name="coming_soon">Not available yet</string>
+    <string name="about_message">AI Robot Control\nVersion %s</string>
+
+    <!-- Connection dialog -->
+    <string name="wifi">Wi-Fi</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="ip_address">IP address</string>
+    <string name="port">Port</string>
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="close">Close</string>
+    <string name="invalid_port">Enter a valid port</string>
+    <string name="connected_via">Connected · %s</string>
+    <string name="connection_summary">%1$s · %2$s</string>
 </resources>

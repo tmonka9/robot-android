@@ -40,12 +40,14 @@ public class WaveformView extends View {
     protected void onDraw(Canvas canvas) {
         float h = getHeight();
         float cy = h / 2f;
-        float total = BAR_COUNT * barWidth + (BAR_COUNT - 1) * barGap;
+        // fit as many bars as the width allows (small inline waveforms get fewer bars)
+        int count = Math.max(1, Math.min(BAR_COUNT, (int) ((getWidth() + barGap) / (barWidth + barGap))));
+        float total = count * barWidth + (count - 1) * barGap;
         float x = (getWidth() - total) / 2f;
         double t = SystemClock.uptimeMillis() / 1000.0;
-        int mid = BAR_COUNT / 2;
+        int mid = count / 2;
 
-        for (int i = 0; i < BAR_COUNT; i++) {
+        for (int i = 0; i < count; i++) {
             // taller in the middle, tapering to the edges
             float envelope = 1f - Math.abs(i - mid) / (float) (mid + 1);
             float level;

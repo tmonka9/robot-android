@@ -3,14 +3,13 @@ package com.falcon.robot;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ProgressBar;
 
-public class SplashActivity extends Activity {
+public class SplashActivity extends BaseActivity {
 
     private static final long LOADING_DURATION_MS = 2200;
 
@@ -43,7 +42,7 @@ public class SplashActivity extends Activity {
             public void onAnimationEnd(Animator animation) {
                 if (cancelled || isFinishing()) return;
                 startActivity(new Intent(SplashActivity.this, MainActivity.class));
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+                overridePendingTransition(R.anim.page_fade_in, R.anim.page_fade_out);
                 finish();
             }
         });
