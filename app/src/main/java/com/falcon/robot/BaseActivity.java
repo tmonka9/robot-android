@@ -145,22 +145,32 @@ public abstract class BaseActivity extends Activity {
     /** Updates the in-app Wi-Fi / battery indicators (the system status bar is hidden). */
     @SuppressWarnings("deprecation")
     private void refreshSystemStatus() {
+        // These indicators are cosmetic: never let a platform/permission error crash the page.
         TextView battery = findViewById(R.id.status_battery);
         if (battery != null) {
-            Intent status = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-            if (status != null) {
-                int level = status.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-                int scale = status.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
-                if (level >= 0 && scale > 0) {
-                    battery.setText(getString(R.string.percent, Math.round(level * 100f / scale)));
+            try {
+                Intent status = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                if (status != null) {
+                    int level = status.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                    int scale = status.getIntExtra(BatteryManager.EXTRA_SCALE, 100);
+                    if (level >= 0 && scale > 0) {
+                        battery.setText(getString(R.string.percent, Math.round(level * 100f / scale)));
+                    }
                 }
+            } catch (RuntimeException ignored) {
+                battery.setText(R.string.placeholder_value);
             }
         }
         View wifi = findViewById(R.id.status_wifi);
         if (wifi != null) {
-            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo info = cm != null ? cm.getActiveNetworkInfo() : null;
-            boolean onWifi = info != null && info.isConnected() && info.getType() == ConnectivityManager.TYPE_WIFI;
+            boolean onWifi = false;
+            try {
+                ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+                NetworkInfo info = cm != null ? cm.getActiveNetworkInfo() : null;
+                onWifi = info != null && info.isConnected() && info.getType() == ConnectivityManager.TYPE_WIFI;
+            } catch (RuntimeException ignored) {
+                // e.g. SecurityException when ACCESS_NETWORK_STATE is missing
+            }
             wifi.setAlpha(onWifi ? 1f : 0.3f);
         }
     }
