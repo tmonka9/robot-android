@@ -1,22 +1,24 @@
 package com.falcon.robot;
 
-import android.animation.ObjectAnimator;
+import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.PorterDuff;
-import android.graphics.RectF;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
+import android.os.Environment;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.TypedValue;
+import android.util.Size;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
@@ -26,83 +28,96 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.falcon.robot.widget.CoverImageView;
-import com.falcon.robot.widget.DonutChartView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.Preview;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.camera.core.resolutionselector.ResolutionStrategy;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
 
+import com.falcon.robot.face.FaceAnalyzer;
+import com.falcon.robot.face.FaceDatabase;
+import com.falcon.robot.face.FaceEmbedder;
+import com.falcon.robot.widget.DonutChartView;
+import com.falcon.robot.widget.FaceOverlayView;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * Face Recognition page (design/face-rec.png): live camera with recognition overlay, result
- * details, face database, recognition history, statistics and detection settings.
+ * Face Recognition page: live camera (CameraX), face detection (ML Kit), face embeddings with
+ * MobileFaceNet ({@code assets/mobilefacenet.tflite}) and a face database stored on the device.
  *
- * <p>Recognition is simulated: the feed is the design's camera artwork, and events are generated
- * periodically while detection and recognition are enabled. Replace {@link #simulateEvent} with
- * results from the real face engine.
+ * <p>Without the model file the page still detects faces but cannot recognize or register them.
  */
 public class FaceRecognitionActivity extends BaseActivity {
 
-    private static final long EVENT_INTERVAL_MS = 6000;
     private static final int HISTORY_ROWS = 5;
-
-    /** Artwork coordinates (face_camera_feed.png pixels) of the labels around the face box. */
-    private static final RectF FEED_CHIP_RECT = new RectF(298, 28, 384, 56);
-    private static final RectF FEED_ID_RECT = new RectF(254, 252, 430, 282);
-
-    private static final class Person {
-        final String name;
-        final String id;
-        final String department;
-        final String position;
-        final int photo; // 0 = no photo
-        boolean active = true;
-
-        Person(String name, String id, String department, String position, int photo) {
-            this.name = name;
-            this.id = id;
-            this.department = department;
-            this.position = position;
-            this.photo = photo;
-        }
-    }
+    private static final int MAX_HISTORY = 200;
+    private static final int REGISTRATION_SAMPLES = 5;
+    private static final long REGISTRATION_TIMEOUT_MS = 5000;
+    private static final Size ANALYSIS_SIZE = new Size(640, 480);
 
     private static final class HistoryEntry {
         final long time;
-        final Person person; // null = unknown face
-        final float similarity; // < 0 = none
+        final FaceDatabase.Record record; // null = unknown face
+        final float similarity;           // percent, < 0 = none
+        final Bitmap crop;
 
-        HistoryEntry(long time, Person person, float similarity) {
+        HistoryEntry(long time, FaceDatabase.Record record, float similarity, Bitmap crop) {
             this.time = time;
-            this.person = person;
+            this.record = record;
             this.similarity = similarity;
+            this.crop = crop;
         }
     }
 
-    private final List<Person> people = new ArrayList<>();
-    private final List<HistoryEntry> history = new ArrayList<>();
-    private final Random random = new Random();
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    private enum ResultMode { EMPTY, RECOGNIZED, UNRECOGNIZED, PROFILE }
+
     private final SimpleDateFormat dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+    private final List<HistoryEntry> history = new ArrayList<>();
+    private final Map<String, Bitmap> photoCache = new HashMap<>();
+    private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
 
-    private int totalFaces = 1248;
-    private int recognizedFaces = 1082;
-    private int nextId = 128;
+    private FaceDatabase database;
+    private FaceEmbedder embedder;
+    private FaceAnalyzer analyzer;
+    private ProcessCameraProvider cameraProvider;
+    private int lensFacing = CameraSelector.LENS_FACING_FRONT;
+    private boolean permissionAsked;
 
-    private Person selected;      // person shown in the result panel
-    private float lastSimilarity; // similarity of the last event for `selected`, < 0 = profile view
-    private long lastAccess;
+    private int totalFaces;
+    private int recognizedFaces;
+
+    private FaceDatabase.Record selected;
+    private ResultMode resultMode = ResultMode.EMPTY;
+    private float resultSimilarity = -1f;
+    private long resultTime;
+    private Bitmap resultCrop;
+    private String[] pendingRegistration; // name, department, position
     private boolean fullscreen;
-    private int eventCount;
 
-    private CoverImageView feed;
-    private View scanLine;
-    private TextView feedChip;
-    private TextView feedIdLabel;
+    private PreviewView previewView;
+    private FaceOverlayView overlay;
+    private TextView cameraMessage;
     private TextView feedSource;
+    private TextView frameInfo;
     private LinearLayout dbList;
     private EditText dbSearch;
     private LinearLayout historyList;
@@ -111,15 +126,12 @@ public class FaceRecognitionActivity extends BaseActivity {
     private SeekBar threshold;
     private Spinner cameraSpinner;
     private Spinner databaseSpinner;
-    private ObjectAnimator scanAnimator;
 
-    private final Runnable eventLoop = new Runnable() {
-        @Override
-        public void run() {
-            simulateEvent();
-            handler.postDelayed(this, EVENT_INTERVAL_MS);
-        }
-    };
+    private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) startCamera();
+                else showCameraMessage(getString(R.string.camera_permission_needed));
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -129,36 +141,23 @@ public class FaceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
 
-        seedData();
+        database = new FaceDatabase(this);
+
         setupCamera();
         setupResultPanel();
         setupDatabase();
         setupHistory();
         setupSettings();
-
-        showResult(people.get(0), 98.7f, System.currentTimeMillis());
+        renderResult();
         renderStats();
+
+        loadModelThenStartCamera();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshRichHeader();
-        handler.removeCallbacks(eventLoop);
-        handler.postDelayed(eventLoop, EVENT_INTERVAL_MS);
-    }
-
-    @Override
-    protected void onPause() {
-        handler.removeCallbacks(eventLoop);
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        handler.removeCallbacksAndMessages(null);
-        if (scanAnimator != null) scanAnimator.cancel();
-        super.onDestroy();
     }
 
     @Override
@@ -166,86 +165,188 @@ public class FaceRecognitionActivity extends BaseActivity {
         refreshRichHeader();
     }
 
-    // ---- data ------------------------------------------------------------------------------
-
-    private void seedData() {
-        people.add(new Person("Emma Wilson", "00123", "Marketing", "Manager", R.drawable.face_portrait_emma));
-        people.add(new Person("James Miller", "00124", "IT", "Engineer", R.drawable.face_avatar_james));
-        people.add(new Person("Sophia Davis", "00125", "HR", "Specialist", R.drawable.face_avatar_sophia));
-        people.add(new Person("Daniel Brown", "00126", "Finance", "Analyst", R.drawable.face_avatar_daniel));
-        people.add(new Person("Olivia Taylor", "00127", "Operations", "Coordinator", R.drawable.face_avatar_olivia));
-
-        long now = System.currentTimeMillis();
-        history.add(new HistoryEntry(now - 492_000, null, -1f));
-        history.add(new HistoryEntry(now - 347_000, people.get(3), 93.6f));
-        history.add(new HistoryEntry(now - 210_000, people.get(2), 97.1f));
-        history.add(new HistoryEntry(now - 77_000, people.get(1), 96.3f));
-        history.add(new HistoryEntry(now, people.get(0), 98.7f));
+    @Override
+    protected void onDestroy() {
+        if (cameraProvider != null) cameraProvider.unbindAll();
+        cameraExecutor.execute(() -> {
+            if (analyzer != null) analyzer.close();
+            if (embedder != null) embedder.close();
+        });
+        cameraExecutor.shutdown();
+        super.onDestroy();
     }
 
-    /**
-     * One simulated detection: usually the person in the camera artwork (Emma) with a jittering
-     * similarity; sometimes an unknown passer-by. Faces below the threshold count as unrecognized.
-     */
-    private void simulateEvent() {
-        if (!detectionSwitch.isChecked()) return;
-        eventCount++;
-        long now = System.currentTimeMillis();
-        totalFaces++;
+    // ---- model + camera --------------------------------------------------------------------
 
-        if (!recognitionSwitch.isChecked() || eventCount % 4 == 0) {
-            history.add(new HistoryEntry(now, null, -1f));
-        } else {
-            Person emma = people.isEmpty() ? null : people.get(0);
-            float similarity = 94f + random.nextFloat() * 5.5f;
-            if (emma != null && similarity >= thresholdPercent()) {
-                recognizedFaces++;
-                history.add(new HistoryEntry(now, emma, similarity));
-                showResult(emma, similarity, now);
-                RobotSession.get().send("FACE RECOGNIZED " + emma.id);
-            } else {
-                history.add(new HistoryEntry(now, null, similarity));
-                showFeedLabels(null, similarity);
+    /** Loads MobileFaceNet off the UI thread, then creates the analyzer and opens the camera. */
+    private void loadModelThenStartCamera() {
+        cameraExecutor.execute(() -> {
+            FaceEmbedder loaded = null;
+            String error = null;
+            try {
+                loaded = new FaceEmbedder(this, 4);
+            } catch (java.io.FileNotFoundException e) {
+                error = getString(R.string.model_missing);
+            } catch (IOException | RuntimeException e) {
+                error = getString(R.string.model_failed, e.getMessage());
             }
+            final FaceEmbedder model = loaded;
+            final String message = error;
+            runOnUiThread(() -> {
+                if (isDestroyed()) {
+                    if (model != null) cameraExecutor.execute(model::close);
+                    return;
+                }
+                embedder = model;
+                analyzer = new FaceAnalyzer(database, model, analyzerListener);
+                applySettingsToAnalyzer();
+                if (message != null) toast(message);
+                requestCameraOrStart();
+            });
+        });
+    }
+
+    private void requestCameraOrStart() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera();
+        } else if (!permissionAsked) {
+            permissionAsked = true;
+            cameraPermission.launch(Manifest.permission.CAMERA);
+        } else {
+            // the system no longer shows the dialog after repeated denials: open app settings
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", getPackageName(), null)));
         }
-        playScan();
-        renderHistory();
-        renderStats();
     }
 
-    private int thresholdPercent() {
-        return 50 + threshold.getProgress();
+    private void startCamera() {
+        cameraMessage.setVisibility(View.GONE);
+        final ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(this);
+        future.addListener(() -> {
+            try {
+                cameraProvider = future.get();
+                bindCamera();
+            } catch (Exception e) {
+                showCameraMessage(getString(R.string.camera_unavailable));
+            }
+        }, ContextCompat.getMainExecutor(this));
     }
 
-    // ---- live camera -----------------------------------------------------------------------
+    private void bindCamera() {
+        if (cameraProvider == null || analyzer == null || isDestroyed()) return;
+        cameraProvider.unbindAll();
+        overlay.clear();
+
+        CameraSelector selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
+        try {
+            if (!cameraProvider.hasCamera(selector)) {
+                // fall back to the other lens (e.g. tablets without a back camera)
+                lensFacing = lensFacing == CameraSelector.LENS_FACING_FRONT
+                        ? CameraSelector.LENS_FACING_BACK : CameraSelector.LENS_FACING_FRONT;
+                selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
+                if (!cameraProvider.hasCamera(selector)) {
+                    showCameraMessage(getString(R.string.camera_unavailable));
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            showCameraMessage(getString(R.string.camera_unavailable));
+            return;
+        }
+
+        Preview preview = new Preview.Builder().build();
+        preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+        ImageAnalysis analysis = new ImageAnalysis.Builder()
+                .setResolutionSelector(new ResolutionSelector.Builder()
+                        .setResolutionStrategy(new ResolutionStrategy(ANALYSIS_SIZE,
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+                        .build())
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build();
+        analysis.setAnalyzer(cameraExecutor, analyzer);
+
+        try {
+            cameraProvider.bindToLifecycle(this, selector, preview, analysis);
+            cameraMessage.setVisibility(View.GONE);
+        } catch (Exception e) {
+            showCameraMessage(getString(R.string.camera_unavailable));
+        }
+        updateCameraSource();
+    }
+
+    private void showCameraMessage(String message) {
+        cameraMessage.setText(message);
+        cameraMessage.setVisibility(View.VISIBLE);
+        overlay.clear();
+    }
+
+    private final FaceAnalyzer.Listener analyzerListener = new FaceAnalyzer.Listener() {
+        @Override
+        public void onFrame(List<FaceAnalyzer.FrameFace> faces, int width, int height, long inferenceMs) {
+            overlay.setFaces(faces, width, height, lensFacing == CameraSelector.LENS_FACING_FRONT);
+            frameInfo.setText(getString(R.string.frame_info, width, height, (int) inferenceMs));
+        }
+
+        @Override
+        public void onFaceEvent(FaceAnalyzer.FaceEvent event) {
+            totalFaces++;
+            if (event.record != null) recognizedFaces++;
+            history.add(new HistoryEntry(event.time, event.record, event.similarity, event.crop));
+            while (history.size() > MAX_HISTORY) history.remove(0);
+
+            selected = event.record;
+            resultMode = event.record != null ? ResultMode.RECOGNIZED : ResultMode.UNRECOGNIZED;
+            resultSimilarity = event.similarity;
+            resultTime = event.time;
+            resultCrop = event.crop;
+            if (event.record != null) RobotSession.get().send("FACE RECOGNIZED " + event.record.id);
+
+            renderResult();
+            renderHistory();
+            renderStats();
+            renderDatabase();
+        }
+
+        @Override
+        public void onRegistrationResult(float[] embedding, Bitmap crop) {
+            String[] info = pendingRegistration;
+            pendingRegistration = null;
+            if (info == null) return;
+            if (embedding == null) {
+                toast(R.string.registration_failed);
+                return;
+            }
+            FaceDatabase.Record record = database.add(info[0], info[1], info[2], embedding, crop);
+            if (crop != null) photoCache.put(record.id, crop);
+            RobotSession.get().send("FACE REGISTER " + record.id);
+            toast(getString(R.string.face_registered, record.name));
+            analyzer.resetTracks(); // re-identify faces in view against the new entry
+            showProfile(record);
+        }
+    };
+
+    // ---- camera panel ----------------------------------------------------------------------
 
     private void setupCamera() {
-        feed = findViewById(R.id.face_feed);
-        feed.setFocus(0.3f, 0.05f, 0.7f, 0.8f); // keep the face and its labels in view
+        previewView = findViewById(R.id.camera_preview);
+        previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
+        overlay = findViewById(R.id.face_overlay);
+        overlay.setLabels(getString(R.string.unknown_person), getString(R.string.face_label_face));
+        cameraMessage = findViewById(R.id.camera_message);
+        cameraMessage.setOnClickListener(v -> requestCameraOrStart());
         findViewById(R.id.feed_frame).setClipToOutline(true);
-        scanLine = findViewById(R.id.face_scan_line);
-        feedChip = findViewById(R.id.feed_chip);
-        feedIdLabel = findViewById(R.id.feed_id_label);
         feedSource = findViewById(R.id.feed_source);
-        ((TextView) findViewById(R.id.feed_resolution)).setText(
-                getResources().getStringArray(R.array.camera_resolution_sizes)[0]);
-
-        // keep the live labels glued to the face box whenever the feed is resized
-        feed.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> v.post(this::placeFeedLabels));
+        frameInfo = findViewById(R.id.feed_resolution);
 
         int white = color(R.color.text_primary);
         for (int id : new int[] {R.id.tool_capture, R.id.tool_rescan, R.id.tool_source, R.id.tool_fullscreen, R.id.feed_fullscreen}) {
             ((ImageView) findViewById(id)).setColorFilter(white, PorterDuff.Mode.SRC_IN);
         }
-        findViewById(R.id.tool_capture).setOnClickListener(v -> {
-            RobotSession.get().send("CAMERA SNAPSHOT");
-            toast(R.string.snapshot_saved);
-        });
+        findViewById(R.id.tool_capture).setOnClickListener(v -> saveSnapshot());
         findViewById(R.id.tool_rescan).setOnClickListener(v -> {
-            handler.removeCallbacks(eventLoop);
-            eventCount = 0; // next event recognizes the face in view
-            simulateEvent();
-            handler.postDelayed(eventLoop, EVENT_INTERVAL_MS);
+            if (analyzer != null) analyzer.resetTracks();
         });
         findViewById(R.id.tool_source).setOnClickListener(this::showCameraMenu);
         feedSource.setOnClickListener(this::showCameraMenu);
@@ -264,7 +365,6 @@ public class FaceRecognitionActivity extends BaseActivity {
         menu.show();
     }
 
-    /** Hides every panel except the live camera, or restores them. */
     private void toggleFullscreen() {
         fullscreen = !fullscreen;
         int visibility = fullscreen ? View.GONE : View.VISIBLE;
@@ -276,57 +376,27 @@ public class FaceRecognitionActivity extends BaseActivity {
         ((ImageView) findViewById(R.id.feed_fullscreen)).setImageResource(icon);
     }
 
-    /** Updates the labels drawn over the artwork's face box. {@code person == null} = not recognized. */
-    private void showFeedLabels(Person person, float similarity) {
-        boolean recognized = person != null;
-        feedChip.setText(recognized ? R.string.recognized : R.string.unrecognized);
-        feedChip.setBackgroundResource(recognized ? R.drawable.bg_feed_chip_green : R.drawable.bg_feed_chip_red);
-        feedIdLabel.setBackgroundResource(recognized ? R.drawable.bg_feed_chip_green : R.drawable.bg_feed_chip_red);
-        feedIdLabel.setTextColor(color(recognized ? R.color.teal : R.color.red));
-        feedIdLabel.setText(getString(R.string.feed_id_label,
-                recognized ? person.id : "-----",
-                getString(R.string.similarity_value, similarity)));
-        placeFeedLabels();
-    }
-
-    private void placeFeedLabels() {
-        placeOnFeed(feedChip, FEED_CHIP_RECT, 0.55f);
-        placeOnFeed(feedIdLabel, FEED_ID_RECT, 0.55f);
-    }
-
-    /** Sizes and positions {@code label} to cover {@code imageRect} of the feed artwork. */
-    private void placeOnFeed(TextView label, RectF imageRect, float textRatio) {
-        RectF rect = new RectF();
-        if (!feed.mapImageRect(imageRect, rect)) return;
-        label.setTextSize(TypedValue.COMPLEX_UNIT_PX, rect.height() * textRatio);
-        int pad = Math.round(rect.height() * 0.2f);
-        label.setPadding(pad * 2, 0, pad * 2, 0);
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) label.getLayoutParams();
-        lp.width = Math.round(rect.width());
-        lp.height = Math.round(rect.height());
-        label.setLayoutParams(lp);
-        label.setX(feed.getLeft() + rect.left);
-        label.setY(feed.getTop() + rect.top);
-        label.setVisibility(detectionSwitch == null || detectionSwitch.isChecked() ? View.VISIBLE : View.INVISIBLE);
-    }
-
-    private void playScan() {
-        if (scanAnimator != null && scanAnimator.isRunning()) return;
-        View frame = findViewById(R.id.feed_frame);
-        scanAnimator = ObjectAnimator.ofFloat(scanLine, View.TRANSLATION_Y, 0f, frame.getHeight() - scanLine.getHeight());
-        scanAnimator.setDuration(700);
-        scanAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationStart(android.animation.Animator animation) {
-                scanLine.setVisibility(View.VISIBLE);
+    /** Saves what the preview shows to the app's Pictures folder (no storage permission needed). */
+    private void saveSnapshot() {
+        final Bitmap bitmap = previewView.getBitmap();
+        if (bitmap == null) {
+            toast(R.string.snapshot_failed);
+            return;
+        }
+        final File dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        cameraExecutor.execute(() -> {
+            File file = new File(dir != null ? dir : getFilesDir(),
+                    "face_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date()) + ".jpg");
+            boolean ok;
+            try (OutputStream out = new FileOutputStream(file)) {
+                ok = bitmap.compress(Bitmap.CompressFormat.JPEG, 92, out);
+            } catch (IOException e) {
+                ok = false;
             }
-
-            @Override
-            public void onAnimationEnd(android.animation.Animator animation) {
-                scanLine.setVisibility(View.INVISIBLE);
-            }
+            final boolean saved = ok;
+            runOnUiThread(() -> toast(saved ? getString(R.string.snapshot_saved_to, file.getAbsolutePath())
+                    : getString(R.string.snapshot_failed)));
         });
-        scanAnimator.start();
     }
 
     // ---- result panel ----------------------------------------------------------------------
@@ -343,11 +413,12 @@ public class FaceRecognitionActivity extends BaseActivity {
         TextView addLog = findViewById(R.id.btn_add_log);
         setIcon(addLog, R.drawable.ic_note, 18, white, Gravity.START);
         addLog.setOnClickListener(v -> {
-            if (selected == null) return;
+            if (resultMode == ResultMode.EMPTY) return;
             history.add(new HistoryEntry(System.currentTimeMillis(), selected,
-                    lastSimilarity >= 0 ? lastSimilarity : -1f));
+                    resultMode == ResultMode.PROFILE ? -1f : resultSimilarity, resultCrop));
             renderHistory();
-            toast(getString(R.string.added_to_log, selected.name));
+            toast(getString(R.string.added_to_log,
+                    selected != null ? selected.name : getString(R.string.unknown_person)));
         });
 
         TextView more = findViewById(R.id.btn_more);
@@ -357,75 +428,101 @@ public class FaceRecognitionActivity extends BaseActivity {
 
     private void showMoreMenu(View anchor) {
         if (selected == null) return;
-        final Person person = selected;
+        final FaceDatabase.Record record = selected;
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenu().add(0, 1, 0, R.string.toggle_active);
         menu.getMenu().add(0, 2, 1, R.string.remove_from_database);
         menu.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == 1) {
-                person.active = !person.active;
+                database.setActive(record, !record.active);
             } else {
-                people.remove(person);
-                toast(getString(R.string.face_removed, person.name));
-                if (!people.isEmpty()) showProfile(people.get(0));
+                database.remove(record);
+                photoCache.remove(record.id);
+                toast(getString(R.string.face_removed, record.name));
+                selected = null;
+                resultMode = ResultMode.EMPTY;
+                renderResult();
             }
+            if (analyzer != null) analyzer.resetTracks();
             renderDatabase();
             return true;
         });
         menu.show();
     }
 
-    /** Shows a recognition result (from the camera). */
-    private void showResult(Person person, float similarity, long time) {
-        selected = person;
-        lastSimilarity = similarity;
-        lastAccess = time;
-        renderResult(true);
-        showFeedLabels(person, similarity);
+    private void showProfile(FaceDatabase.Record record) {
+        selected = record;
+        resultMode = ResultMode.PROFILE;
+        resultSimilarity = -1f;
+        resultCrop = null;
+        resultTime = lastSeen(record);
+        renderResult();
         renderDatabase();
     }
 
-    /** Shows a database profile (picked from the list). */
-    private void showProfile(Person person) {
-        selected = person;
-        lastSimilarity = -1f;
-        lastAccess = lastSeen(person);
-        renderResult(false);
-        renderDatabase();
-    }
-
-    private void renderResult(boolean fromCamera) {
+    private void renderResult() {
         TextView title = findViewById(R.id.result_title);
-        title.setText(fromCamera ? R.string.recognized : R.string.profile);
-        title.setTextColor(color(fromCamera ? R.color.teal : R.color.blue_light));
-        setIcon(title, fromCamera ? R.drawable.ic_check_circle : R.drawable.ic_person, 26,
-                color(fromCamera ? R.color.teal : R.color.blue_light), Gravity.START);
+        int titleText;
+        int titleColor;
+        int titleIcon;
+        switch (resultMode) {
+            case RECOGNIZED:
+                titleText = R.string.recognized;
+                titleColor = R.color.teal;
+                titleIcon = R.drawable.ic_check_circle;
+                break;
+            case UNRECOGNIZED:
+                titleText = R.string.unrecognized;
+                titleColor = R.color.red;
+                titleIcon = R.drawable.ic_warning;
+                break;
+            case PROFILE:
+                titleText = R.string.profile;
+                titleColor = R.color.blue_light;
+                titleIcon = R.drawable.ic_person;
+                break;
+            default:
+                titleText = R.string.waiting_for_face;
+                titleColor = R.color.text_secondary;
+                titleIcon = R.drawable.ic_face_id;
+                break;
+        }
+        title.setText(titleText);
+        title.setTextColor(color(titleColor));
+        setIcon(title, titleIcon, 26, color(titleColor), Gravity.START);
 
-        Person p = selected;
-        ImageView photo = findViewById(R.id.result_photo);
-        bindPhoto(photo, p == null ? 0 : p.photo);
-        ((TextView) findViewById(R.id.result_name)).setText(p == null ? "" : p.name);
-        ((TextView) findViewById(R.id.result_id)).setText(p == null ? "" : p.id);
-        ((TextView) findViewById(R.id.result_similarity)).setText(lastSimilarity >= 0
-                ? getString(R.string.similarity_value, lastSimilarity) : getString(R.string.placeholder_value));
-        ((ProgressBar) findViewById(R.id.result_similarity_bar)).setProgress(Math.round(Math.max(0, lastSimilarity) * 10));
-        ((TextView) findViewById(R.id.result_department)).setText(p == null ? "" : p.department);
-        ((TextView) findViewById(R.id.result_position)).setText(p == null ? "" : p.position);
-        ((TextView) findViewById(R.id.result_access_time)).setText(lastAccess > 0
-                ? dateTime.format(new Date(lastAccess)) : getString(R.string.placeholder_value));
+        FaceDatabase.Record r = selected;
+        Bitmap photo = resultCrop != null ? resultCrop : r != null ? photoOf(r) : null;
+        bindPhoto(findViewById(R.id.result_photo), photo);
+        String dash = getString(R.string.placeholder_value);
+        ((TextView) findViewById(R.id.result_name)).setText(r != null ? r.name
+                : resultMode == ResultMode.UNRECOGNIZED ? getString(R.string.unknown_person) : dash);
+        ((TextView) findViewById(R.id.result_id)).setText(r != null ? r.id : dash);
+        ((TextView) findViewById(R.id.result_similarity)).setText(resultSimilarity >= 0
+                ? getString(R.string.similarity_value, resultSimilarity) : dash);
+        ((ProgressBar) findViewById(R.id.result_similarity_bar)).setProgress(Math.round(Math.max(0, resultSimilarity) * 10));
+        ((TextView) findViewById(R.id.result_department)).setText(r != null && !r.department.isEmpty() ? r.department : dash);
+        ((TextView) findViewById(R.id.result_position)).setText(r != null && !r.position.isEmpty() ? r.position : dash);
+        ((TextView) findViewById(R.id.result_access_time)).setText(resultTime > 0
+                ? dateTime.format(new Date(resultTime)) : dash);
     }
 
-    private long lastSeen(Person person) {
+    private long lastSeen(FaceDatabase.Record record) {
         for (int i = history.size() - 1; i >= 0; i--) {
-            if (history.get(i).person == person) return history.get(i).time;
+            if (history.get(i).record == record) return history.get(i).time;
         }
         return 0;
     }
 
-    private void bindPhoto(ImageView view, int photo) {
+    private Bitmap photoOf(FaceDatabase.Record record) {
+        if (!photoCache.containsKey(record.id)) photoCache.put(record.id, database.loadPhoto(record));
+        return photoCache.get(record.id);
+    }
+
+    private void bindPhoto(ImageView view, Bitmap photo) {
         view.setClipToOutline(true);
-        if (photo != 0) {
-            view.setImageResource(photo);
+        if (photo != null) {
+            view.setImageBitmap(photo);
             view.setScaleType(ImageView.ScaleType.CENTER_CROP);
             view.clearColorFilter();
             view.setPadding(0, 0, 0, 0);
@@ -468,34 +565,48 @@ public class FaceRecognitionActivity extends BaseActivity {
         if (dbList == null) return;
         dbList.removeAllViews();
         String query = dbSearch.getText().toString().trim().toLowerCase(Locale.US);
-        // "Visitors" has no entries yet: everyone in the seed data is an employee
-        boolean visitorsOnly = databaseSpinner != null && databaseSpinner.getSelectedItemPosition() == 2;
+        int filter = databaseSpinner == null ? 0 : databaseSpinner.getSelectedItemPosition();
         LayoutInflater inflater = LayoutInflater.from(this);
         int gap = Math.round(6 * getResources().getDisplayMetrics().density);
 
-        for (final Person person : people) {
-            if (visitorsOnly) break;
-            if (!query.isEmpty() && !person.name.toLowerCase(Locale.US).contains(query) && !person.id.contains(query)) {
+        for (final FaceDatabase.Record record : database.getAll()) {
+            if (filter == 1 && !record.active || filter == 2 && record.active) continue;
+            if (!query.isEmpty() && !record.name.toLowerCase(Locale.US).contains(query) && !record.id.contains(query)) {
                 continue;
             }
             View row = inflater.inflate(R.layout.item_face_db_row, dbList, false);
-            bindPhoto(row.findViewById(R.id.db_photo), person.photo);
-            ((TextView) row.findViewById(R.id.db_name)).setText(person.name);
-            ((TextView) row.findViewById(R.id.db_id)).setText(person.id);
-            ((TextView) row.findViewById(R.id.db_department)).setText(person.department);
+            bindPhoto(row.findViewById(R.id.db_photo), photoOf(record));
+            ((TextView) row.findViewById(R.id.db_name)).setText(record.name);
+            ((TextView) row.findViewById(R.id.db_id)).setText(record.id);
+            ((TextView) row.findViewById(R.id.db_department)).setText(record.department);
             TextView active = row.findViewById(R.id.db_active);
-            active.setText(person.active ? R.string.active : R.string.inactive);
-            active.setTextColor(color(person.active ? R.color.teal : R.color.text_muted));
-            active.setBackgroundResource(person.active ? R.drawable.bg_chip_green : R.drawable.bg_table_box);
-            row.setSelected(person == selected);
-            row.setOnClickListener(v -> showProfile(person));
+            active.setText(record.active ? R.string.active : R.string.inactive);
+            active.setTextColor(color(record.active ? R.color.teal : R.color.text_muted));
+            active.setBackgroundResource(record.active ? R.drawable.bg_chip_green : R.drawable.bg_table_box);
+            row.setSelected(record == selected);
+            row.setOnClickListener(v -> showProfile(record));
             LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) row.getLayoutParams();
             if (dbList.getChildCount() > 0) lp.topMargin = gap;
             dbList.addView(row, lp);
         }
+        if (dbList.getChildCount() == 0) dbList.addView(emptyText(R.string.empty_database));
+    }
+
+    private TextView emptyText(int text) {
+        TextView view = new TextView(this);
+        view.setText(text);
+        view.setTextColor(color(R.color.text_secondary));
+        view.setTextSize(13);
+        int pad = Math.round(10 * getResources().getDisplayMetrics().density);
+        view.setPadding(pad, pad, pad, pad);
+        return view;
     }
 
     private void showAddFaceDialog() {
+        if (analyzer == null || !analyzer.canRecognize()) {
+            toast(R.string.recognition_unavailable);
+            return;
+        }
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_add_face, null);
         final EditText name = view.findViewById(R.id.input_name);
         final EditText department = view.findViewById(R.id.input_department);
@@ -512,20 +623,12 @@ public class FaceRecognitionActivity extends BaseActivity {
                 name.setError(getString(R.string.enter_name));
                 return;
             }
-            Person person = new Person(n, String.format(Locale.US, "%05d", nextId++),
-                    orDash(department.getText().toString()), orDash(position.getText().toString()), 0);
-            people.add(person);
-            RobotSession.get().send("FACE REGISTER " + person.id);
-            toast(getString(R.string.face_registered, person.name));
+            pendingRegistration = new String[] {n, department.getText().toString().trim(), position.getText().toString().trim()};
+            analyzer.startRegistration(REGISTRATION_SAMPLES, REGISTRATION_TIMEOUT_MS);
+            toast(R.string.look_at_camera);
             dialog.dismiss();
-            showProfile(person);
         }));
         dialog.show();
-    }
-
-    private String orDash(String value) {
-        String v = value.trim();
-        return v.isEmpty() ? getString(R.string.placeholder_value) : v;
     }
 
     // ---- history & statistics ------------------------------------------------------------
@@ -546,12 +649,13 @@ public class FaceRecognitionActivity extends BaseActivity {
         for (int i = history.size() - 1; i >= 0 && historyList.getChildCount() < HISTORY_ROWS; i--) {
             HistoryEntry entry = history.get(i);
             View row = inflater.inflate(R.layout.item_face_history_row, historyList, false);
-            boolean recognized = entry.person != null;
+            boolean recognized = entry.record != null;
             ((TextView) row.findViewById(R.id.history_time)).setText(dateTime.format(new Date(entry.time)));
-            bindPhoto(row.findViewById(R.id.history_photo), recognized ? entry.person.photo : 0);
+            bindPhoto(row.findViewById(R.id.history_photo), entry.crop != null ? entry.crop
+                    : recognized ? photoOf(entry.record) : null);
             ((TextView) row.findViewById(R.id.history_name)).setText(
-                    recognized ? entry.person.name : getString(R.string.unknown_person));
-            ((TextView) row.findViewById(R.id.history_similarity)).setText(recognized && entry.similarity >= 0
+                    recognized ? entry.record.name : getString(R.string.unknown_person));
+            ((TextView) row.findViewById(R.id.history_similarity)).setText(entry.similarity >= 0
                     ? getString(R.string.similarity_value, entry.similarity) : "-");
             TextView status = row.findViewById(R.id.history_status);
             status.setText(recognized ? R.string.recognized : R.string.unrecognized);
@@ -561,24 +665,26 @@ public class FaceRecognitionActivity extends BaseActivity {
                     recognized ? R.drawable.dot_teal : R.drawable.dot_red, 0, 0, 0);
             historyList.addView(row);
         }
+        if (history.isEmpty()) historyList.addView(emptyText(R.string.empty_history));
     }
 
     private void showAllHistory() {
         CharSequence[] lines = new CharSequence[history.size()];
         for (int i = 0; i < history.size(); i++) {
             HistoryEntry entry = history.get(history.size() - 1 - i);
-            boolean recognized = entry.person != null;
+            boolean recognized = entry.record != null;
             lines[i] = getString(R.string.history_line,
                     dateTime.format(new Date(entry.time)),
-                    recognized ? entry.person.name : getString(R.string.unknown_person),
-                    recognized && entry.similarity >= 0 ? getString(R.string.similarity_value, entry.similarity) : "-",
+                    recognized ? entry.record.name : getString(R.string.unknown_person),
+                    entry.similarity >= 0 ? getString(R.string.similarity_value, entry.similarity) : "-",
                     getString(recognized ? R.string.recognized : R.string.unrecognized));
         }
-        new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
+        AlertDialog.Builder builder = new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
                 .setTitle(R.string.recognition_history)
-                .setItems(lines, null)
-                .setPositiveButton(R.string.close, null)
-                .show();
+                .setPositiveButton(R.string.close, null);
+        if (lines.length == 0) builder.setMessage(R.string.empty_history);
+        else builder.setItems(lines, null);
+        builder.show();
     }
 
     private void renderStats() {
@@ -589,7 +695,8 @@ public class FaceRecognitionActivity extends BaseActivity {
         ((TextView) findViewById(R.id.stats_recognized)).setText(String.format(Locale.US, "%,d", recognizedFaces));
         ((TextView) findViewById(R.id.stats_unrecognized)).setText(String.format(Locale.US, "%,d", unrecognized));
         ((TextView) findViewById(R.id.stats_recognized_pct)).setText(getString(R.string.similarity_value, recognizedShare * 100));
-        ((TextView) findViewById(R.id.stats_unrecognized_pct)).setText(getString(R.string.similarity_value, (1 - recognizedShare) * 100));
+        ((TextView) findViewById(R.id.stats_unrecognized_pct)).setText(getString(R.string.similarity_value,
+                totalFaces == 0 ? 0f : (1 - recognizedShare) * 100));
         ((TextView) findViewById(R.id.today_recognized)).setText(String.format(Locale.US, "%,d", recognizedFaces));
         ((TextView) findViewById(R.id.today_unrecognized)).setText(String.format(Locale.US, "%,d", unrecognized));
     }
@@ -605,12 +712,11 @@ public class FaceRecognitionActivity extends BaseActivity {
         detectionSwitch = findViewById(R.id.sw_face_detection);
         recognitionSwitch = findViewById(R.id.sw_face_recognition);
         detectionSwitch.setOnCheckedChangeListener((b, on) -> {
-            RobotSession.get().send("FACE DETECTION " + (on ? "ON" : "OFF"));
             findViewById(R.id.feed_dot).setBackgroundResource(on ? R.drawable.dot_teal : R.drawable.dot_gray);
-            placeFeedLabels();
+            if (!on) overlay.clear();
+            applySettingsToAnalyzer();
         });
-        recognitionSwitch.setOnCheckedChangeListener((b, on) ->
-                RobotSession.get().send("FACE RECOGNITION " + (on ? "ON" : "OFF")));
+        recognitionSwitch.setOnCheckedChangeListener((b, on) -> applySettingsToAnalyzer());
 
         threshold = findViewById(R.id.seek_threshold);
         final TextView thresholdValue = findViewById(R.id.value_threshold);
@@ -619,34 +725,51 @@ public class FaceRecognitionActivity extends BaseActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 thresholdValue.setText(getString(R.string.percent, thresholdPercent()));
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                RobotSession.get().send("FACE THRESHOLD " + thresholdPercent());
+                applySettingsToAnalyzer();
             }
         });
 
-        bindSettingSpinner(R.id.spinner_mode, R.array.recognition_modes, "FACE MODE ");
-        databaseSpinner = bindSettingSpinner(R.id.spinner_database, R.array.face_databases, "FACE DATABASE ");
-        cameraSpinner = bindSettingSpinner(R.id.spinner_camera, R.array.camera_sources, "FACE CAMERA ");
+        bindSettingSpinner(R.id.spinner_mode, R.array.recognition_modes, position -> applySettingsToAnalyzer());
+        databaseSpinner = bindSettingSpinner(R.id.spinner_database, R.array.face_databases, position -> renderDatabase());
+        cameraSpinner = bindSettingSpinner(R.id.spinner_camera, R.array.camera_sources, position -> {
+            int facing = position == 0 ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
+            if (facing != lensFacing) {
+                lensFacing = facing;
+                bindCamera();
+            }
+            updateCameraSource();
+        });
         updateCameraSource();
+        renderDatabase();
     }
 
-    private Spinner bindSettingSpinner(int id, int entries, final String command) {
+    private int thresholdPercent() {
+        return 50 + threshold.getProgress();
+    }
+
+    private void applySettingsToAnalyzer() {
+        if (analyzer == null || detectionSwitch == null) return;
+        analyzer.setDetectionEnabled(detectionSwitch.isChecked());
+        analyzer.setRecognitionEnabled(recognitionSwitch.isChecked());
+        analyzer.setThresholdPercent(thresholdPercent());
+        int mode = ((Spinner) findViewById(R.id.spinner_mode)).getSelectedItemPosition();
+        // 0 High Accuracy: accurate detector; 1 Balanced: fast detector; 2 Fast: fast detector, every other frame
+        analyzer.setMode(mode == 0, mode == 2 ? 1 : 0);
+    }
+
+    private interface OnSelected {
+        void onSelected(int position);
+    }
+
+    private Spinner bindSettingSpinner(int id, int entries, final OnSelected onSelected) {
         Spinner spinner = findViewById(id);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, entries, R.layout.item_spinner);
         adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
         spinner.setAdapter(adapter);
         spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            private boolean initialized;
-
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long rowId) {
-                if (initialized) RobotSession.get().send(command + parent.getItemAtPosition(position));
-                initialized = true;
-                if (parent == cameraSpinner) updateCameraSource();
-                if (parent == databaseSpinner) renderDatabase();
+                onSelected.onSelected(position);
             }
 
             @Override
@@ -658,6 +781,8 @@ public class FaceRecognitionActivity extends BaseActivity {
 
     private void updateCameraSource() {
         if (cameraSpinner == null) return;
-        feedSource.setText(getString(R.string.live_camera, cameraSpinner.getSelectedItem()));
+        int index = lensFacing == CameraSelector.LENS_FACING_FRONT ? 0 : 1;
+        feedSource.setText(getString(R.string.live_camera, getResources().getStringArray(R.array.camera_sources)[index]));
+        if (cameraSpinner.getSelectedItemPosition() != index) cameraSpinner.setSelection(index);
     }
 }

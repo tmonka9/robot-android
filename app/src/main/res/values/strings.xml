@@ -280,7 +280,6 @@
     <string name="position_title">Position</string>
     <string name="access_time">Access Time</string>
     <string name="similarity_value">%.1f%%</string>
-    <string name="feed_id_label">ID: %1$s     %2$s</string>
     <string name="open_door">Open Door</string>
     <string name="add_to_log">Add to Log</string>
     <string name="more">More</string>
@@ -315,16 +314,31 @@
         <item>Balanced</item>
         <item>Fast</item>
     </string-array>
+    <!-- Database filter: index 0 all, 1 active only, 2 inactive only -->
     <string-array name="face_databases">
         <item>All Users</item>
-        <item>Employees</item>
-        <item>Visitors</item>
+        <item>Active Users</item>
+        <item>Inactive Users</item>
     </string-array>
+    <!-- Camera choice: index 0 front (lens facing the user), 1 back -->
     <string-array name="camera_sources">
-        <item>Webcam</item>
-        <item>Robot Front</item>
-        <item>RTSP Camera</item>
+        <item>Front Camera</item>
+        <item>Back Camera</item>
     </string-array>
+    <string name="face_label_face">Face</string>
+    <string name="camera_permission_needed">Camera permission is required for face recognition.\nTap to allow.</string>
+    <string name="camera_unavailable">Camera is not available</string>
+    <string name="model_missing">Face detection only: add mobilefacenet.tflite to app/src/main/assets to enable recognition</string>
+    <string name="model_failed">Could not load mobilefacenet.tflite: %s</string>
+    <string name="frame_info">%1$d × %2$d  ·  %3$d ms</string>
+    <string name="snapshot_saved_to">Snapshot saved: %s</string>
+    <string name="snapshot_failed">Could not save snapshot</string>
+    <string name="look_at_camera">Look at the camera…</string>
+    <string name="registration_failed">No face captured. Face the camera and try again.</string>
+    <string name="recognition_unavailable">Face recognition needs mobilefacenet.tflite</string>
+    <string name="empty_database">No faces registered yet.\nTap + to add one.</string>
+    <string name="empty_history">No faces detected yet</string>
+    <string name="waiting_for_face">Waiting for a face…</string>
 
     <!-- Voice Recognition -->
     <string name="voice_subtitle">Recognize and process voice commands</string>

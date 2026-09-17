@@ -31,11 +31,13 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
+
 /**
  * Base for every screen: full-screen mode, the sidebar shell, the robot connection dialog and
  * small UI helpers shared by the pages.
  */
-public abstract class BaseActivity extends Activity {
+public abstract class BaseActivity extends ComponentActivity {
 
     private static final int[] NAV_IDS = {
             R.id.nav_home, R.id.nav_robot, R.id.nav_face, R.id.nav_voice,
