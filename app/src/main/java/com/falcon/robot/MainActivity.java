@@ -1,67 +1,30 @@
 package com.falcon.robot;
 
-import android.graphics.LinearGradient;
 import android.graphics.PorterDuff;
-import android.graphics.Shader;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.falcon.robot.widget.DetectionView;
-import com.falcon.robot.widget.LidarMapView;
-import com.falcon.robot.widget.WaveformView;
+import com.falcon.robot.widget.CoverImageView;
 
-/** Home: hero banner, system status panel and feature cards with live illustrations. */
+/**
+ * Home: banner artwork, live system status panel and feature cards. The banner and cards use
+ * artwork cut from {@code design/home.png} ({@code res/drawable-nodpi/home_*.png}).
+ */
 public class MainActivity extends BaseActivity {
 
-    private static final int ART_ROBOT = 0;
-    private static final int ART_FACE = 1;
-    private static final int ART_VOICE = 2;
-    private static final int ART_OBJECT = 3;
-    private static final int ART_LIDAR = 4;
-    private static final int ART_REMOTE = 5;
-
-    private static final class Card {
-        final int title;
-        final int description;
-        final int icon;
-        final int iconTint;
-        final int background;
-        final int badge;
-        final int art;
-        final int navId;
-
-        Card(int title, int description, int icon, int iconTint, int background, int badge, int art, int navId) {
-            this.title = title;
-            this.description = description;
-            this.icon = icon;
-            this.iconTint = iconTint;
-            this.background = background;
-            this.badge = badge;
-            this.art = art;
-            this.navId = navId;
-        }
-    }
-
-    private static final Card[] CARDS = {
-            new Card(R.string.nav_robot, R.string.card_robot_desc, R.drawable.ic_robot, 0xFFD6ECFF,
-                    R.drawable.bg_home_card_blue, R.drawable.bg_badge_blue, ART_ROBOT, R.id.nav_robot),
-            new Card(R.string.nav_face, R.string.card_face_desc, R.drawable.ic_face_id, 0xFFF6E6FF,
-                    R.drawable.bg_home_card_purple, R.drawable.bg_badge_purple, ART_FACE, R.id.nav_face),
-            new Card(R.string.nav_voice, R.string.card_voice_desc, R.drawable.ic_mic, 0xFFD2FFF0,
-                    R.drawable.bg_home_card_green, R.drawable.bg_badge_green, ART_VOICE, R.id.nav_voice),
-            new Card(R.string.nav_object, R.string.card_object_desc, R.drawable.ic_cube, 0xFFFFEBC4,
-                    R.drawable.bg_home_card_orange, R.drawable.bg_badge_orange, ART_OBJECT, R.id.nav_object),
-            new Card(R.string.nav_lidar, R.string.card_lidar_desc, R.drawable.ic_lidar, 0xFFD2FFFF,
-                    R.drawable.bg_home_card_teal, R.drawable.bg_badge_teal, ART_LIDAR, R.id.nav_lidar),
-            new Card(R.string.nav_remote, R.string.card_remote_desc, R.drawable.ic_gamepad, 0xFFFFFFFF,
-                    R.drawable.bg_home_card_indigo, R.drawable.bg_badge_indigo, ART_REMOTE, R.id.nav_remote),
+    /** Feature cards: {artwork, accessible title, nav target}, in design order. */
+    private static final int[][] CARDS = {
+            {R.drawable.home_card_robot, R.string.nav_robot, R.id.nav_robot},
+            {R.drawable.home_card_face, R.string.nav_face, R.id.nav_face},
+            {R.drawable.home_card_voice, R.string.nav_voice, R.id.nav_voice},
+            {R.drawable.home_card_object, R.string.nav_object, R.id.nav_object},
+            {R.drawable.home_card_lidar, R.string.nav_lidar, R.id.nav_lidar},
+            {R.drawable.home_card_remote, R.string.nav_remote, R.id.nav_remote},
     };
 
     /** Quick Status rows: {icon, label, nav target}. */
@@ -81,14 +44,15 @@ public class MainActivity extends BaseActivity {
         setPage(R.layout.activity_main, R.id.nav_home, 0);
         setupColumns();
 
-        findViewById(R.id.hero).setClipToOutline(true); // keep the backdrop inside the rounded corners
-        applyHeroGradients();
+        findViewById(R.id.hero).setClipToOutline(true); // round the banner corners
+        // Keep "AI ROBOT CONTROL" (left) and the robot's head (right) on screen at any aspect ratio.
+        ((CoverImageView) findViewById(R.id.hero_image)).setFocus(0.05f, 0.18f, 0.93f, 0.95f);
+
         buildQuickStatus();
         buildCardGrid();
 
         systemStatus = findViewById(R.id.home_system_status);
         systemStatus.setOnClickListener(v -> showConnectionDialog());
-
     }
 
     @Override
@@ -100,20 +64,6 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onConnectionChanged() {
         refreshStatusPanel();
-    }
-
-    /** Glossy blue "AI" and silver "ROBOT CONTROL". */
-    private void applyHeroGradients() {
-        final TextView ai = findViewById(R.id.hero_ai);
-        final TextView title = findViewById(R.id.hero_title);
-        ai.post(() -> {
-            ai.getPaint().setShader(new LinearGradient(0, 0, 0, ai.getHeight(),
-                    new int[] {0xFFB5ECFF, 0xFF3A8CFF, 0xFF6A4BFF}, null, Shader.TileMode.CLAMP));
-            title.getPaint().setShader(new LinearGradient(0, 0, 0, title.getHeight(),
-                    new int[] {0xFFFFFFFF, 0xFFD5DDEA, 0xFF8C99AE}, null, Shader.TileMode.CLAMP));
-            ai.invalidate();
-            title.invalidate();
-        });
     }
 
     private void buildQuickStatus() {
@@ -175,89 +125,22 @@ public class MainActivity extends BaseActivity {
                 row = new LinearLayout(this);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                 if (i > 0) rowLp.topMargin = gap;
                 grid.addView(row, rowLp);
             }
+            final int[] card = CARDS[i];
             View view = inflater.inflate(R.layout.item_home_card, row, false);
-            bindCard(view, CARDS[i]);
-            // cards fill their row; rows share the grid height (min height from item_home_card)
+            ImageView image = view.findViewById(R.id.card_image);
+            image.setImageResource(card[0]);
+            view.setContentDescription(getString(card[1]));
+            view.setClipToOutline(true); // round the artwork corners
+            view.setOnClickListener(v -> navigate(card[2]));
+
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
             if (i % columns > 0) lp.setMarginStart(gap);
             row.addView(view, lp);
         }
-    }
-
-    private void bindCard(View view, final Card card) {
-        view.setBackgroundResource(card.background);
-        view.setClipToOutline(true);
-        view.findViewById(R.id.card_badge).setBackgroundResource(card.badge);
-        ImageView icon = view.findViewById(R.id.card_icon);
-        icon.setImageResource(card.icon);
-        icon.setColorFilter(card.iconTint, PorterDuff.Mode.SRC_IN);
-        ((TextView) view.findViewById(R.id.card_title)).setText(card.title);
-        ((TextView) view.findViewById(R.id.card_desc)).setText(card.description);
-        ((FrameLayout) view.findViewById(R.id.card_art)).addView(createArt(card.art),
-                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT));
-        view.setOnClickListener(v -> navigate(card.navId));
-    }
-
-    /** Live illustration shown on the right side of each card. */
-    private View createArt(int art) {
-        switch (art) {
-            case ART_FACE: {
-                FrameLayout frame = new FrameLayout(this);
-                ImageView face = image(R.drawable.ic_person, 0xFFEAD8F8);
-                face.setPadding(0, dp(18), 0, 0);
-                frame.addView(face, matchParent());
-                ImageView corners = image(R.drawable.face_frame, 0xFFE0C0FF);
-                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dp(110), dp(110), Gravity.CENTER);
-                frame.addView(corners, lp);
-                return frame;
-            }
-            case ART_VOICE: {
-                FrameLayout frame = new FrameLayout(this);
-                WaveformView wave = new WaveformView(this);
-                wave.setBarColor(0x5EF0C0);
-                frame.addView(wave, new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT, dp(70), Gravity.CENTER));
-                ImageView mic = image(R.drawable.ic_mic, 0xFF7CF5CF);
-                mic.setBackgroundResource(R.drawable.bg_badge_green);
-                mic.setPadding(dp(14), dp(14), dp(14), dp(14));
-                frame.addView(mic, new FrameLayout.LayoutParams(dp(72), dp(72), Gravity.CENTER));
-                return frame;
-            }
-            case ART_OBJECT: {
-                DetectionView detection = new DetectionView(this);
-                detection.setCompact(true);
-                return detection;
-            }
-            case ART_LIDAR:
-                return new LidarMapView(this);
-            case ART_REMOTE:
-                return image(R.drawable.img_rover, 0);
-            case ART_ROBOT:
-            default:
-                return image(R.drawable.img_robot, 0);
-        }
-    }
-
-    private ImageView image(int drawable, int tint) {
-        ImageView view = new ImageView(this);
-        view.setImageResource(drawable);
-        view.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        if (tint != 0) view.setColorFilter(tint, PorterDuff.Mode.SRC_IN);
-        return view;
-    }
-
-    private static FrameLayout.LayoutParams matchParent() {
-        return new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT);
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }

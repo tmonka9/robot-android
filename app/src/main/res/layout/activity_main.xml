@@ -19,6 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1">
 
+            <!-- Banner artwork from design/home.png; the title and robot always stay visible. -->
             <FrameLayout
                 android:id="@+id/hero"
                 android:layout_width="match_parent"
@@ -27,67 +28,12 @@
                 android:minHeight="@dimen/hero_min_height"
                 android:tag="2.3">
 
-                <com.falcon.robot.widget.SplashBackgroundView
+                <com.falcon.robot.widget.CoverImageView
+                    android:id="@+id/hero_image"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-
-                <View
-                    android:layout_width="@dimen/hero_robot"
-                    android:layout_height="@dimen/hero_robot"
-                    android:layout_gravity="end|center_vertical"
-                    android:background="@drawable/bg_glow_blue" />
-
-                <ImageView
-                    android:layout_width="@dimen/hero_robot"
-                    android:layout_height="@dimen/hero_robot"
-                    android:layout_gravity="end|bottom"
-                    android:layout_marginEnd="24dp"
-                    android:contentDescription="@null"
-                    android:scaleType="fitEnd"
-                    android:src="@drawable/img_robot" />
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="start|center_vertical"
-                    android:orientation="vertical"
-                    android:paddingStart="36dp"
-                    android:paddingEnd="16dp">
-
-                    <TextView
-                        android:id="@+id/hero_ai"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:includeFontPadding="false"
-                        android:shadowColor="#882F80FF"
-                        android:shadowRadius="20"
-                        android:text="@string/title_ai"
-                        android:textColor="@color/blue"
-                        android:textSize="@dimen/hero_ai" />
-
-                    <TextView
-                        android:id="@+id/hero_title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="sans-serif-black"
-                        android:includeFontPadding="false"
-                        android:shadowColor="#552F80FF"
-                        android:shadowRadius="12"
-                        android:singleLine="true"
-                        android:text="@string/title_rest"
-                        android:textColor="@color/text_primary"
-                        android:textSize="@dimen/hero_title" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:letterSpacing="0.1"
-                        android:text="@string/hero_tagline"
-                        android:textColor="@color/text_primary"
-                        android:textSize="@dimen/hero_tagline" />
-                </LinearLayout>
+                    android:layout_height="match_parent"
+                    android:contentDescription="@string/app_name"
+                    android:src="@drawable/home_hero" />
             </FrameLayout>
 
             <!-- Status panel -->
@@ -239,13 +185,12 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Feature cards; filled by MainActivity#buildCardGrid. Rows share the leftover height. -->
+        <!-- Feature cards; filled by MainActivity#buildCardGrid. Cards keep the artwork's aspect ratio; the banner row takes the remaining height. -->
         <LinearLayout
             android:id="@+id/home_grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/gap"
-            android:layout_weight="1.3"
             android:orientation="vertical" />
     </LinearLayout>
 </ScrollView>

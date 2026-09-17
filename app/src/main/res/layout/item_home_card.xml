@@ -1,86 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home feature card; bound in MainActivity#buildCardGrid. -->
+<!-- Home feature card: artwork cut from design/home.png; bound in MainActivity#buildCardGrid. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:minHeight="@dimen/home_card_height"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_card_outline"
+    android:clickable="true"
+    android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground">
 
-    <!-- Illustration on the right ~55% of the card -->
-    <LinearLayout
+    <com.falcon.robot.widget.AspectImageView
+        android:id="@+id/card_image"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal">
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="0.45" />
-
-        <FrameLayout
-            android:id="@+id/card_art"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.55"
-            android:alpha="0.9"
-            android:padding="10dp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="18dp">
-
-        <FrameLayout
-            android:id="@+id/card_badge"
-            android:layout_width="64dp"
-            android:layout_height="64dp">
-
-            <ImageView
-                android:id="@+id/card_icon"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:layout_gravity="center"
-                android:contentDescription="@null" />
-        </FrameLayout>
-
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/card_title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
-            android:shadowColor="#99000000"
-            android:shadowRadius="6"
-            android:singleLine="true"
-            android:textColor="@color/white"
-            android:textSize="20sp" />
-
-        <TextView
-            android:id="@+id/card_desc"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="56dp"
-            android:maxLines="2"
-            android:shadowColor="#99000000"
-            android:shadowRadius="6"
-            android:textColor="@color/white_80"
-            android:textSize="13sp" />
-    </LinearLayout>
-
-    <ImageView
-        android:layout_width="38dp"
-        android:layout_height="38dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:background="@drawable/bg_arrow_circle"
-        android:contentDescription="@null"
-        android:padding="8dp"
-        android:src="@drawable/ic_arrow_right" />
+        android:layout_height="wrap_content" />
 </FrameLayout>

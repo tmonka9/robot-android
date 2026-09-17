@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AI Robot Control</string>
-    <string name="title_ai">AI</string>
-    <string name="title_rest">ROBOT CONTROL</string>
     <string name="splash_step_init">Initializing system…</string>
     <string name="splash_step_models">Loading AI models…</string>
     <string name="splash_step_sensors">Starting camera &amp; LiDAR…</string>
@@ -21,14 +19,7 @@
     <string name="back">Back</string>
 
     <!-- Home -->
-    <string name="hero_tagline">Smarter  •  Safer  •  Together</string>
-    <string name="card_robot_desc">Control the robot\'s movement and actions.</string>
-    <string name="card_remote_desc">Control the robot via remote device.</string>
-    <string name="card_face_desc">Detect, identify and manage faces.</string>
-    <string name="card_object_desc">Detect and recognize objects in real time.</string>
-    <string name="card_voice_desc">Recognize and process voice commands.</string>
     <string name="nav_lidar">LiDAR SLAM</string>
-    <string name="card_lidar_desc">Map, localize and navigate using LiDAR.</string>
     <string name="system_online">System Online</string>
     <string name="robot_offline">Robot Offline · tap to connect</string>
     <string name="network">Network</string>

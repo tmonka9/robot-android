@@ -6,11 +6,6 @@
     <dimen name="title_text">18sp</dimen>
 
     <dimen name="hero_min_height">240dp</dimen>
-    <dimen name="hero_robot">230dp</dimen>
-    <dimen name="hero_ai">56sp</dimen>
-    <dimen name="hero_title">28sp</dimen>
-    <dimen name="hero_tagline">15sp</dimen>
-    <dimen name="home_card_height">170dp</dimen>
 
     <dimen name="dpad_size">180dp</dimen>
     <dimen name="joystick_size">150dp</dimen>
