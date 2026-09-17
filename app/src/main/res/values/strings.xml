@@ -67,6 +67,8 @@
     <!-- Common status -->
     <string name="status_disconnected">Disconnected · tap to connect</string>
     <string name="status_connecting">Connecting…</string>
+    <string name="status_connected_short">Connected</string>
+    <string name="status_offline_short">Offline</string>
     <string name="status_ready">Ready</string>
     <string name="status_recognizing">Recognizing…</string>
     <string name="status_listening">Listening…</string>
@@ -79,19 +81,74 @@
 
     <!-- Robot Control -->
     <string name="movement_control">Movement Control</string>
-    <string name="actions">Actions</string>
     <string name="speed">Speed</string>
     <string name="battery">Battery</string>
     <string name="mode">Mode</string>
-    <string-array name="robot_modes">
-        <item>Standby</item>
-        <item>Manual</item>
-        <item>Autonomous</item>
+    <string name="robot_subtitle">Control the robot\'s movement and actions.</string>
+    <string name="robot_status">Robot Status</string>
+    <string name="temperature">Temperature</string>
+    <string name="mode_remote">Remote Control</string>
+    <string name="speed_slow">Slow</string>
+    <string name="speed_normal">Normal</string>
+    <string name="speed_fast">Fast</string>
+    <string name="demo_battery">78%</string>
+    <string name="demo_temperature">36°C</string>
+    <string name="position">Position</string>
+    <string name="position_x">X:  %.2f m</string>
+    <string name="position_y">Y:  %.2f m</string>
+    <string name="position_z">Z:  %.2f m</string>
+    <string name="position_reset">Position reset</string>
+    <string name="camera_view">Camera View</string>
+    <string name="cam_front">Front</string>
+    <string name="cam_rear">Rear</string>
+    <string name="cam_left">Left</string>
+    <string name="cam_right">Right</string>
+    <string name="camera_settings">Camera Settings</string>
+    <string name="brightness">Brightness</string>
+    <string name="contrast">Contrast</string>
+    <string name="saturation">Saturation</string>
+    <string name="resolution">Resolution</string>
+    <string name="fps">FPS</string>
+    <string-array name="camera_resolutions">
+        <item>1080P</item>
+        <item>720P</item>
+        <item>480P</item>
     </string-array>
+    <string-array name="camera_resolution_sizes">
+        <item>1920 × 1080</item>
+        <item>1280 × 720</item>
+        <item>854 × 480</item>
+    </string-array>
+    <string-array name="camera_fps">
+        <item>30</item>
+        <item>60</item>
+        <item>15</item>
+    </string-array>
+    <string name="feed_info">%1$s  ·  %2$s FPS</string>
+    <string name="act_turn_left">Turn Left</string>
+    <string name="act_turn_right">Turn Right</string>
+    <string name="act_reset">Reset</string>
+    <string name="arm_control">Arm Control</string>
+    <string name="arm_left">Left Arm</string>
+    <string name="arm_right">Right Arm</string>
+    <string name="arm_head">Head</string>
+    <string name="arm_waist">Waist</string>
+    <string name="preset_pose">Preset Pose</string>
+    <string name="pose_t">T-Pose</string>
+    <string name="qa_go_home">Go Home</string>
+    <string name="qa_start_patrol">Start Patrol</string>
+    <string name="qa_stop_patrol">Stop Patrol</string>
+    <string name="qa_follow_me">Follow Me</string>
+    <string name="qa_stop_follow">Stop Following</string>
+    <string name="qa_shutdown">Shutdown</string>
+    <string name="shutdown_confirm">Shut down the robot?</string>
+    <string name="cancel">Cancel</string>
+    <string name="custom_actions">Custom Actions</string>
+    <string name="custom_action">Action %d</string>
+    <string name="robot_tip">Use the virtual joystick or preset buttons to control the robot.</string>
     <string name="pose_stand">Stand</string>
     <string name="pose_sit">Sit</string>
     <string name="pose_wave">Wave</string>
-    <string name="pose_dance">Dance</string>
     <string name="moving_forward">Moving forward</string>
     <string name="moving_backward">Moving backward</string>
     <string name="turning_left">Turning left</string>

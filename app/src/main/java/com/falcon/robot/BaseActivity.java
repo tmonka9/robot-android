@@ -25,6 +25,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -298,7 +299,12 @@ public abstract class BaseActivity extends Activity {
      * {@code fillViewport}, so they only scroll when the screen is too small for the content.
      */
     protected void setupColumns() {
-        LinearLayout columns = findViewById(R.id.columns);
+        setupColumns(R.id.columns);
+    }
+
+    /** Same as {@link #setupColumns()} for another row container. */
+    protected void setupColumns(int containerId) {
+        LinearLayout columns = findViewById(containerId);
         boolean side = getResources().getBoolean(R.bool.two_columns);
         int gap = getResources().getDimensionPixelSize(R.dimen.gap);
         columns.setOrientation(side ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
@@ -358,6 +364,52 @@ public abstract class BaseActivity extends Activity {
     protected static void setStatus(TextView view, CharSequence text, int dot) {
         view.setText(text);
         view.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, 0, 0, 0);
+    }
+
+    /**
+     * Sets a sized, tinted compound drawable on a TextView.
+     * {@code gravity} is {@link android.view.Gravity#START} or {@link android.view.Gravity#TOP}.
+     */
+    protected void setIcon(TextView view, int drawable, int sizeDp, int color, int gravity) {
+        Drawable icon = getResources().getDrawable(drawable).mutate();
+        int size = Math.round(sizeDp * getResources().getDisplayMetrics().density);
+        icon.setBounds(0, 0, size, size);
+        if (color != 0) icon.setColorFilter(color, PorterDuff.Mode.SRC_IN);
+        if (gravity == android.view.Gravity.TOP) {
+            view.setCompoundDrawablesRelative(null, icon, null, null);
+        } else {
+            view.setCompoundDrawablesRelative(icon, null, null, null);
+        }
+    }
+
+    // ---- large page header (view_page_header_rich) --------------------------------------
+
+    protected void setupRichHeader(int icon, int title, int subtitle) {
+        ImageView iconView = findViewById(R.id.header_icon);
+        iconView.setImageResource(icon);
+        iconView.setColorFilter(color(R.color.cyan), PorterDuff.Mode.SRC_IN);
+        ((TextView) findViewById(R.id.header_title)).setText(title);
+        ((TextView) findViewById(R.id.header_subtitle)).setText(subtitle);
+        findViewById(R.id.header_pill).setOnClickListener(v -> showConnectionDialog());
+        refreshRichHeader();
+    }
+
+    /** Robot connection, address and (simulated) robot battery in the header pill. */
+    protected void refreshRichHeader() {
+        TextView connection = findViewById(R.id.header_connection);
+        if (connection == null) return;
+        RobotSession session = RobotSession.get();
+        boolean connected = session.isConnected();
+        setStatus(connection, connected ? R.string.status_connected_short : R.string.status_offline_short,
+                connected ? R.drawable.dot_teal : R.drawable.dot_gray);
+        connection.setTextColor(color(connected ? R.color.teal : R.color.text_secondary));
+        ((TextView) findViewById(R.id.header_ip)).setText(
+                session.getTransport() == RobotSession.Transport.WIFI
+                        ? session.getHost() : getString(R.string.bluetooth));
+        ((TextView) findViewById(R.id.header_battery)).setText(
+                connected ? getString(R.string.demo_battery) : getString(R.string.placeholder_value));
+        ((ImageView) findViewById(R.id.header_battery_icon)).setColorFilter(
+                color(connected ? R.color.teal : R.color.text_muted), PorterDuff.Mode.SRC_IN);
     }
 
     /** Tints the top compound drawable of a button-like TextView. */

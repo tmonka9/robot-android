@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Robot Control page, following design/robot.png.
+  Top row: Robot Status | Camera View. Bottom row: Movement | Arm | Quick & Custom Actions.
+  Rows are arranged side by side on wide screens and stacked otherwise (BaseActivity#setupColumns);
+  icons, sizes and state are bound in RobotControlActivity.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <include layout="@layout/view_page_header" />
+    <include layout="@layout/view_page_header_rich" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -13,62 +19,611 @@
         android:fillViewport="true">
 
         <LinearLayout
-            android:id="@+id/columns"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical"
             android:padding="@dimen/screen_padding">
 
-            <!-- Column 1: camera/robot view + movement -->
+            <!-- ======================= Top row ======================= -->
             <LinearLayout
-                style="@style/Column"
-                android:tag="1.3">
+                android:id="@+id/columns"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.05">
 
-                <LinearLayout style="@style/Panel"
-                    android:layout_weight="1">
+                <!-- Robot Status: robot artwork with live status overlays -->
+                <FrameLayout
+                    android:id="@+id/robot_status_panel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_panel_robot"
+                    android:minHeight="280dp"
+                    android:tag="1">
 
-                    <FrameLayout
+                    <com.falcon.robot.widget.CoverImageView
+                        android:id="@+id/robot_status_art"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:minHeight="@dimen/robot_preview_height"
-                        android:background="@drawable/bg_preview">
+                        android:layout_height="match_parent"
+                        android:contentDescription="@null"
+                        android:src="@drawable/robot_status_art" />
 
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="@drawable/bg_glow_blue" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="start|top"
+                        android:orientation="vertical"
+                        android:padding="12dp">
 
-                        <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:contentDescription="@null"
-                            android:padding="12dp"
-                            android:src="@drawable/img_robot" />
-                    </FrameLayout>
+                        <TextView
+                            android:id="@+id/robot_status_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_title_chip"
+                            android:clickable="true"
+                            android:drawablePadding="12dp"
+                            android:focusable="true"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center_vertical"
+                            android:paddingLeft="16dp"
+                            android:paddingRight="20dp"
+                            android:text="@string/robot_status"
+                            android:textColor="@color/white"
+                            android:textSize="16sp" />
 
-                    <TextView
-                        style="@style/SectionTitle"
-                        android:layout_marginTop="14dp"
-                        android:text="@string/movement_control" />
+                        <LinearLayout
+                            android:layout_width="230dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:background="@drawable/bg_table_box"
+                            android:orientation="vertical"
+                            android:paddingLeft="12dp"
+                            android:paddingRight="12dp">
 
-                    <com.falcon.robot.widget.DPadView
-                        android:id="@+id/dpad"
-                        android:layout_width="@dimen/dpad_size"
-                        android:layout_height="@dimen/dpad_size"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="8dp" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
 
-                    <TextView
-                        style="@style/FieldLabel"
-                        android:layout_marginTop="14dp"
-                        android:text="@string/speed" />
+                                <TextView
+                                    android:id="@+id/label_mode"
+                                    style="@style/StatusRowLabel"
+                                    android:text="@string/mode" />
+
+                                <TextView
+                                    android:id="@+id/value_mode"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:singleLine="true"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:background="@color/divider" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/label_speed"
+                                    style="@style/StatusRowLabel"
+                                    android:text="@string/speed" />
+
+                                <TextView
+                                    android:id="@+id/value_speed"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:singleLine="true"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:background="@color/divider" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/label_battery"
+                                    style="@style/StatusRowLabel"
+                                    android:text="@string/battery" />
+
+                                <TextView
+                                    android:id="@+id/value_battery"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:singleLine="true"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="1dp"
+                                android:background="@color/divider" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="40dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/label_temperature"
+                                    style="@style/StatusRowLabel"
+                                    android:text="@string/temperature" />
+
+                                <TextView
+                                    android:id="@+id/value_temperature"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:singleLine="true"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end|top"
+                        android:layout_marginTop="80dp"
+                        android:layout_marginEnd="18dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/position"
+                            android:textColor="@color/blue_light"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/position_x"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/position_y"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/position_z"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </FrameLayout>
+
+                <!-- Camera View -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1.45">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/camera_title"
+                            style="@style/RobotPanelTitle"
+                            android:layout_width="wrap_content"
+                            android:text="@string/camera_view" />
+
+                        <HorizontalScrollView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:scrollbars="none">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/cam_front"
+                                    style="@style/CameraTab"
+                                    android:text="@string/cam_front" />
+
+                                <TextView
+                                    android:id="@+id/cam_rear"
+                                    style="@style/CameraTab"
+                                    android:text="@string/cam_rear" />
+
+                                <TextView
+                                    android:id="@+id/cam_left"
+                                    style="@style/CameraTab"
+                                    android:text="@string/cam_left" />
+
+                                <TextView
+                                    android:id="@+id/cam_right"
+                                    style="@style/CameraTab"
+                                    android:text="@string/cam_right" />
+                            </LinearLayout>
+                        </HorizontalScrollView>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_weight="1"
+                        android:minHeight="230dp"
+                        android:orientation="horizontal">
+
+                        <!-- Live feed placeholder (design artwork); replace with the camera stream. -->
+                        <FrameLayout
+                            android:id="@+id/camera_feed_frame"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_table_box">
+
+                            <com.falcon.robot.widget.CoverImageView
+                                android:id="@+id/camera_feed"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/camera_view"
+                                android:src="@drawable/robot_camera_front" />
+
+                            <TextView
+                                android:id="@+id/camera_name"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="top|end"
+                                android:layout_margin="10dp"
+                                android:background="@drawable/bg_feed_label"
+                                android:paddingLeft="10dp"
+                                android:paddingTop="4dp"
+                                android:paddingRight="10dp"
+                                android:paddingBottom="4dp"
+                                android:textColor="@color/white"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/camera_info"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:layout_margin="10dp"
+                                android:background="@drawable/bg_feed_label"
+                                android:paddingLeft="10dp"
+                                android:paddingTop="4dp"
+                                android:paddingRight="10dp"
+                                android:paddingBottom="4dp"
+                                android:textColor="@color/white"
+                                android:textSize="12sp" />
+                        </FrameLayout>
+
+                        <!-- Camera settings -->
+                        <LinearLayout
+                            android:layout_width="200dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/bg_table_box"
+                            android:orientation="vertical"
+                            android:paddingLeft="12dp"
+                            android:paddingTop="10dp"
+                            android:paddingRight="10dp"
+                            android:paddingBottom="10dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="@string/camera_settings"
+                                android:textColor="@color/blue_light"
+                                android:textSize="14sp" />
+
+                            <TextView
+                                android:id="@+id/label_brightness"
+                                style="@style/SettingLabel"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/brightness" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <SeekBar
+                                    android:id="@+id/seek_brightness"
+                                    android:layout_width="0dp"
+                                    android:layout_height="28dp"
+                                    android:layout_weight="1"
+                                    android:max="100"
+                                    android:maxHeight="4dp"
+                                    android:minHeight="4dp"
+                                    android:paddingStart="8dp"
+                                    android:paddingEnd="8dp"
+                                    android:progress="50"
+                                    android:progressDrawable="@drawable/progress_loading"
+                                    android:splitTrack="false"
+                                    android:thumb="@drawable/seekbar_thumb" />
+
+                                <TextView
+                                    android:id="@+id/value_brightness"
+                                    android:layout_width="36dp"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="end"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/label_contrast"
+                                style="@style/SettingLabel"
+                                android:text="@string/contrast" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <SeekBar
+                                    android:id="@+id/seek_contrast"
+                                    android:layout_width="0dp"
+                                    android:layout_height="28dp"
+                                    android:layout_weight="1"
+                                    android:max="100"
+                                    android:maxHeight="4dp"
+                                    android:minHeight="4dp"
+                                    android:paddingStart="8dp"
+                                    android:paddingEnd="8dp"
+                                    android:progress="50"
+                                    android:progressDrawable="@drawable/progress_loading"
+                                    android:splitTrack="false"
+                                    android:thumb="@drawable/seekbar_thumb" />
+
+                                <TextView
+                                    android:id="@+id/value_contrast"
+                                    android:layout_width="36dp"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="end"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/label_saturation"
+                                style="@style/SettingLabel"
+                                android:text="@string/saturation" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <SeekBar
+                                    android:id="@+id/seek_saturation"
+                                    android:layout_width="0dp"
+                                    android:layout_height="28dp"
+                                    android:layout_weight="1"
+                                    android:max="100"
+                                    android:maxHeight="4dp"
+                                    android:minHeight="4dp"
+                                    android:paddingStart="8dp"
+                                    android:paddingEnd="8dp"
+                                    android:progress="50"
+                                    android:progressDrawable="@drawable/progress_loading"
+                                    android:splitTrack="false"
+                                    android:thumb="@drawable/seekbar_thumb" />
+
+                                <TextView
+                                    android:id="@+id/value_saturation"
+                                    android:layout_width="36dp"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="end"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+
+                            <Space
+                                android:layout_width="0dp"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <TextView
+                                style="@style/SettingLabel"
+                                android:text="@string/resolution" />
+
+                            <FrameLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp">
+
+                                <Spinner
+                                    android:id="@+id/camera_resolution"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+
+                            <TextView
+                                style="@style/SettingLabel"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/fps" />
+
+                            <FrameLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp">
+
+                                <Spinner
+                                    android:id="@+id/camera_fps"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ======================= Bottom row ======================= -->
+            <LinearLayout
+                android:id="@+id/columns_bottom"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/gap"
+                android:layout_weight="1">
+
+                <!-- Movement Control -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1">
+
+                    <TextView
+                        android:id="@+id/movement_title"
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/movement_control" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.falcon.robot.widget.JoystickView
+                            android:id="@+id/joystick"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:minHeight="170dp" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1.1"
+                            android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/move_forward"
+                                    style="@style/ControlButton"
+                                    android:text="@string/act_forward" />
+
+                                <TextView
+                                    android:id="@+id/move_backward"
+                                    style="@style/ControlButton"
+                                    android:layout_marginStart="8dp"
+                                    android:text="@string/act_backward" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/move_left"
+                                    style="@style/ControlButton"
+                                    android:text="@string/act_turn_left" />
+
+                                <TextView
+                                    android:id="@+id/move_right"
+                                    style="@style/ControlButton"
+                                    android:layout_marginStart="8dp"
+                                    android:text="@string/act_turn_right" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/move_stop"
+                                    style="@style/ControlButton"
+                                    android:text="@string/act_stop" />
+
+                                <TextView
+                                    android:id="@+id/move_reset"
+                                    style="@style/ControlButton"
+                                    android:layout_marginStart="8dp"
+                                    android:text="@string/act_reset" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_table_box"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="12dp">
+
+                        <TextView
+                            android:id="@+id/label_speed_slider"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:drawablePadding="8dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/speed"
+                            android:textColor="@color/blue_light"
+                            android:textSize="13sp" />
 
                         <SeekBar
                             android:id="@+id/speed_seek"
@@ -78,145 +633,248 @@
                             android:max="100"
                             android:maxHeight="4dp"
                             android:minHeight="4dp"
-                            android:paddingStart="4dp"
+                            android:paddingStart="16dp"
                             android:paddingEnd="12dp"
-                            android:progress="60"
+                            android:progress="50"
                             android:progressDrawable="@drawable/progress_loading"
                             android:splitTrack="false"
                             android:thumb="@drawable/seekbar_thumb" />
 
                         <TextView
                             android:id="@+id/speed_value"
-                            android:layout_width="40dp"
+                            android:layout_width="44dp"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
                             android:gravity="end"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
                     </LinearLayout>
                 </LinearLayout>
-            </LinearLayout>
 
-            <!-- Column 2: status + actions -->
-            <LinearLayout
-                style="@style/Column"
-                android:tag="1">
-
-                <LinearLayout style="@style/Panel">
+                <!-- Arm Control -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:tag="1">
 
                     <TextView
-                        android:id="@+id/robot_connection"
-                        style="@style/StatusText"
-                        android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:drawableStart="@drawable/dot_gray"
-                        android:textColor="@color/text_primary" />
+                        android:id="@+id/arm_title"
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/arm_control" />
 
-                    <View style="@style/PanelDivider" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:gravity="center_vertical"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_weight="1"
                         android:orientation="horizontal">
 
-                        <TextView
+                        <ImageView
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.9"
+                            android:contentDescription="@null"
+                            android:minHeight="170dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/robot_arm_body" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginStart="10dp"
                             android:layout_weight="1"
-                            android:text="@string/battery"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+                            android:orientation="vertical">
 
-                        <TextView
-                            android:id="@+id/robot_battery"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+                            <TextView
+                                android:id="@+id/arm_left"
+                                style="@style/ListControlButton"
+                                android:text="@string/arm_left" />
+
+                            <TextView
+                                android:id="@+id/arm_right"
+                                style="@style/ListControlButton"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/arm_right" />
+
+                            <TextView
+                                android:id="@+id/arm_head"
+                                style="@style/ListControlButton"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/arm_head" />
+
+                            <TextView
+                                android:id="@+id/arm_waist"
+                                style="@style/ListControlButton"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/arm_waist" />
+                        </LinearLayout>
                     </LinearLayout>
-
-                    <View style="@style/PanelDivider" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_table_box"
+                        android:orientation="vertical"
+                        android:padding="8dp">
 
                         <TextView
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/mode"
+                            android:layout_marginStart="4dp"
+                            android:text="@string/preset_pose"
                             android:textColor="@color/text_primary"
-                            android:textSize="14sp" />
+                            android:textSize="13sp" />
 
-                        <FrameLayout
-                            android:layout_width="160dp"
-                            android:layout_height="wrap_content">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="42dp"
+                            android:layout_marginTop="6dp"
+                            android:orientation="horizontal">
 
-                            <Spinner
-                                android:id="@+id/robot_mode"
-                                style="@style/Dropdown" />
+                            <TextView
+                                android:id="@+id/pose_stand"
+                                style="@style/ControlButton"
+                                android:minHeight="0dp"
+                                android:paddingTop="0dp"
+                                android:paddingBottom="0dp"
+                                android:text="@string/pose_stand" />
 
-                            <ImageView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:layout_gravity="end|center_vertical"
-                                android:layout_marginEnd="8dp"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_dropdown" />
-                        </FrameLayout>
+                            <TextView
+                                android:id="@+id/pose_sit"
+                                style="@style/ControlButton"
+                                android:layout_marginStart="6dp"
+                                android:minHeight="0dp"
+                                android:paddingTop="0dp"
+                                android:paddingBottom="0dp"
+                                android:text="@string/pose_sit" />
+
+                            <TextView
+                                android:id="@+id/pose_wave"
+                                style="@style/ControlButton"
+                                android:layout_marginStart="6dp"
+                                android:minHeight="0dp"
+                                android:paddingTop="0dp"
+                                android:paddingBottom="0dp"
+                                android:text="@string/pose_wave" />
+
+                            <TextView
+                                android:id="@+id/pose_tpose"
+                                style="@style/ControlButton"
+                                android:layout_marginStart="6dp"
+                                android:minHeight="0dp"
+                                android:paddingTop="0dp"
+                                android:paddingBottom="0dp"
+                                android:text="@string/pose_t" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- Quick actions, custom actions, tip -->
                 <LinearLayout
-                    style="@style/Panel"
-                    android:layout_marginTop="@dimen/gap"
-                    android:layout_weight="1">
+                    style="@style/Column"
+                    android:tag="1.05">
 
-                    <TextView
-                        style="@style/SectionTitle"
-                        android:text="@string/actions" />
-
-                    <TextView
-                        android:id="@+id/action_stand"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_pose_stand"
-                        android:text="@string/pose_stand" />
-
-                    <TextView
-                        android:id="@+id/action_sit"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_pose_sit"
-                        android:text="@string/pose_sit" />
-
-                    <TextView
-                        android:id="@+id/action_wave"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_pose_wave"
-                        android:text="@string/pose_wave" />
-
-                    <TextView
-                        android:id="@+id/action_dance"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_music"
-                        android:text="@string/pose_dance" />
-
-                    <Space
-                        android:layout_width="0dp"
+                    <LinearLayout
+                        style="@style/RobotPanel"
                         android:layout_height="0dp"
-                        android:layout_weight="1" />
+                        android:layout_weight="1">
 
+                        <TextView
+                            android:id="@+id/quick_title"
+                            style="@style/RobotPanelTitle"
+                            android:text="@string/quick_actions"
+                            android:textColor="@color/blue_light" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/qa_home"
+                                style="@style/QuickButton"
+                                android:text="@string/qa_go_home" />
+
+                            <TextView
+                                android:id="@+id/qa_patrol"
+                                style="@style/QuickButton"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/qa_start_patrol" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/qa_follow"
+                                style="@style/QuickButton"
+                                android:text="@string/qa_follow_me" />
+
+                            <TextView
+                                android:id="@+id/qa_shutdown"
+                                style="@style/QuickButton"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/qa_shutdown" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        style="@style/RobotPanel"
+                        android:layout_marginTop="@dimen/gap">
+
+                        <TextView
+                            android:id="@+id/custom_title"
+                            style="@style/RobotPanelTitle"
+                            android:text="@string/custom_actions"
+                            android:textColor="@color/blue_light" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
+
+                        <!-- Filled by RobotControlActivity#buildCustomActions -->
+                        <LinearLayout
+                            android:id="@+id/custom_actions"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="10dp"
+                            android:orientation="horizontal" />
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/robot_status"
-                        style="@style/StatusText"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/status_idle"
-                        android:textColor="@color/text_secondary" />
+                        android:id="@+id/robot_tip"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/gap"
+                        android:background="@drawable/bg_panel_robot"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
+                        android:minHeight="42dp"
+                        android:paddingLeft="14dp"
+                        android:paddingRight="14dp"
+                        android:text="@string/robot_tip"
+                        android:textColor="@color/blue_light"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
