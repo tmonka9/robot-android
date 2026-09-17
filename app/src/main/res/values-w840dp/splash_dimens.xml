@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="splash_padding">32dp</dimen>
+    <dimen name="splash_ai">120sp</dimen>
+    <dimen name="splash_title">52sp</dimen>
+    <dimen name="splash_tagline">18sp</dimen>
+    <dimen name="splash_robot">420dp</dimen>
+    <dimen name="splash_card_height">220dp</dimen>
+    <dimen name="splash_card_icon">64dp</dimen>
+    <dimen name="splash_card_title">17sp</dimen>
+    <dimen name="splash_card_desc">12sp</dimen>
+</resources>

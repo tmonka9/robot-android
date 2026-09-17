@@ -1,98 +1,177 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/bg_splash">
+    android:layout_height="match_parent">
 
-    <!-- floor glow -->
-    <View
+    <com.falcon.robot.widget.SplashBackgroundView
         android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="-110dp"
-        android:background="@drawable/bg_glow_blue" />
+        android:layout_height="match_parent" />
 
     <LinearLayout
-        android:id="@+id/splash_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:gravity="center_horizontal"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:paddingLeft="24dp"
-        android:paddingRight="24dp">
+        android:padding="@dimen/splash_padding">
 
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-
-            <View
-                android:layout_width="@dimen/splash_robot"
-                android:layout_height="@dimen/splash_robot"
-                android:layout_gravity="center"
-                android:background="@drawable/bg_glow_blue" />
-
-            <ImageView
-                android:id="@+id/splash_robot"
-                android:layout_width="@dimen/splash_robot"
-                android:layout_height="@dimen/splash_robot"
-                android:layout_gravity="center"
-                android:contentDescription="@null"
-                android:src="@drawable/img_robot" />
-        </FrameLayout>
-
+        <!-- Title, robot and (on wide screens) the LiDAR SLAM panel -->
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="@string/title_ai"
-                android:textColor="@color/blue"
-                android:textSize="@dimen/splash_title" />
+            <LinearLayout
+                android:id="@+id/splash_title_block"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1.2"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:fontFamily="sans-serif-light"
-                android:letterSpacing="0.04"
-                android:singleLine="true"
-                android:text="@string/title_rest"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/splash_title" />
+                <TextView
+                    android:id="@+id/splash_ai"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="sans-serif-black"
+                    android:includeFontPadding="false"
+                    android:shadowColor="#AA2F80FF"
+                    android:shadowRadius="28"
+                    android:text="@string/title_ai"
+                    android:textColor="@color/blue"
+                    android:textSize="@dimen/splash_ai" />
+
+                <TextView
+                    android:id="@+id/splash_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:fontFamily="sans-serif-black"
+                    android:includeFontPadding="false"
+                    android:shadowColor="#662F80FF"
+                    android:shadowRadius="16"
+                    android:singleLine="true"
+                    android:text="@string/title_rest"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/splash_title" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="14dp"
+                    android:letterSpacing="0.3"
+                    android:singleLine="true"
+                    android:text="@string/splash_tagline"
+                    android:textColor="@color/blue_light"
+                    android:textSize="@dimen/splash_tagline" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:id="@+id/splash_robot"
+                android:layout_width="@dimen/splash_robot"
+                android:layout_height="match_parent">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_glow_blue" />
+
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:scaleType="fitEnd"
+                    android:src="@drawable/img_robot" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/splash_lidar"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1.2"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_lidar" />
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:letterSpacing="0.06"
+                            android:text="@string/nav_lidar"
+                            android:textColor="@color/cyan"
+                            android:textSize="24sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/lidar_subtitle"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <com.falcon.robot.widget.LidarMapView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
         </LinearLayout>
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- Feature cards; filled by SplashActivity#buildCards -->
+        <LinearLayout
+            android:id="@+id/splash_cards"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:letterSpacing="0.3"
-            android:text="@string/splash_tagline"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="16dp"
+            android:orientation="vertical" />
 
-        <ProgressBar
-            android:id="@+id/splash_progress"
-            style="@android:style/Widget.ProgressBar.Horizontal"
-            android:layout_width="220dp"
-            android:layout_height="6dp"
-            android:layout_marginTop="72dp"
-            android:indeterminate="false"
-            android:max="100"
-            android:progress="0"
-            android:progressDrawable="@drawable/progress_loading" />
-
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/splash_loader"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/loading"
-            android:textColor="@color/text_secondary"
-            android:textSize="14sp" />
+            android:layout_marginTop="28dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <ProgressBar
+                android:id="@+id/splash_progress"
+                style="@android:style/Widget.ProgressBar.Horizontal"
+                android:layout_width="320dp"
+                android:layout_height="8dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/progress_loading" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/loading"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>
