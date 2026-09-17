@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  LiDAR & SLAM page, following design/slam.png.
+  Left: 3D view (artwork with live tabs/tools on top), Map View + Settings.
+  Right: SLAM Status + Robot Pose | LiDAR Data, Control, Log.
+  Rows sit side by side on wide screens and stack otherwise (BaseActivity#setupColumns).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <include layout="@layout/view_page_header" />
+    <include layout="@layout/view_page_header_rich" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -18,212 +24,785 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/screen_padding">
 
-            <!-- Column 1: mode + map -->
+            <!-- ======================= Left column ======================= -->
             <LinearLayout
-                style="@style/Panel"
-                android:tag="1.8">
+                android:id="@+id/column_left"
+                style="@style/Column"
+                android:tag="1.08">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_segment_group"
-                    android:orientation="horizontal"
-                    android:padding="4dp">
-
-                    <TextView
-                        android:id="@+id/mode_mapping"
-                        style="@style/Segment"
-                        android:text="@string/lidar_mapping" />
-
-                    <TextView
-                        android:id="@+id/mode_localization"
-                        style="@style/Segment"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/lidar_localization" />
-
-                    <TextView
-                        android:id="@+id/mode_navigation"
-                        style="@style/Segment"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/lidar_navigation" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/lidar_status"
-                    style="@style/StatusText"
-                    android:layout_marginTop="12dp"
-                    android:drawableStart="@drawable/dot_teal"
-                    android:textColor="@color/text_primary" />
-
-                <com.falcon.robot.widget.LidarMapView
-                    android:id="@+id/lidar_map"
+                <!-- 3D view: artwork with native tabs and tools placed over its own -->
+                <FrameLayout
+                    android:id="@+id/view_frame"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:minHeight="@dimen/preview_height"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/bg_status_box" />
-            </LinearLayout>
+                    android:layout_weight="1.55"
+                    android:background="@drawable/bg_panel_robot"
+                    android:minHeight="300dp">
 
-            <!-- Column 2: data, controls, goals -->
-            <LinearLayout
-                style="@style/Column"
-                android:tag="1">
+                    <com.falcon.robot.widget.CoverImageView
+                        android:id="@+id/view_3d"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@string/view_3d"
+                        android:src="@drawable/slam_3d_view" />
 
-                <LinearLayout style="@style/Panel">
+                    <FrameLayout
+                        android:id="@+id/view_alt"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/bg_view_alt"
+                        android:paddingTop="60dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:id="@+id/view_top"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/view_top"
+                            android:padding="12dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/slam_map_2d" />
+
+                        <com.falcon.robot.widget.LidarMapView
+                            android:id="@+id/view_live"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone" />
+                    </FrameLayout>
 
                     <TextView
-                        style="@style/SectionTitle"
-                        android:text="@string/scan_data" />
+                        android:id="@+id/tab_3d"
+                        style="@style/CameraTab"
+                        android:layout_marginStart="0dp"
+                        android:text="@string/view_3d" />
 
-                    <View style="@style/PanelDivider" />
+                    <TextView
+                        android:id="@+id/tab_top"
+                        style="@style/CameraTab"
+                        android:layout_marginStart="0dp"
+                        android:text="@string/view_top" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/tab_map"
+                        style="@style/CameraTab"
+                        android:layout_marginStart="0dp"
+                        android:text="@string/view_map" />
 
-                        <TextView
-                            style="@style/FieldLabel"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:text="@string/scan_rate"
-                            android:textSize="13sp" />
+                    <ImageButton
+                        android:id="@+id/tool_layers"
+                        style="@style/ViewTool"
+                        android:contentDescription="@string/legend_path"
+                        android:src="@drawable/ic_layers" />
 
-                        <TextView
-                            android:id="@+id/stat_rate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
-                    </LinearLayout>
+                    <ImageButton
+                        android:id="@+id/tool_center"
+                        style="@style/ViewTool"
+                        android:contentDescription="@string/legend_robot"
+                        android:src="@drawable/ic_crosshair" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                    <ImageButton
+                        android:id="@+id/tool_snapshot"
+                        style="@style/ViewTool"
+                        android:contentDescription="@string/log_snapshot"
+                        android:src="@drawable/ic_camera" />
 
-                        <TextView
-                            style="@style/FieldLabel"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:text="@string/point_count"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/stat_points"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/FieldLabel"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:text="@string/map_area"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/stat_area"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="36dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            style="@style/FieldLabel"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:text="@string/robot_pose"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/stat_pose"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/cyan"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-                </LinearLayout>
+                    <ImageButton
+                        android:id="@+id/tool_fullscreen"
+                        style="@style/ViewTool"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_fullscreen" />
+                </FrameLayout>
 
                 <LinearLayout
-                    style="@style/Panel"
+                    android:id="@+id/columns_left_bottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
                     android:layout_marginTop="@dimen/gap"
                     android:layout_weight="1">
 
-                    <TextView
-                        style="@style/SectionTitle"
-                        android:text="@string/controls" />
+                    <!-- Map view -->
+                    <LinearLayout
+                        style="@style/RobotPanel"
+                        android:tag="1.15">
 
-                    <TextView
-                        android:id="@+id/btn_scan_toggle"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_stop"
-                        android:text="@string/stop_scan" />
+                        <TextView
+                            android:id="@+id/map_title"
+                            style="@style/RobotPanelTitle"
+                            android:text="@string/view_map" />
 
-                    <TextView
-                        android:id="@+id/btn_save_map"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_save"
-                        android:text="@string/save_map" />
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
 
-                    <TextView
-                        android:id="@+id/btn_clear_map"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_delete"
-                        android:text="@string/clear_map" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:minHeight="170dp"
+                            android:orientation="horizontal">
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_tool_strip"
+                                android:orientation="vertical"
+                                android:padding="3dp">
+
+                                <ImageButton
+                                    android:id="@+id/map_zoom_in"
+                                    style="@style/MapTool"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_add" />
+
+                                <ImageButton
+                                    android:id="@+id/map_zoom_out"
+                                    style="@style/MapTool"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_remove" />
+
+                                <ImageButton
+                                    android:id="@+id/map_fit"
+                                    style="@style/MapTool"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_fullscreen" />
+                            </LinearLayout>
+
+                            <FrameLayout
+                                android:id="@+id/map_frame"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="8dp"
+                                android:layout_weight="1"
+                                android:background="@drawable/bg_table_box">
+
+                                <ImageView
+                                    android:id="@+id/map_2d"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:contentDescription="@string/view_map"
+                                    android:scaleType="fitCenter"
+                                    android:src="@drawable/slam_map_2d" />
+                            </FrameLayout>
+
+                            <!-- Filled by LidarSlamActivity#buildLegend -->
+                            <LinearLayout
+                                android:id="@+id/map_legend"
+                                android:layout_width="104dp"
+                                android:layout_height="match_parent"
+                                android:layout_marginStart="10dp"
+                                android:orientation="vertical" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Settings -->
+                    <LinearLayout
+                        style="@style/RobotPanel"
+                        android:tag="1">
+
+                        <TextView
+                            android:id="@+id/settings_title"
+                            style="@style/RobotPanelTitle"
+                            android:text="@string/nav_settings" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/lidar_range"
+                            android:textColor="@color/text_primary"
+                            android:textSize="13sp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <SeekBar
+                                android:id="@+id/seek_range"
+                                android:layout_width="0dp"
+                                android:layout_height="32dp"
+                                android:layout_weight="1"
+                                android:max="29"
+                                android:maxHeight="4dp"
+                                android:minHeight="4dp"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="8dp"
+                                android:progress="29"
+                                android:progressDrawable="@drawable/progress_loading"
+                                android:splitTrack="false"
+                                android:thumb="@drawable/seekbar_thumb" />
+
+                            <TextView
+                                android:id="@+id/value_range"
+                                android:layout_width="48dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="end"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp" />
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/resolution"
+                                android:textSize="13sp" />
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.3">
+
+                                <Spinner
+                                    android:id="@+id/spinner_resolution"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/mapping_mode"
+                                android:textSize="13sp" />
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.3">
+
+                                <Spinner
+                                    android:id="@+id/spinner_mapping_mode"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <LinearLayout style="@style/FaceSettingRow">
+
+                            <TextView
+                                style="@style/FaceSettingLabel"
+                                android:text="@string/update_rate"
+                                android:textSize="13sp" />
+
+                            <FrameLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.3">
+
+                                <Spinner
+                                    android:id="@+id/spinner_update_rate"
+                                    style="@style/Dropdown"
+                                    android:layout_height="36dp" />
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="end|center_vertical"
+                                    android:layout_marginEnd="8dp"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_dropdown" />
+                            </FrameLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/btn_apply"
+                            android:layout_width="match_parent"
+                            android:layout_height="42dp"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_button_primary"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:text="@string/apply"
+                            android:textColor="@color/white"
+                            android:textSize="14sp" />
+                    </LinearLayout>
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- ======================= Right column ======================= -->
+            <LinearLayout
+                android:id="@+id/column_right"
+                style="@style/Column"
+                android:tag="1">
 
                 <LinearLayout
-                    android:id="@+id/goals_panel"
-                    style="@style/Panel"
+                    android:id="@+id/columns_right_top"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1.15">
+
+                    <LinearLayout
+                        style="@style/Column"
+                        android:tag="1">
+
+                        <!-- SLAM status -->
+                        <LinearLayout
+                            style="@style/RobotPanel"
+                            android:layout_height="0dp"
+                            android:layout_weight="1.3">
+
+                            <TextView
+                                android:id="@+id/slam_title"
+                                style="@style/RobotPanelTitle"
+                                android:text="@string/slam_status" />
+
+                            <include
+                                android:id="@+id/status_mapping"
+                                layout="@layout/item_slam_status_row"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <include
+                                android:id="@+id/status_localization"
+                                layout="@layout/item_slam_status_row"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <include
+                                android:id="@+id/status_navigation"
+                                layout="@layout/item_slam_status_row"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+
+                            <include
+                                android:id="@+id/status_quality"
+                                layout="@layout/item_slam_status_row"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1" />
+                        </LinearLayout>
+
+                        <!-- Robot pose -->
+                        <LinearLayout
+                            style="@style/RobotPanel"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="@dimen/gap"
+                            android:layout_weight="1">
+
+                            <TextView
+                                android:id="@+id/pose_title"
+                                style="@style/RobotPanelTitle"
+                                android:text="@string/robot_pose"
+                                android:textColor="@color/blue_light" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_weight="1"
+                                android:gravity="center_vertical"
+                                android:minHeight="84dp"
+                                android:orientation="horizontal">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:paddingStart="6dp">
+
+                                    <LinearLayout style="@style/PoseRow">
+
+                                        <TextView
+                                            style="@style/PoseLabel"
+                                            android:text="X" />
+
+                                        <TextView
+                                            android:id="@+id/pose_x"
+                                            style="@style/PoseValue" />
+                                    </LinearLayout>
+
+                                    <LinearLayout style="@style/PoseRow">
+
+                                        <TextView
+                                            style="@style/PoseLabel"
+                                            android:text="Y" />
+
+                                        <TextView
+                                            android:id="@+id/pose_y"
+                                            style="@style/PoseValue" />
+                                    </LinearLayout>
+
+                                    <LinearLayout style="@style/PoseRow">
+
+                                        <TextView
+                                            style="@style/PoseLabel"
+                                            android:text="@string/yaw" />
+
+                                        <TextView
+                                            android:id="@+id/pose_yaw"
+                                            style="@style/PoseValue" />
+                                    </LinearLayout>
+                                </LinearLayout>
+
+                                <com.falcon.robot.widget.CompassView
+                                    android:id="@+id/pose_compass"
+                                    android:layout_width="84dp"
+                                    android:layout_height="84dp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- LiDAR data -->
+                    <LinearLayout
+                        style="@style/RobotPanel"
+                        android:tag="1.05">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/lidar_title"
+                                style="@style/RobotPanelTitle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:text="@string/lidar_data" />
+
+                            <TextView
+                                android:id="@+id/lidar_range"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="6dp"
+                            android:layout_weight="1"
+                            android:minHeight="200dp">
+
+                            <ImageView
+                                android:id="@+id/radar_image"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/lidar_data"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/slam_radar" />
+
+                            <com.falcon.robot.widget.RadarSweepView
+                                android:id="@+id/radar_sweep"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|end"
+                                android:gravity="end"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/points"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="12sp" />
+
+                                <TextView
+                                    android:id="@+id/lidar_points"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:textColor="@color/white"
+                                    android:textSize="15sp" />
+                            </LinearLayout>
+                        </FrameLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Control -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:layout_height="0dp"
                     android:layout_marginTop="@dimen/gap"
-                    android:visibility="gone">
+                    android:layout_weight="0.95">
 
                     <TextView
-                        style="@style/SectionTitle"
-                        android:text="@string/nav_goals" />
+                        android:id="@+id/control_title"
+                        style="@style/RobotPanelTitle"
+                        android:text="@string/control" />
 
-                    <TextView
-                        android:id="@+id/goal_dock"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_place"
-                        android:text="@string/goal_dock" />
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="6dp"
+                        android:background="@color/divider" />
 
-                    <TextView
-                        android:id="@+id/goal_entrance"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_place"
-                        android:text="@string/goal_entrance" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="10dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal">
 
-                    <TextView
-                        android:id="@+id/goal_kitchen"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_place"
-                        android:text="@string/goal_kitchen" />
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1.05"
+                            android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/goal_office"
-                        style="@style/ListAction"
-                        android:drawableStart="@drawable/ic_place"
-                        android:text="@string/goal_office" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="42dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/btn_start_mapping"
+                                    style="@style/SlamButton"
+                                    android:background="@drawable/bg_button_primary"
+                                    android:text="@string/start_mapping"
+                                    android:textColor="@color/white" />
+
+                                <TextView
+                                    android:id="@+id/btn_stop"
+                                    style="@style/SlamButton"
+                                    android:layout_marginStart="8dp"
+                                    android:text="@string/stop" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="42dp"
+                                android:layout_marginTop="8dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/btn_save_map"
+                                    style="@style/SlamButton"
+                                    android:text="@string/save_map" />
+
+                                <TextView
+                                    android:id="@+id/btn_load_map"
+                                    style="@style/SlamButton"
+                                    android:layout_marginStart="8dp"
+                                    android:text="@string/load_map" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <Switch
+                                    android:id="@+id/sw_auto_nav"
+                                    style="@style/FaceSwitch" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_weight="1"
+                                    android:singleLine="true"
+                                    android:text="@string/auto_navigation"
+                                    android:textColor="@color/blue_light"
+                                    android:textSize="12sp" />
+
+                                <Switch
+                                    android:id="@+id/sw_follow"
+                                    style="@style/FaceSwitch"
+                                    android:checked="false" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_weight="1"
+                                    android:singleLine="true"
+                                    android:text="@string/follow_mode"
+                                    android:textColor="@color/blue_light"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginLeft="12dp"
+                            android:layout_marginRight="12dp"
+                            android:background="@color/divider" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/target_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="24dp"
+                                android:drawablePadding="8dp"
+                                android:gravity="center_vertical"
+                                android:text="@string/navigation_target"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/btn_set_target"
+                                android:layout_width="match_parent"
+                                android:layout_height="36dp"
+                                android:layout_marginTop="6dp"
+                                android:background="@drawable/bg_control_button"
+                                android:clickable="true"
+                                android:drawablePadding="8dp"
+                                android:focusable="true"
+                                android:gravity="center"
+                                android:singleLine="true"
+                                android:text="@string/set_target"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_marginTop="8dp"
+                                android:layout_weight="1"
+                                android:minHeight="116dp"
+                                android:orientation="horizontal">
+
+                                <com.falcon.robot.widget.DPadView
+                                    android:id="@+id/slam_dpad"
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_weight="1" />
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="match_parent"
+                                    android:layout_marginStart="8dp"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/drive_forward"
+                                        style="@style/ListControlButton"
+                                        android:minHeight="26dp"
+                                        android:paddingLeft="8dp"
+                                        android:text="@string/act_forward"
+                                        android:textSize="11sp" />
+
+                                    <TextView
+                                        android:id="@+id/drive_backward"
+                                        style="@style/ListControlButton"
+                                        android:layout_marginTop="5dp"
+                                        android:minHeight="26dp"
+                                        android:paddingLeft="8dp"
+                                        android:text="@string/act_backward"
+                                        android:textSize="11sp" />
+
+                                    <TextView
+                                        android:id="@+id/drive_rotate_left"
+                                        style="@style/ListControlButton"
+                                        android:layout_marginTop="5dp"
+                                        android:minHeight="26dp"
+                                        android:paddingLeft="8dp"
+                                        android:text="@string/rotate_left"
+                                        android:textSize="11sp" />
+
+                                    <TextView
+                                        android:id="@+id/drive_rotate_right"
+                                        style="@style/ListControlButton"
+                                        android:layout_marginTop="5dp"
+                                        android:minHeight="26dp"
+                                        android:paddingLeft="8dp"
+                                        android:text="@string/rotate_right"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Log -->
+                <LinearLayout
+                    style="@style/RobotPanel"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="@dimen/gap"
+                    android:layout_weight="0.62"
+                    android:minHeight="140dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/log_title"
+                            style="@style/RobotPanelTitle"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:text="@string/log" />
+
+                        <TextView
+                            android:id="@+id/btn_clear_log"
+                            android:layout_width="wrap_content"
+                            android:layout_height="30dp"
+                            android:background="@drawable/bg_control_button"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:paddingLeft="16dp"
+                            android:paddingRight="16dp"
+                            android:text="@string/clear"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ScrollView
+                        android:id="@+id/log_scroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_weight="1"
+                        android:nestedScrollingEnabled="true">
+
+                        <!-- Filled by LidarSlamActivity#addLog -->
+                        <LinearLayout
+                            android:id="@+id/log_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

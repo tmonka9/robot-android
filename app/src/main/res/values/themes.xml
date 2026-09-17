@@ -242,6 +242,62 @@
         <item name="android:textSize">12sp</item>
     </style>
 
+    <!-- LiDAR & SLAM page (design/slam.png) -->
+    <style name="ViewTool">
+        <item name="android:layout_width">44dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:background">@drawable/bg_icon_box</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
+    <style name="MapTool">
+        <item name="android:layout_width">34dp</item>
+        <item name="android:layout_height">34dp</item>
+        <item name="android:background">?android:attr/selectableItemBackgroundBorderless</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:scaleType">fitCenter</item>
+    </style>
+
+    <style name="SlamButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:background">@drawable/bg_control_button</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:drawablePadding">10dp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="PoseRow">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">28dp</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:orientation">horizontal</item>
+    </style>
+
+    <style name="PoseLabel">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/blue_light</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="PoseValue">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">end</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
     <!-- Face Recognition page (design/face-rec.png) -->
     <style name="FaceSettingRow">
         <item name="android:layout_width">match_parent</item>

@@ -37,32 +37,99 @@
     <string name="date_format">yyyy-MM-dd  EEE</string>
 
     <!-- LiDAR SLAM -->
+    <string name="lidar_title">LiDAR &amp; SLAM</string>
+    <string name="lidar_subtitle">Mapping  •  Localization  •  Navigation</string>
     <string name="lidar_mapping">Mapping</string>
     <string name="lidar_localization">Localization</string>
     <string name="lidar_navigation">Navigation</string>
-    <string name="scan_data">Scan Data</string>
-    <string name="scan_rate">Scan Rate</string>
-    <string name="scan_rate_value">10 Hz</string>
-    <string name="point_count">Points</string>
-    <string name="map_area">Map Area</string>
-    <string name="map_area_value">%.1f m²</string>
+    <string name="map_quality">Map Quality</string>
+    <string name="slam_status">SLAM Status</string>
+    <string name="state_running">Running</string>
+    <string name="state_paused">Paused</string>
+    <string name="state_stable">Stable</string>
+    <string name="state_ready">Ready</string>
+    <string name="state_active">Active</string>
+    <string name="state_good">Good</string>
+    <string name="view_3d">3D View</string>
+    <string name="view_top">Top View</string>
+    <string name="view_map">Map View</string>
     <string name="robot_pose">Robot Pose</string>
-    <string name="pose_value">x %1$.2f  y %2$.2f  θ %3$d°</string>
-    <string name="controls">Controls</string>
-    <string name="start_scan">Start Scan</string>
-    <string name="stop_scan">Stop Scan</string>
+    <string name="pose_meters">%.2f m</string>
+    <string name="pose_degrees">%.1f°</string>
+    <string name="yaw">Yaw</string>
+    <string name="lidar_data">LiDAR Data</string>
+    <string name="lidar_range_label">Range: 0.1 - %d m</string>
+    <string name="points">Points</string>
+    <string name="control">Control</string>
+    <string name="start_mapping">Start Mapping</string>
+    <string name="pause_mapping">Pause Mapping</string>
     <string name="save_map">Save Map</string>
-    <string name="clear_map">Clear Map</string>
-    <string name="map_saved">Map saved</string>
-    <string name="map_cleared">Map cleared</string>
-    <string name="nav_goals">Navigation Goals</string>
+    <string name="load_map">Load Map</string>
+    <string name="auto_navigation">Auto Navigation</string>
+    <string name="follow_mode">Follow Mode</string>
+    <string name="navigation_target">Navigation Target</string>
+    <string name="set_target">Set Target</string>
+    <string name="rotate_left">Rotate Left</string>
+    <string name="rotate_right">Rotate Right</string>
     <string name="goal_dock">Charging Dock</string>
     <string name="goal_entrance">Entrance</string>
     <string name="goal_kitchen">Kitchen</string>
     <string name="goal_office">Office</string>
-    <string name="lidar_scanning">Scanning · %s</string>
-    <string name="lidar_paused">Paused · %s</string>
-    <string name="navigating_to">Navigating to %s</string>
+    <string name="log">Log</string>
+    <string name="clear">Clear</string>
+    <string name="legend_robot">Robot</string>
+    <string name="legend_path">Path</string>
+    <string name="legend_obstacle">Obstacle</string>
+    <string name="legend_wall">Wall</string>
+    <string name="legend_explored">Explored</string>
+    <string name="legend_unexplored">Unexplored</string>
+    <string name="lidar_range">LiDAR Range</string>
+    <string name="meters">%d m</string>
+    <string name="mapping_mode">Mapping Mode</string>
+    <string name="update_rate">Update Rate</string>
+    <string name="apply">Apply</string>
+    <string-array name="lidar_resolutions">
+        <item>High (0.1°)</item>
+        <item>Medium (0.25°)</item>
+        <item>Low (0.5°)</item>
+    </string-array>
+    <string-array name="mapping_modes">
+        <item>RTAB-Map</item>
+        <item>Cartographer</item>
+        <item>GMapping</item>
+    </string-array>
+    <string-array name="update_rates">
+        <item>10 Hz</item>
+        <item>20 Hz</item>
+        <item>5 Hz</item>
+    </string-array>
+    <string-array name="saved_maps">
+        <item>Office_Floor1</item>
+        <item>Warehouse_A</item>
+        <item>Lobby_Demo</item>
+    </string-array>
+    <!-- log messages -->
+    <string name="log_slam_initialized">SLAM initialized successfully</string>
+    <string name="log_map_updated">Map updated. Points: %,d</string>
+    <string name="log_localization_stable">Localization stable</string>
+    <string name="log_target_set">Navigation target set: %1$s (%2$.2f, %3$.2f)</string>
+    <string name="log_robot_moving">Robot moving…</string>
+    <string name="log_obstacle">Obstacle detected (ID: %d)</string>
+    <string name="log_replanning">Path replanning…</string>
+    <string name="log_reached">Reached target</string>
+    <string name="log_mapping_started">Mapping started</string>
+    <string name="log_mapping_paused">Mapping paused</string>
+    <string name="log_stopped">Mapping and navigation stopped</string>
+    <string name="log_map_saved">Map saved (%,d points)</string>
+    <string name="log_map_loaded">Map loaded: %s</string>
+    <string name="log_command">Command: %s</string>
+    <string name="log_setting">%1$s: %2$s</string>
+    <string name="log_settings_applied">Settings applied: %1$d m, %2$s, %3$s, %4$s</string>
+    <string name="log_snapshot">Snapshot saved</string>
+    <string name="log_centered">View centered on robot</string>
+    <string name="log_path_layer">Path layer %s</string>
+    <string name="on">on</string>
+    <string name="off">off</string>
 
     <!-- Common status -->
     <string name="status_disconnected">Disconnected · tap to connect</string>
