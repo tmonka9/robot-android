@@ -3,8 +3,12 @@
     <string name="app_name">AI Robot Control</string>
     <string name="title_ai">AI</string>
     <string name="title_rest">ROBOT CONTROL</string>
-    <string name="splash_tagline">SMARTER  •  SAFER  •  TOGETHER</string>
-    <string name="loading">Loading…</string>
+    <string name="splash_step_init">Initializing system…</string>
+    <string name="splash_step_models">Loading AI models…</string>
+    <string name="splash_step_sensors">Starting camera &amp; LiDAR…</string>
+    <string name="splash_step_services">Connecting services…</string>
+    <string name="splash_step_ready">System ready</string>
+    <string name="splash_version">Version %s</string>
 
     <!-- Sidebar -->
     <string name="nav_home">Home</string>
@@ -25,7 +29,6 @@
     <string name="card_voice_desc">Recognize and process voice commands.</string>
     <string name="nav_lidar">LiDAR SLAM</string>
     <string name="card_lidar_desc">Map, localize and navigate using LiDAR.</string>
-    <string name="lidar_subtitle">Mapping  •  Localization  •  Navigation</string>
     <string name="home_footer">//   AI Powers a Smarter Future   //</string>
     <string name="system_online">System Online</string>
     <string name="robot_offline">Robot Offline · tap to connect</string>

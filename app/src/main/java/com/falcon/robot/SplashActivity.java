@@ -4,140 +4,188 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Intent;
-import android.content.res.Configuration;
-import android.graphics.LinearGradient;
-import android.graphics.PorterDuff;
-import android.graphics.Shader;
+import android.content.pm.PackageManager;
+import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.util.TypedValue;
 import android.view.View;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+/**
+ * Splash screen built on the designer's full-resolution artwork
+ * ({@code res/drawable-nodpi/splash_background.png}, 1900x1200, from
+ * {@code design/splash_screen_1900x1200.psd}). The baked-in loading bar and version text were
+ * removed from the artwork; live versions are drawn on top at the same artwork coordinates.
+ */
 public class SplashActivity extends BaseActivity {
 
-    private static final long LOADING_DELAY_MS = 400;
-    private static final long LOADING_DURATION_MS = 3000;
+    private static final long LOADING_DELAY_MS = 500;
+    private static final long LOADING_DURATION_MS = 3200;
 
-    /** {title, description, icon, background, icon tint (0 = keep original colors)} */
-    private static final int[][] CARDS = {
-            {R.string.nav_robot, R.string.card_robot_desc, R.drawable.ic_robot,
-                    R.drawable.bg_home_card_blue, 0xFF8FD0FF},
-            {R.string.nav_face, R.string.card_face_desc, R.drawable.ic_face_id,
-                    R.drawable.bg_home_card_purple, 0xFFF2C6FF},
-            {R.string.nav_voice, R.string.card_voice_desc, R.drawable.ic_mic,
-                    R.drawable.bg_home_card_green, 0xFF7CF5CF},
-            {R.string.nav_object, R.string.card_object_desc, R.drawable.ic_cube_scan,
-                    R.drawable.bg_home_card_orange, 0},
-            {R.string.nav_lidar, R.string.card_lidar_desc, R.drawable.ic_lidar,
-                    R.drawable.bg_home_card_indigo, 0xFF8FB8FF},
-            {R.string.nav_remote, R.string.card_remote_desc, R.drawable.ic_gamepad,
-                    R.drawable.bg_home_card_navy, 0xFFFFFFFF},
+    // Artwork size and positions (pixels in the 1900x1200 design).
+    private static final float ART_W = 1900f;
+    private static final float ART_H = 1200f;
+    /** Region holding the logo, title, icons, loader and robot; kept on screen on any aspect ratio. */
+    private static final float BAND_LEFT = 90f;
+    private static final float BAND_TOP = 140f;
+    private static final float BAND_RIGHT = 1660f;
+    private static final float BAND_BOTTOM = 1010f;
+
+    // Text positions are baselines; sizes are in artwork pixels.
+    private static final float STATUS_X = 124f;
+    private static final float STATUS_BASELINE = 832f;
+    private static final float STATUS_TEXT = 36f;
+    private static final float BAR_X = 124f;
+    private static final float BAR_TOP = 860f;
+    private static final float BAR_WIDTH = 694f;
+    private static final float BAR_HEIGHT = 16f;
+    private static final float PERCENT_X = 888f;
+    private static final float PERCENT_BASELINE = 877f;
+    private static final float PERCENT_TEXT = 27f;
+    private static final float VERSION_X = 40f;
+    private static final float VERSION_BASELINE = 1180f;
+    private static final float VERSION_TEXT = 22f;
+
+    private static final int[] STEPS = {
+            R.string.splash_step_init,
+            R.string.splash_step_models,
+            R.string.splash_step_sensors,
+            R.string.splash_step_services,
     };
 
-    private ValueAnimator loader;
+    private ImageView image;
+    private TextView status;
+    private TextView percent;
+    private ProgressBar progress;
+    private TextView version;
+    private ValueAnimator loading;
+    private ValueAnimator reveal;
+    private int step = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash);
 
-        boolean wide = getResources().getBoolean(R.bool.two_columns);
-        findViewById(R.id.splash_lidar).setVisibility(wide ? View.VISIBLE : View.GONE);
+        image = findViewById(R.id.splash_image);
+        status = findViewById(R.id.splash_status);
+        percent = findViewById(R.id.splash_percent);
+        progress = findViewById(R.id.splash_progress);
+        version = findViewById(R.id.splash_version);
 
-        applyTitleGradients();
-        buildCards();
-        playEntrance();
+        version.setText(getString(R.string.splash_version, versionName()));
+        percent.setText(getString(R.string.percent, 0));
+
+        final View root = findViewById(R.id.splash_root);
+        root.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            if (r - l != or - ol || b - t != ob - ot) layoutOverlay(r - l, b - t, 1f);
+        });
+
+        playReveal();
         startLoading();
     }
 
-    /** Glossy blue "AI" and silver "ROBOT CONTROL", as in the design. */
-    private void applyTitleGradients() {
-        final TextView ai = findViewById(R.id.splash_ai);
-        final TextView title = findViewById(R.id.splash_title);
-        ai.post(() -> {
-            ai.getPaint().setShader(new LinearGradient(0, 0, 0, ai.getHeight(),
-                    new int[] {0xFFB5ECFF, 0xFF3A8CFF, 0xFF6A4BFF}, null, Shader.TileMode.CLAMP));
-            title.getPaint().setShader(new LinearGradient(0, 0, 0, title.getHeight(),
-                    new int[] {0xFFFFFFFF, 0xFFC9D3E3, 0xFF7E8CA3}, null, Shader.TileMode.CLAMP));
-            ai.invalidate();
-            title.invalidate();
+    /**
+     * Scales the artwork to cover the screen (like centerCrop) while keeping the content band
+     * visible, then positions the loader and version label at their artwork coordinates.
+     * {@code zoom} slightly enlarges the artwork around its center for the reveal animation.
+     */
+    private void layoutOverlay(int viewW, int viewH, float zoom) {
+        if (viewW == 0 || viewH == 0) return;
+
+        float scale = Math.max(viewW / ART_W, viewH / ART_H);
+        // Too narrow or too short to show the content band when covering: fit the band instead.
+        scale = Math.min(scale, viewW / (BAND_RIGHT - BAND_LEFT));
+        scale = Math.min(scale, viewH / (BAND_BOTTOM - BAND_TOP));
+
+        float offsetX = place(viewW, ART_W * scale, (BAND_LEFT + BAND_RIGHT) / 2f * scale);
+        float offsetY = place(viewH, ART_H * scale, (BAND_TOP + BAND_BOTTOM) / 2f * scale);
+
+        Matrix matrix = new Matrix();
+        matrix.setScale(scale, scale);
+        matrix.postTranslate(offsetX, offsetY);
+        matrix.postScale(zoom, zoom, viewW / 2f, viewH / 2f);
+        image.setImageMatrix(matrix);
+
+        if (zoom != 1f) return; // overlay only needs positioning once the artwork is settled
+
+        FrameLayout.LayoutParams barLp = (FrameLayout.LayoutParams) progress.getLayoutParams();
+        barLp.width = Math.round(BAR_WIDTH * scale);
+        barLp.height = Math.max(4, Math.round(BAR_HEIGHT * scale));
+        progress.setLayoutParams(barLp);
+        progress.setX(offsetX + BAR_X * scale);
+        progress.setY(offsetY + BAR_TOP * scale);
+
+        placeText(status, offsetX + STATUS_X * scale, offsetY + STATUS_BASELINE * scale, STATUS_TEXT * scale);
+        placeText(percent, offsetX + PERCENT_X * scale, offsetY + PERCENT_BASELINE * scale, PERCENT_TEXT * scale);
+        placeText(version, offsetX + VERSION_X * scale,
+                Math.min(viewH - 8f, offsetY + VERSION_BASELINE * scale), VERSION_TEXT * scale);
+    }
+
+    /** Sizes a text view and positions it so its first baseline lands on {@code baselineY}. */
+    private static void placeText(TextView view, float x, float baselineY, float textSizePx) {
+        view.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSizePx);
+        Paint.FontMetrics metrics = view.getPaint().getFontMetrics();
+        view.setX(x);
+        view.setY(baselineY + metrics.ascent); // ascent is negative
+    }
+
+    /** Offset that centers the band, clamped so the artwork still covers the screen when it can. */
+    private static float place(float view, float art, float bandCenter) {
+        float offset = view / 2f - bandCenter;
+        if (art >= view) return Math.max(view - art, Math.min(0f, offset));
+        return (view - art) / 2f;
+    }
+
+    /** Artwork fades in while settling from a slight zoom; the loader follows. */
+    private void playReveal() {
+        image.setAlpha(0f);
+        for (View v : new View[] {status, progress, percent, version}) {
+            v.setAlpha(0f);
+            v.animate().alpha(1f).setStartDelay(LOADING_DELAY_MS).setDuration(500).start();
+        }
+
+        reveal = ValueAnimator.ofFloat(0f, 1f);
+        reveal.setDuration(1100);
+        reveal.setInterpolator(new DecelerateInterpolator());
+        reveal.addUpdateListener(a -> {
+            float f = (float) a.getAnimatedValue();
+            image.setAlpha(f);
+            View root = findViewById(R.id.splash_root);
+            layoutOverlay(root.getWidth(), root.getHeight(), 1.05f - 0.05f * f);
         });
-    }
-
-    /** One row of six cards on landscape screens, otherwise two rows of three. */
-    private void buildCards() {
-        LinearLayout container = findViewById(R.id.splash_cards);
-        Configuration config = getResources().getConfiguration();
-        int columns = config.orientation == Configuration.ORIENTATION_LANDSCAPE ? CARDS.length : 3;
-        int gap = Math.round(12 * getResources().getDisplayMetrics().density);
-        LayoutInflater inflater = LayoutInflater.from(this);
-
-        LinearLayout row = null;
-        for (int i = 0; i < CARDS.length; i++) {
-            if (i % columns == 0) {
-                row = new LinearLayout(this);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                if (i > 0) rowLp.topMargin = gap;
-                container.addView(row, rowLp);
+        reveal.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                View root = findViewById(R.id.splash_root);
+                layoutOverlay(root.getWidth(), root.getHeight(), 1f);
             }
-            int[] card = CARDS[i];
-            View view = inflater.inflate(R.layout.item_splash_card, row, false);
-            view.setBackgroundResource(card[3]);
-            ImageView icon = view.findViewById(R.id.card_icon);
-            icon.setImageResource(card[2]);
-            if (card[4] != 0) icon.setColorFilter(card[4], PorterDuff.Mode.SRC_IN);
-            ((TextView) view.findViewById(R.id.card_title)).setText(card[0]);
-            ((TextView) view.findViewById(R.id.card_desc)).setText(card[1]);
-
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
-                    view.getLayoutParams().height, 1f);
-            if (i % columns > 0) lp.setMarginStart(gap);
-            row.addView(view, lp);
-        }
-    }
-
-    private void playEntrance() {
-        float dp = getResources().getDisplayMetrics().density;
-        slideIn(findViewById(R.id.splash_title_block), -40 * dp, 0, 0);
-        slideIn(findViewById(R.id.splash_robot), 0, 30 * dp, 120);
-        slideIn(findViewById(R.id.splash_lidar), 40 * dp, 0, 240);
-
-        LinearLayout cards = findViewById(R.id.splash_cards);
-        long delay = 300;
-        for (int r = 0; r < cards.getChildCount(); r++) {
-            LinearLayout row = (LinearLayout) cards.getChildAt(r);
-            for (int c = 0; c < row.getChildCount(); c++) {
-                slideIn(row.getChildAt(c), 0, 30 * dp, delay);
-                delay += 70;
-            }
-        }
-        slideIn(findViewById(R.id.splash_loader), 0, 0, delay);
-    }
-
-    private static void slideIn(View view, float fromX, float fromY, long delay) {
-        view.setAlpha(0f);
-        view.setTranslationX(fromX);
-        view.setTranslationY(fromY);
-        view.animate().alpha(1f).translationX(0f).translationY(0f)
-                .setStartDelay(delay).setDuration(600)
-                .setInterpolator(new DecelerateInterpolator()).start();
+        });
+        reveal.start();
     }
 
     private void startLoading() {
-        final ProgressBar progress = findViewById(R.id.splash_progress);
-        loader = ValueAnimator.ofInt(0, 100);
-        loader.setStartDelay(LOADING_DELAY_MS);
-        loader.setDuration(LOADING_DURATION_MS);
-        loader.setInterpolator(new AccelerateDecelerateInterpolator());
-        loader.addUpdateListener(animation -> progress.setProgress((Integer) animation.getAnimatedValue()));
-        loader.addListener(new AnimatorListenerAdapter() {
+        loading = ValueAnimator.ofInt(0, 100);
+        loading.setStartDelay(LOADING_DELAY_MS);
+        loading.setDuration(LOADING_DURATION_MS);
+        loading.setInterpolator(new LinearInterpolator());
+        loading.addUpdateListener(animation -> {
+            int value = (Integer) animation.getAnimatedValue();
+            progress.setProgress(value);
+            percent.setText(getString(R.string.percent, value));
+            int next = Math.min(STEPS.length - 1, value * STEPS.length / 100);
+            if (next != step) {
+                step = next;
+                status.setText(STEPS[step]);
+            }
+        });
+        loading.addListener(new AnimatorListenerAdapter() {
             private boolean cancelled;
 
             @Override
@@ -148,17 +196,27 @@ public class SplashActivity extends BaseActivity {
             @Override
             public void onAnimationEnd(Animator animation) {
                 if (cancelled || isFinishing()) return;
+                status.setText(R.string.splash_step_ready);
                 startActivity(new Intent(SplashActivity.this, MainActivity.class));
                 overridePendingTransition(R.anim.page_fade_in, R.anim.page_fade_out);
                 finish();
             }
         });
-        loader.start();
+        loading.start();
+    }
+
+    private String versionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "1.0";
+        }
     }
 
     @Override
     protected void onDestroy() {
-        if (loader != null) loader.cancel();
+        if (reveal != null) reveal.cancel();
+        if (loading != null) loading.cancel();
         super.onDestroy();
     }
 }
