@@ -382,6 +382,53 @@ public abstract class BaseActivity extends Activity {
         }
     }
 
+    // ---- log panels ------------------------------------------------------------------------
+
+    public static final int LOG_INFO = 0xFF3FA0FF;
+    public static final int LOG_OK = 0xFF1ED9A4;
+    public static final int LOG_WARN = 0xFFFFC53D;
+    public static final int LOG_ERROR = 0xFFFF4D5E;
+
+    /** Appends "● HH:mm:ss  message" to a log list, trims it to {@code maxLines} and scrolls to the end. */
+    protected void appendLog(LinearLayout list, final android.widget.ScrollView scroll, int dotColor,
+                             String message, int maxLines) {
+        float density = getResources().getDisplayMetrics().density;
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPadding(Math.round(4 * density), Math.round(2 * density), 0, Math.round(2 * density));
+
+        View dot = new View(this);
+        android.graphics.drawable.GradientDrawable circle = new android.graphics.drawable.GradientDrawable();
+        circle.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        circle.setColor(dotColor);
+        dot.setBackground(circle);
+        int size = Math.round(7 * density);
+        row.addView(dot, new LinearLayout.LayoutParams(size, size));
+
+        TextView time = new TextView(this);
+        time.setText(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()));
+        time.setTextColor(color(R.color.text_primary));
+        time.setTextSize(11);
+        LinearLayout.LayoutParams timeLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        timeLp.setMarginStart(Math.round(8 * density));
+        row.addView(time, timeLp);
+
+        TextView text = new TextView(this);
+        text.setText(message);
+        text.setTextColor(color(R.color.text_primary));
+        text.setTextSize(11);
+        text.setSingleLine(true);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        textLp.setMarginStart(Math.round(14 * density));
+        row.addView(text, textLp);
+
+        list.addView(row);
+        while (list.getChildCount() > maxLines) list.removeViewAt(0);
+        scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
+    }
+
     // ---- large page header (view_page_header_rich) --------------------------------------
 
     protected void setupRichHeader(int icon, int title, int subtitle) {

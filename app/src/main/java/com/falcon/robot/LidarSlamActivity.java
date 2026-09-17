@@ -26,8 +26,6 @@ import com.falcon.robot.widget.DPadView;
 import com.falcon.robot.widget.LidarMapView;
 import com.falcon.robot.widget.RadarSweepView;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
 
@@ -60,15 +58,9 @@ public class LidarSlamActivity extends BaseActivity {
             {-3.20f, 1.40f}, {4.10f, -2.60f}, {2.34f, -1.27f}, {-1.80f, 3.90f},
     };
 
-    private static final int LOG_INFO = 0xFF3FA0FF;
-    private static final int LOG_OK = 0xFF1ED9A4;
-    private static final int LOG_WARN = 0xFFFFC53D;
-    private static final int LOG_ERROR = 0xFFFF4D5E;
-
     private final RobotSession session = RobotSession.get();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Random random = new Random();
-    private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
 
     private CoverImageView view3d;
     private View viewAlt;
@@ -595,40 +587,6 @@ public class LidarSlamActivity extends BaseActivity {
     }
 
     private void addLog(int dotColor, String message) {
-        float density = getResources().getDisplayMetrics().density;
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(Math.round(4 * density), Math.round(2 * density), 0, Math.round(2 * density));
-
-        View dot = new View(this);
-        GradientDrawable circle = new GradientDrawable();
-        circle.setShape(GradientDrawable.OVAL);
-        circle.setColor(dotColor);
-        dot.setBackground(circle);
-        int size = Math.round(7 * density);
-        row.addView(dot, new LinearLayout.LayoutParams(size, size));
-
-        TextView time = new TextView(this);
-        time.setText(clock.format(new Date()));
-        time.setTextColor(color(R.color.text_primary));
-        time.setTextSize(11);
-        LinearLayout.LayoutParams timeLp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        timeLp.setMarginStart(Math.round(8 * density));
-        row.addView(time, timeLp);
-
-        TextView text = new TextView(this);
-        text.setText(message);
-        text.setTextColor(color(R.color.text_primary));
-        text.setTextSize(11);
-        text.setSingleLine(true);
-        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-        textLp.setMarginStart(Math.round(14 * density));
-        row.addView(text, textLp);
-
-        logList.addView(row);
-        while (logList.getChildCount() > MAX_LOG_LINES) logList.removeViewAt(0);
-        logScroll.post(() -> logScroll.fullScroll(View.FOCUS_DOWN));
+        appendLog(logList, logScroll, dotColor, message, MAX_LOG_LINES);
     }
 }
