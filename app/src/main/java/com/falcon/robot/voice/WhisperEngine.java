@@ -94,11 +94,12 @@ public final class WhisperEngine {
             String[] files = context.getAssets().list("");
             if (files != null) {
                 for (String name : files) {
-                    if (name.endsWith(".bin")) names.add(name);
+                    // the build tools also put folders here ("images", "webkit"), which never match
+                    if (name != null && name.endsWith(".bin")) names.add(name);
                 }
             }
-        } catch (IOException e) {
-            Log.w(TAG, "Could not list assets", e);
+        } catch (IOException | RuntimeException e) {
+            Log.w(TAG, "Could not list the assets", e);
         }
         Collections.sort(names);
         return names;
