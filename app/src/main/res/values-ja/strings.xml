@@ -396,6 +396,7 @@
     <string name="model_not_found">%1$s を %2$s に配置してください</string>
     <string name="loading_model">%s を読み込んでいます…</string>
     <string name="model_loaded">%s を読み込みました</string>
+    <string name="model_too_large">モデルには約 %1$d MB のメモリが必要ですが、空きは %2$d MB です — ggml-base.bin などの小さいモデルをご利用ください</string>
     <string name="model_load_failed">%s を読み込めませんでした</string>
     <string name="mic_error">マイクエラー: %s</string>
     <string name="tap_mic_to_speak">マイクをタップして話してください</string>

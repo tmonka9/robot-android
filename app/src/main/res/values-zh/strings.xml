@@ -396,6 +396,7 @@
     <string name="model_not_found">请将 %1$s 放入 %2$s</string>
     <string name="loading_model">正在加载 %s…</string>
     <string name="model_loaded">%s 已加载</string>
+    <string name="model_too_large">模型约需 %1$d MB 内存，但可用内存仅 %2$d MB — 请改用更小的模型，例如 ggml-base.bin</string>
     <string name="model_load_failed">无法加载 %s</string>
     <string name="mic_error">麦克风错误：%s</string>
     <string name="tap_mic_to_speak">点击麦克风开始说话</string>

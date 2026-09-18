@@ -774,7 +774,9 @@ public class RobotService extends Service implements LifecycleOwner {
             main.post(() -> {
                 loadingSpeechModel = false;
                 speechModel = ok ? model : null;
-                message(getString(ok ? R.string.model_loaded : R.string.model_load_failed, model));
+                message(ok ? getString(R.string.model_loaded, model)
+                        : engine.getLoadError() != null ? engine.getLoadError()
+                        : getString(R.string.model_load_failed, model));
                 notifyState();
             });
         });
