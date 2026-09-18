@@ -12,5 +12,5 @@ local.properties
 # whisper.cpp sources (cloned locally, not committed)
 app/src/main/cpp/whisper.cpp/
 
-# speech models (large binaries, pushed to the device instead)
+# speech models (large binaries: pushed to the device, or dropped in app/src/main/assets)
 *.bin

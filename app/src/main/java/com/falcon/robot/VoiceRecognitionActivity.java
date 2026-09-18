@@ -729,7 +729,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
             ArrayAdapter<CharSequence> adapter;
             if (tab == 0 && r == 0) {
                 // the model list comes from the device, not from resources
-                List<CharSequence> models = new ArrayList<>(WhisperEngine.listModels(this));
+                List<CharSequence> models = new ArrayList<>(WhisperEngine.listAvailableModels(this));
                 if (models.isEmpty()) models.add(WhisperEngine.DEFAULT_MODEL);
                 adapter = new ArrayAdapter<>(this, R.layout.item_spinner, models);
                 modelSpinner = spinner;
@@ -759,7 +759,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         if (modelSpinner != null && modelSpinner.getSelectedItem() != null) {
             return modelSpinner.getSelectedItem().toString();
         }
-        List<String> models = WhisperEngine.listModels(this);
+        List<String> models = WhisperEngine.listAvailableModels(this);
         return models.isEmpty() ? WhisperEngine.DEFAULT_MODEL : models.get(0);
     }
 
@@ -778,13 +778,15 @@ public class VoiceRecognitionActivity extends BaseActivity {
         }
         final String model = selectedModel();
         final File file = new File(WhisperEngine.getModelDir(this), model);
-        if (!file.exists()) {
+        final boolean install = !file.exists();
+        if (install && !WhisperEngine.isBundled(this, model)) {
             toast(getString(R.string.model_not_found, model, file.getParent()));
             return;
         }
-        toast(getString(R.string.loading_model, model));
+        toast(getString(install ? R.string.installing_model : R.string.loading_model, model));
         transcriber.execute(() -> {
-            final boolean ok = engine.load(model);
+            // a bundled model is copied out of the APK once, before it can be loaded
+            final boolean ok = (!install || engine.installFromAssets(model)) && engine.load(model);
             runOnUiThread(() -> toast(ok ? getString(R.string.model_loaded, model)
                     : getString(R.string.model_load_failed, model)));
         });

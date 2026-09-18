@@ -4,6 +4,10 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -11,15 +15,18 @@ import java.util.List;
 /**
  * whisper.cpp speech recognition (see {@code app/src/main/cpp}).
  *
- * <p>Models are ggml files such as {@code ggml-small.bin}. They are far too large for the APK,
- * so they are read from the device:
+ * <p>Models are ggml files such as {@code ggml-small.bin}, read from {@link #getModelDir} on the
+ * device:
  *
  * <pre>
  *   adb push ggml-small.bin /sdcard/Android/data/com.falcon.robot/files/models/
  * </pre>
  *
- * <p>{@link #getModelDir} is that folder; the app's private {@code files/models} folder is used
- * as a fallback. All calls must be made from a background thread.
+ * <p>A model can also be shipped in {@code app/src/main/assets} instead;
+ * {@link #installFromAssets} copies it into that folder on first use. That makes the APK as
+ * large as the model, so it suits the small models better than {@code ggml-small.bin}.
+ *
+ * <p>All calls must be made from a background thread.
  */
 public final class WhisperEngine {
 
@@ -80,6 +87,65 @@ public final class WhisperEngine {
         }
         Collections.sort(names);
         return names;
+    }
+
+    /** ggml models bundled in {@code app/src/main/assets}. */
+    public static List<String> listAssetModels(Context context) {
+        List<String> names = new ArrayList<>();
+        try {
+            String[] files = context.getAssets().list("");
+            if (files != null) {
+                for (String name : files) {
+                    if (name.endsWith(".bin")) names.add(name);
+                }
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Could not list assets", e);
+        }
+        Collections.sort(names);
+        return names;
+    }
+
+    /** Everything the user can pick: models on the device plus the ones bundled in the APK. */
+    public static List<String> listAvailableModels(Context context) {
+        List<String> names = listModels(context);
+        for (String name : listAssetModels(context)) {
+            if (!names.contains(name)) names.add(name);
+        }
+        Collections.sort(names);
+        return names;
+    }
+
+    public static boolean isBundled(Context context, String modelName) {
+        return listAssetModels(context).contains(modelName);
+    }
+
+    /**
+     * Copies a bundled model out of the APK into the models folder, which is where the native
+     * side reads it from. Done once per install and slow for a large model (ggml-small is about
+     * half a gigabyte), so call it from a background thread.
+     */
+    public boolean installFromAssets(String modelName) {
+        File target = new File(getModelDir(context), modelName);
+        if (target.exists()) return true;
+        File partial = new File(target.getPath() + ".part");
+        try (InputStream in = context.getAssets().open(modelName);
+             OutputStream out = new FileOutputStream(partial)) {
+            byte[] buffer = new byte[1 << 16];
+            int read;
+            while ((read = in.read(buffer)) > 0) out.write(buffer, 0, read);
+        } catch (IOException e) {
+            Log.w(TAG, "Could not install " + modelName + " from assets", e);
+            //noinspection ResultOfMethodCallIgnored
+            partial.delete();
+            return false;
+        }
+        // rename only once the copy is complete, so an interrupted install is not mistaken
+        // for a usable model
+        if (partial.renameTo(target)) return true;
+        //noinspection ResultOfMethodCallIgnored
+        partial.delete();
+        return false;
     }
 
     public boolean isReady() {

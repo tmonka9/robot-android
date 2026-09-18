@@ -390,6 +390,7 @@
     <string name="engine_unavailable">Speech engine not built: add whisper.cpp to app/src/main/cpp</string>
     <string name="model_not_found">Put %1$s in %2$s</string>
     <string name="loading_model">Loading %s…</string>
+    <string name="installing_model">Copying %s out of the app…</string>
     <string name="model_loaded">%s loaded</string>
     <string name="model_load_failed">Could not load %s</string>
     <string name="mic_error">Microphone error: %s</string>

@@ -46,8 +46,8 @@ android {
     }
 
     androidResources {
-        // keep the TFLite model uncompressed inside the APK
-        noCompress 'tflite'
+        // keep the TFLite and ggml models uncompressed inside the APK
+        noCompress 'tflite', 'bin'
     }
 }
 
