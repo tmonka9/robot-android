@@ -80,6 +80,7 @@ public class RemoteControlActivity extends BaseActivity {
     private float x = 1.23f;
     private float y = 0.56f;
     private float heading;
+    private JoystickView joystick;
     private float joyX;
     private float joyY;
     private int lastJoyX;
@@ -359,7 +360,7 @@ public class RemoteControlActivity extends BaseActivity {
             }
         });
 
-        JoystickView joystick = findViewById(R.id.joystick);
+        joystick = findViewById(R.id.joystick);
         joystick.setOnMoveListener(this::onJoystick);
 
         modes = new TextView[] {
@@ -394,6 +395,13 @@ public class RemoteControlActivity extends BaseActivity {
             refreshPosition();
             log(LOG_OK, getString(R.string.log_movement, button.getText()));
         });
+    }
+
+    /** The gamepad stick drives the same control as the on-screen one. */
+    @Override
+    protected void onGamepadDirection(float x, float y, float turn) {
+        joystick.setDirection(x, y);
+        onJoystick(x, y);
     }
 
     private void onJoystick(float jx, float jy) {

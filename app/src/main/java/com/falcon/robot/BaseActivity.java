@@ -18,7 +18,9 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -32,6 +34,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
+
+import java.util.Locale;
 
 /**
  * Base for every screen: full-screen mode, the sidebar shell, the robot connection dialog and
@@ -202,6 +206,82 @@ public abstract class BaseActivity extends ComponentActivity {
 
     /** Called after the robot connects or disconnects. */
     protected void onConnectionChanged() {
+    }
+
+    // ---- gamepad ------------------------------------------------------------------------
+
+    private final GamepadController gamepad = new GamepadController(new GamepadController.Listener() {
+        @Override
+        public void onGamepadMove(float x, float y, float turn) {
+            onGamepadDirection(x, y, turn);
+        }
+
+        @Override
+        public void onGamepadButton(int keyCode) {
+            onGamepadPress(keyCode);
+        }
+
+        @Override
+        public void onGamepadConnected(String deviceName) {
+            toast(getString(R.string.gamepad_connected, deviceName));
+        }
+    });
+
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent event) {
+        return gamepad.onMotionEvent(event) || super.dispatchGenericMotionEvent(event);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        return gamepad.onKeyEvent(event) || super.dispatchKeyEvent(event);
+    }
+
+    /**
+     * Drives the robot from the pad's sticks, in the same commands the on-screen joystick sends.
+     * Pages override this to move their own control as well.
+     */
+    protected void onGamepadDirection(float x, float y, float turn) {
+        if (x == 0 && y == 0 && turn == 0) {
+            RobotSession.get().send("MOVE STOP"); // silent: the stick centres constantly
+            return;
+        }
+        if (x == 0 && y == 0) {
+            sendCommand(String.format(Locale.US, "TURN %.1f", turn));
+            return;
+        }
+        sendCommand(String.format(Locale.US, "MOVE %.1f %.1f", x, y));
+    }
+
+    /** Runs the action a gamepad button stands for. Pages override to add their own. */
+    protected void onGamepadPress(int keyCode) {
+        String command = commandFor(keyCode);
+        if (command == null) return;
+        if (sendCommand(command)) toast(getString(R.string.sent_command, command));
+    }
+
+    /** The robot command a gamepad button sends, or null for buttons the app ignores. */
+    protected String commandFor(int keyCode) {
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_UP:
+                return "MOVE FORWARD";
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                return "MOVE BACKWARD";
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+                return "TURN LEFT";
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                return "TURN RIGHT";
+            case KeyEvent.KEYCODE_BUTTON_B:
+                return "STOP";
+            case KeyEvent.KEYCODE_BUTTON_A:
+                return "GO_HOME";
+            case KeyEvent.KEYCODE_BUTTON_X:
+                return "POSE WAVE";
+            case KeyEvent.KEYCODE_BUTTON_Y:
+                return "POSE DANCE";
+            default:
+                return null;
+        }
     }
 
     /** Sends a command, or prompts the user to connect first. */

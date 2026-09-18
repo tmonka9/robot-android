@@ -62,6 +62,7 @@ public class RobotControlActivity extends BaseActivity {
     // simulated odometry
     private float posX;
     private float posY;
+    private JoystickView joystick;
     private float joyX;
     private float joyY;
     private int lastJoyX;
@@ -330,7 +331,7 @@ public class RobotControlActivity extends BaseActivity {
         });
         refreshSpeedLabel();
 
-        JoystickView joystick = findViewById(R.id.joystick);
+        joystick = findViewById(R.id.joystick);
         joystick.setOnMoveListener(this::onJoystick);
     }
 
@@ -345,6 +346,13 @@ public class RobotControlActivity extends BaseActivity {
             refreshPosition();
             setTip(getString(R.string.sent_command, button.getText()));
         });
+    }
+
+    /** The gamepad stick drives the same control as the on-screen one. */
+    @Override
+    protected void onGamepadDirection(float x, float y, float turn) {
+        joystick.setDirection(x, y);
+        onJoystick(x, y);
     }
 
     private void onJoystick(float x, float y) {

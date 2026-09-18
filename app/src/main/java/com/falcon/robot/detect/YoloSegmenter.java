@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.util.Log;
 
 import org.tensorflow.lite.DataType;
 import org.tensorflow.lite.Interpreter;
@@ -30,16 +31,20 @@ import java.util.Map;
 /**
  * YOLOv8 segmentation on TFLite: boxes, class scores and instance masks for one frame.
  *
- * <p>Exports differ, so the shapes are read from the model instead of assumed. Handled are the
- * prediction tensor as {@code [1, 4+classes+coefficients, anchors]} or its transpose, the mask
- * prototype tensor as {@code [1, h, w, 32]} or {@code [1, 32, h, w]}, float32 and quantized
- * uint8/int8 tensors, and boxes in either input pixels or normalised coordinates. A detection
- * model without the prototype output works too — it simply has no masks.
+ * <p>Exports differ, so the shapes are read from the model instead of assumed. Handled are:
+ * predictions in one tensor, {@code [1, 4+classes+coefficients, anchors]} or its transpose, and
+ * predictions split into a tensor each ({@code [1, anchors, 4]} boxes, {@code [1, anchors,
+ * classes]} scores, {@code [1, anchors, 32]} coefficients); the mask prototypes as
+ * {@code [1, h, w, 32]} or {@code [1, 32, h, w]}; float32 and quantized uint8/int8 tensors;
+ * boxes in input pixels or normalised, as a centre and size or as corners. A plain detection
+ * model such as yolov8n works too — without prototypes it simply has no masks.
  *
  * <p>The frame is letterboxed into the model's input (aspect ratio kept, grey padding) and the
  * boxes are mapped back to frame pixels. One instance belongs to one thread.
  */
 public final class YoloSegmenter implements Closeable {
+
+    private static final String TAG = "YoloSegmenter";
 
     /** Bundled model, if there is one; any {@code *.tflite} in assets or the models folder works. */
     public static final String DEFAULT_MODEL = "yolov8n-seg.tflite";
@@ -124,13 +129,44 @@ public final class YoloSegmenter implements Closeable {
     private final Matrix letterbox = new Matrix();
     private final int[] pixels;
 
-    private final int predictionIndex;
-    private final Output predictions;
-    private final boolean predictionsChannelsFirst;
+    /**
+     * One prediction output, {@code [1, channels, anchors]} or {@code [1, anchors, channels]}.
+     * Exports either pack boxes, class scores and mask coefficients into a single head or emit
+     * one head each, so the three are addressed through a head plus an offset.
+     */
+    private static final class Head {
+        final int index;
+        final Output data;
+        final int anchors;
+        final int channels;
+        final boolean channelsFirst;
+
+        Head(int index, Tensor tensor) {
+            int[] shape = tensor.shape();
+            this.index = index;
+            this.data = new Output(tensor);
+            this.channelsFirst = shape[1] < shape[2];
+            this.channels = channelsFirst ? shape[1] : shape[2];
+            this.anchors = channelsFirst ? shape[2] : shape[1];
+        }
+
+        float get(int channel, int anchor) {
+            return data.get(channelsFirst ? channel * anchors + anchor : anchor * channels + channel);
+        }
+    }
+
+    private final List<Head> heads = new ArrayList<>();
+    private final Head boxHead;
+    private final Head scoreHead;
+    private final Head coefficientHead; // null without masks
+    private final int boxOffset;
+    private final int scoreOffset;
+    private final int coefficientOffset;
     private final int anchors;
-    private final int channels;
     private final int numClasses;
     private final int coefficients;
+    /** Split exports differ on the box format; decided per frame in {@link #isCornerFormat}. */
+    private final boolean detectBoxFormat;
 
     private final int protoIndex;
     private final Output proto;
@@ -162,23 +198,15 @@ public final class YoloSegmenter implements Closeable {
         inputCanvas = new Canvas(inputImage);
         pixels = new int[inputWidth * inputHeight];
 
-        // the 3-dimensional output holds the predictions, the 4-dimensional one the mask prototypes
-        int predictionTensor = -1;
+        // 3-dimensional outputs are predictions, a 4-dimensional one holds the mask prototypes
         int protoTensor = -1;
         for (int i = 0; i < interpreter.getOutputTensorCount(); i++) {
-            int rank = interpreter.getOutputTensor(i).shape().length;
-            if (rank == 3 && predictionTensor < 0) predictionTensor = i;
+            Tensor tensor = interpreter.getOutputTensor(i);
+            int rank = tensor.shape().length;
+            if (rank == 3) heads.add(new Head(i, tensor));
             else if (rank == 4 && protoTensor < 0) protoTensor = i;
         }
-        if (predictionTensor < 0) throw new IOException("No YOLO prediction output in " + modelName);
-
-        predictionIndex = predictionTensor;
-        Tensor prediction = interpreter.getOutputTensor(predictionIndex);
-        int[] predShape = prediction.shape(); // [1, channels, anchors] or [1, anchors, channels]
-        predictionsChannelsFirst = predShape[1] < predShape[2];
-        channels = predictionsChannelsFirst ? predShape[1] : predShape[2];
-        anchors = predictionsChannelsFirst ? predShape[2] : predShape[1];
-        predictions = new Output(prediction);
+        if (heads.isEmpty()) throw new IOException("No YOLO prediction output in " + modelName + outputShapes());
 
         protoIndex = protoTensor;
         if (protoTensor >= 0) {
@@ -196,9 +224,60 @@ public final class YoloSegmenter implements Closeable {
             protoWidth = 0;
             proto = null;
         }
-        numClasses = channels - 4 - coefficients;
-        if (numClasses <= 0) throw new IOException("Unexpected output shape " + Arrays.toString(predShape));
+
+        anchors = heads.get(0).anchors;
+        for (Head head : heads) {
+            if (head.anchors != anchors) {
+                throw new IOException("Prediction outputs disagree on the number of boxes"
+                        + outputShapes());
+            }
+        }
+
+        if (heads.size() == 1) {
+            // one head: 4 box values, then the class scores, then the mask coefficients
+            Head head = heads.get(0);
+            boxHead = scoreHead = head;
+            coefficientHead = coefficients > 0 ? head : null;
+            boxOffset = 0;
+            scoreOffset = 4;
+            coefficientOffset = 4 + (head.channels - 4 - coefficients);
+            numClasses = head.channels - 4 - coefficients;
+            detectBoxFormat = false; // this layout is always centre/size
+        } else {
+            // separate heads: boxes have 4 channels, coefficients as many as the prototypes,
+            // and whatever is left is the class scores
+            Head boxes = null;
+            Head coeffs = null;
+            Head scores = null;
+            for (Head head : heads) {
+                if (boxes == null && head.channels == 4) boxes = head;
+                else if (coeffs == null && coefficients > 0 && head.channels == coefficients) coeffs = head;
+                else if (scores == null) scores = head;
+            }
+            if (boxes == null || scores == null) {
+                throw new IOException("Cannot tell the YOLO outputs apart" + outputShapes());
+            }
+            boxHead = boxes;
+            scoreHead = scores;
+            coefficientHead = coeffs;
+            boxOffset = 0;
+            scoreOffset = 0;
+            coefficientOffset = 0;
+            numClasses = scores.channels;
+            detectBoxFormat = true;
+        }
+        if (numClasses <= 0) throw new IOException("Unexpected output shape" + outputShapes());
         coefficientBuffer = new float[Math.max(1, coefficients)];
+        Log.i(TAG, "Loaded " + modelName + ": " + describe() + outputShapes());
+    }
+
+    /** Every output shape, for the log and for error messages. */
+    private String outputShapes() {
+        StringBuilder text = new StringBuilder(" (outputs:");
+        for (int i = 0; i < interpreter.getOutputTensorCount(); i++) {
+            text.append(' ').append(Arrays.toString(interpreter.getOutputTensor(i).shape()));
+        }
+        return text.append(')').toString();
     }
 
     public String getName() {
@@ -206,7 +285,7 @@ public final class YoloSegmenter implements Closeable {
     }
 
     public boolean hasMasks() {
-        return proto != null;
+        return proto != null && coefficientHead != null;
     }
 
     public String describe() {
@@ -234,8 +313,10 @@ public final class YoloSegmenter implements Closeable {
         writeInput();
 
         outputs.clear();
-        predictions.buffer.rewind();
-        outputs.put(predictionIndex, predictions.buffer);
+        for (Head head : heads) {
+            head.data.buffer.rewind();
+            outputs.put(head.index, head.data.buffer);
+        }
         if (proto != null) {
             proto.buffer.rewind();
             outputs.put(protoIndex, proto.buffer);
@@ -251,6 +332,12 @@ public final class YoloSegmenter implements Closeable {
         for (Candidate c : candidates) largest = Math.max(largest, Math.max(c.cx, c.cy));
         float boxScaleX = largest > 2f ? 1f : inputWidth;
         float boxScaleY = largest > 2f ? 1f : inputHeight;
+
+        // some exports give the corners instead of the centre and size
+        boolean corners = detectBoxFormat && isCornerFormat(candidates, boxScaleX, boxScaleY);
+        if (corners) {
+            for (Candidate c : candidates) toCentreSize(c);
+        }
 
         List<Candidate> kept = suppressOverlaps(candidates, iou, boxScaleX, boxScaleY);
 
@@ -268,7 +355,7 @@ public final class YoloSegmenter implements Closeable {
                     clamp((inInput.bottom - padY) / scale, 0, frame.getHeight()));
             if (box.width() < 1f || box.height() < 1f) continue;
             RectF maskBox = new RectF();
-            Bitmap mask = withMasks && proto != null ? buildMask(c, inInput, maskBox) : null;
+            Bitmap mask = withMasks && hasMasks() ? buildMask(c, inInput, maskBox) : null;
             if (mask != null) {
                 // the mask rectangle is in input pixels: move it into frame pixels like the box
                 maskBox.set((maskBox.left - padX) / scale, (maskBox.top - padY) / scale,
@@ -305,6 +392,44 @@ public final class YoloSegmenter implements Closeable {
         }
     }
 
+    /**
+     * Whether the box head gives corners (x1, y1, x2, y2) rather than a centre and a size. Both
+     * are four numbers, so the only way to tell them apart is which reading yields boxes that fit
+     * the image; decided on the candidates of the current frame.
+     */
+    private boolean isCornerFormat(List<Candidate> candidates, float scaleX, float scaleY) {
+        final float margin = 8f;
+        int centre = 0;
+        int corner = 0;
+        for (Candidate c : candidates) {
+            float a = c.cx * scaleX;
+            float b = c.cy * scaleY;
+            float x = c.w * scaleX;
+            float y = c.h * scaleY;
+            if (x > 0 && y > 0 && a - x / 2 >= -margin && b - y / 2 >= -margin
+                    && a + x / 2 <= inputWidth + margin && b + y / 2 <= inputHeight + margin) {
+                centre++;
+            }
+            if (x > a && y > b && a >= -margin && b >= -margin
+                    && x <= inputWidth + margin && y <= inputHeight + margin) {
+                corner++;
+            }
+        }
+        return corner > centre;
+    }
+
+    /** Rewrites a corner box (x1, y1, x2, y2) as centre and size. */
+    private static void toCentreSize(Candidate c) {
+        float left = c.cx;
+        float top = c.cy;
+        float right = c.w;
+        float bottom = c.h;
+        c.cx = (left + right) / 2f;
+        c.cy = (top + bottom) / 2f;
+        c.w = right - left;
+        c.h = bottom - top;
+    }
+
     /** Anchors whose best class beats the threshold. */
     private List<Candidate> collectCandidates(float confidence) {
         List<Candidate> candidates = new ArrayList<>();
@@ -312,7 +437,7 @@ public final class YoloSegmenter implements Closeable {
             int bestClass = -1;
             float bestScore = confidence;
             for (int c = 0; c < numClasses; c++) {
-                float score = prediction(4 + c, a);
+                float score = scoreHead.get(scoreOffset + c, a);
                 if (score > bestScore) {
                     bestScore = score;
                     bestClass = c;
@@ -320,10 +445,10 @@ public final class YoloSegmenter implements Closeable {
             }
             if (bestClass < 0) continue;
             Candidate candidate = new Candidate();
-            candidate.cx = prediction(0, a);
-            candidate.cy = prediction(1, a);
-            candidate.w = prediction(2, a);
-            candidate.h = prediction(3, a);
+            candidate.cx = boxHead.get(boxOffset, a);
+            candidate.cy = boxHead.get(boxOffset + 1, a);
+            candidate.w = boxHead.get(boxOffset + 2, a);
+            candidate.h = boxHead.get(boxOffset + 3, a);
             candidate.score = bestScore;
             candidate.classId = bestClass;
             candidate.anchor = a;
@@ -373,7 +498,7 @@ public final class YoloSegmenter implements Closeable {
      */
     private Bitmap buildMask(Candidate candidate, RectF boxInInput, RectF maskBoxInInput) {
         for (int k = 0; k < coefficients; k++) {
-            coefficientBuffer[k] = prediction(4 + numClasses + k, candidate.anchor);
+            coefficientBuffer[k] = coefficientHead.get(coefficientOffset + k, candidate.anchor);
         }
         float toProtoX = protoWidth / (float) inputWidth;
         float toProtoY = protoHeight / (float) inputHeight;
@@ -403,11 +528,6 @@ public final class YoloSegmenter implements Closeable {
         alpha.rewind();
         mask.copyPixelsFromBuffer(alpha);
         return mask;
-    }
-
-    private float prediction(int channel, int anchor) {
-        return predictions.get(predictionsChannelsFirst ? channel * anchors + anchor
-                : anchor * channels + channel);
     }
 
     private float prototype(int y, int x, int k) {

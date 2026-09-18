@@ -139,6 +139,7 @@
     <string name="status_offline_short">オフライン</string>
     <string name="status_listening">音声待機中…</string>
     <string name="status_paused">一時停止</string>
+    <string name="gamepad_connected">ゲームパッドを接続しました: %s</string>
     <string name="not_connected">先にロボットに接続してください</string>
     <string name="sent_command">送信: %s</string>
     <string name="placeholder_value">--</string>

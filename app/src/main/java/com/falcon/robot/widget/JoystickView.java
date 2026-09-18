@@ -65,6 +65,24 @@ public class JoystickView extends View {
         this.listener = listener;
     }
 
+    /**
+     * Moves the knob without touch, so a connected gamepad's stick shows here too. Values are in
+     * [-1, 1] with y positive upwards; the listener is not called, since whoever drives this
+     * already knows the direction.
+     */
+    public void setDirection(float x, float y) {
+        if (springBack != null) springBack.cancel();
+        float length = (float) Math.hypot(x, y);
+        if (length > 1f) {
+            x /= length;
+            y /= length;
+        }
+        float reach = radius() - knobRadius();
+        knobX = x * reach;
+        knobY = -y * reach;
+        invalidate();
+    }
+
     private float radius() {
         return Math.min(getWidth(), getHeight()) / 2f - glow.getStrokeWidth();
     }

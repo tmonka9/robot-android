@@ -139,6 +139,7 @@
     <string name="status_offline_short">离线</string>
     <string name="status_listening">聆听中…</string>
     <string name="status_paused">已暂停</string>
+    <string name="gamepad_connected">已连接手柄：%s</string>
     <string name="not_connected">请先连接机器人</string>
     <string name="sent_command">已发送：%s</string>
     <string name="placeholder_value">--</string>

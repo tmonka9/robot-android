@@ -140,6 +140,7 @@
     <string name="status_offline_short">Offline</string>
     <string name="status_listening">Listening…</string>
     <string name="status_paused">Paused</string>
+    <string name="gamepad_connected">Gamepad connected: %s</string>
     <string name="not_connected">Connect to the robot first</string>
     <string name="sent_command">Sent: %s</string>
     <string name="placeholder_value">--</string>

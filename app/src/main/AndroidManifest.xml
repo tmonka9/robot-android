@@ -18,13 +18,16 @@
 
     <application
         android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.RobotControl">
 
         <activity
             android:name=".SplashActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="true"
             android:theme="@style/Theme.RobotControl.Splash">
             <intent-filter>
@@ -35,34 +38,42 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".RobotControlActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".RemoteControlActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".FaceRecognitionActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".VoiceRecognitionActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".ObjectDetectionActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".LidarSlamActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
 
         <activity
             android:name=".SettingsActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
     </application>
 
