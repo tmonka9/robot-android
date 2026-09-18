@@ -38,6 +38,7 @@
 
     <!-- LiDAR SLAM -->
     <string name="lidar_title">LiDAR 与 SLAM</string>
+    <string name="lidar_card_subtitle">使用 LiDAR 建图、定位与导航。</string>
     <string name="lidar_subtitle">建图  •  定位  •  导航</string>
     <string name="lidar_mapping">建图</string>
     <string name="lidar_localization">定位</string>
@@ -390,7 +391,6 @@
     <string name="engine_unavailable">语音引擎未编译：请将 whisper.cpp 放入 app/src/main/cpp</string>
     <string name="model_not_found">请将 %1$s 放入 %2$s</string>
     <string name="loading_model">正在加载 %s…</string>
-    <string name="installing_model">正在从应用中释放 %s…</string>
     <string name="model_loaded">%s 已加载</string>
     <string name="model_load_failed">无法加载 %s</string>
     <string name="mic_error">麦克风错误：%s</string>
@@ -402,11 +402,7 @@
     <string name="enter_phrase">要说的短语</string>
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
     <!-- Advanced settings rows: label + options, grouped by tab -->
-    <string name="adv_model_type">模型类型</string>
     <!-- replaced at runtime by the ggml models found on the device -->
-    <string-array name="adv_model_type_options">
-        <item>ggml-small.bin</item>
-    </string-array>
     <string name="adv_engine">识别引擎</string>
     <string-array name="adv_engine_options">
         <item>ONNX Runtime</item>
@@ -430,7 +426,7 @@
     <string-array name="adv_language_options">
         <item>自动检测</item>
         <item>英语</item>
-        <item>韩语</item>
+        <!-- <item>韩语</item> -->
         <item>中文（普通话）</item>
         <item>日语</item>
         <item>西班牙语</item>
@@ -440,7 +436,7 @@
     <string-array name="adv_language_codes">
         <item>auto</item>
         <item>en</item>
-        <item>ko</item>
+        <!-- <item>ko</item> -->
         <item>zh</item>
         <item>ja</item>
         <item>es</item>

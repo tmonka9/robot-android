@@ -68,7 +68,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
     /** Advanced settings: per tab, rows of {label, options array}. */
     private static final int[][][] ADVANCED = {
             {
-                    {R.string.adv_model_type, R.array.adv_model_type_options},
                     {R.string.adv_engine, R.array.adv_engine_options},
                     {R.string.adv_sample_rate, R.array.adv_sample_rate_options},
                     {R.string.adv_audio_input, R.array.adv_audio_input_options},
@@ -144,7 +143,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private Switch noiseSwitch;
     private TextView wakeWord;
     private TextView wakeTitle;
-    private Spinner modelSpinner;
 
     private final ActivityResultLauncher<String> micPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
@@ -730,23 +728,14 @@ public class VoiceRecognitionActivity extends BaseActivity {
         advancedTab = tab;
         for (int i = 0; i < advancedTabs.length; i++) advancedTabs[i].setSelected(i == tab);
         advancedRows.removeAllViews();
-        if (tab != 0) modelSpinner = null;
         LayoutInflater inflater = LayoutInflater.from(this);
         for (int r = 0; r < ADVANCED[tab].length; r++) {
             final int rowIndex = r;
             View row = inflater.inflate(R.layout.item_setting_dropdown_row, advancedRows, false);
             ((TextView) row.findViewById(R.id.setting_label)).setText(ADVANCED[tab][r][0]);
             Spinner spinner = row.findViewById(R.id.setting_spinner);
-            ArrayAdapter<CharSequence> adapter;
-            if (tab == 0 && r == 0) {
-                // the model list comes from the device, not from resources
-                List<CharSequence> models = new ArrayList<>(WhisperEngine.listAvailableModels(this));
-                if (models.isEmpty()) models.add(WhisperEngine.DEFAULT_MODEL);
-                adapter = new ArrayAdapter<>(this, R.layout.item_spinner, models);
-                modelSpinner = spinner;
-            } else {
-                adapter = ArrayAdapter.createFromResource(this, ADVANCED[tab][r][1], R.layout.item_spinner);
-            }
+            ArrayAdapter<CharSequence> adapter =
+                    ArrayAdapter.createFromResource(this, ADVANCED[tab][r][1], R.layout.item_spinner);
             adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
             spinner.setAdapter(adapter);
             if (advancedSelection[tab][r] < adapter.getCount()) spinner.setSelection(advancedSelection[tab][r]);
@@ -766,11 +755,10 @@ public class VoiceRecognitionActivity extends BaseActivity {
         }
     }
 
+    /** The speech model in use: the one bundled in the APK, or the first one on the device. */
     private String selectedModel() {
-        if (modelSpinner != null && modelSpinner.getSelectedItem() != null) {
-            return modelSpinner.getSelectedItem().toString();
-        }
         List<String> models = WhisperEngine.listAvailableModels(this);
+        if (models.contains(WhisperEngine.DEFAULT_MODEL)) return WhisperEngine.DEFAULT_MODEL;
         return models.isEmpty() ? WhisperEngine.DEFAULT_MODEL : models.get(0);
     }
 
@@ -789,15 +777,13 @@ public class VoiceRecognitionActivity extends BaseActivity {
         }
         final String model = selectedModel();
         final File file = new File(WhisperEngine.getModelDir(this), model);
-        final boolean install = !file.exists();
-        if (install && !WhisperEngine.isBundled(this, model)) {
+        if (!file.exists() && !WhisperEngine.isBundled(this, model)) {
             toast(getString(R.string.model_not_found, model, file.getParent()));
             return;
         }
-        toast(getString(install ? R.string.installing_model : R.string.loading_model, model));
+        toast(getString(R.string.loading_model, model));
         transcriber.execute(() -> {
-            // a bundled model is copied out of the APK once, before it can be loaded
-            final boolean ok = (!install || engine.installFromAssets(model)) && engine.load(model);
+            final boolean ok = engine.load(model);
             runOnUiThread(() -> toast(ok ? getString(R.string.model_loaded, model)
                     : getString(R.string.model_load_failed, model)));
         });

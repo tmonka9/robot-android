@@ -38,6 +38,8 @@
 
     <!-- LiDAR SLAM -->
     <string name="lidar_title">LiDAR &amp; SLAM</string>
+    <!-- home card wording, as the artwork had it -->
+    <string name="lidar_card_subtitle">Map, localize and navigate using LiDAR.</string>
     <string name="lidar_subtitle">Mapping  •  Localization  •  Navigation</string>
     <string name="lidar_mapping">Mapping</string>
     <string name="lidar_localization">Localization</string>
@@ -390,7 +392,6 @@
     <string name="engine_unavailable">Speech engine not built: add whisper.cpp to app/src/main/cpp</string>
     <string name="model_not_found">Put %1$s in %2$s</string>
     <string name="loading_model">Loading %s…</string>
-    <string name="installing_model">Copying %s out of the app…</string>
     <string name="model_loaded">%s loaded</string>
     <string name="model_load_failed">Could not load %s</string>
     <string name="mic_error">Microphone error: %s</string>
@@ -402,11 +403,7 @@
     <string name="enter_phrase">Phrase to say</string>
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
     <!-- Advanced settings rows: label + options, grouped by tab -->
-    <string name="adv_model_type">Model Type</string>
     <!-- replaced at runtime by the ggml models found on the device -->
-    <string-array name="adv_model_type_options">
-        <item>ggml-small.bin</item>
-    </string-array>
     <string name="adv_engine">Recognition Engine</string>
     <string-array name="adv_engine_options">
         <item>ONNX Runtime</item>
@@ -430,7 +427,7 @@
     <string-array name="adv_language_options">
         <item>Auto detect</item>
         <item>English</item>
-        <item>Korean</item>
+        <!-- <item>Korean</item> -->
         <item>Chinese (Mandarin)</item>
         <item>Japanese</item>
         <item>Spanish</item>
@@ -440,7 +437,7 @@
     <string-array name="adv_language_codes">
         <item>auto</item>
         <item>en</item>
-        <item>ko</item>
+        <!-- <item>ko</item> -->
         <item>zh</item>
         <item>ja</item>
         <item>es</item>

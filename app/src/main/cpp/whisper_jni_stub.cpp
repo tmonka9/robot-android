@@ -15,6 +15,11 @@ Java_com_falcon_robot_voice_WhisperEngine_nativeInit(JNIEnv *, jclass, jstring) 
     return 0;
 }
 
+JNIEXPORT jlong JNICALL
+Java_com_falcon_robot_voice_WhisperEngine_nativeInitAsset(JNIEnv *, jclass, jobject, jstring) {
+    return 0;
+}
+
 JNIEXPORT void JNICALL
 Java_com_falcon_robot_voice_WhisperEngine_nativeRelease(JNIEnv *, jclass, jlong) {
 }

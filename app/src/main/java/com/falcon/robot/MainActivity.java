@@ -2,6 +2,7 @@ package com.falcon.robot;
 
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageView;
@@ -17,15 +18,24 @@ import com.falcon.robot.widget.CoverImageView;
  */
 public class MainActivity extends BaseActivity {
 
-    /** Feature cards: {artwork, accessible title, nav target}, in design order. */
+    /** Feature cards: {artwork, title, subtitle, nav target}, in design order. */
     private static final int[][] CARDS = {
-            {R.drawable.home_card_robot, R.string.nav_robot, R.id.nav_robot},
-            {R.drawable.home_card_face, R.string.nav_face, R.id.nav_face},
-            {R.drawable.home_card_voice, R.string.nav_voice, R.id.nav_voice},
-            {R.drawable.home_card_object, R.string.nav_object, R.id.nav_object},
-            {R.drawable.home_card_lidar, R.string.nav_lidar, R.id.nav_lidar},
-            {R.drawable.home_card_remote, R.string.nav_remote, R.id.nav_remote},
+            {R.drawable.home_card_robot, R.string.nav_robot, R.string.robot_subtitle, R.id.nav_robot},
+            {R.drawable.home_card_face, R.string.nav_face, R.string.face_subtitle, R.id.nav_face},
+            {R.drawable.home_card_voice, R.string.nav_voice, R.string.voice_subtitle, R.id.nav_voice},
+            {R.drawable.home_card_object, R.string.nav_object, R.string.object_subtitle, R.id.nav_object},
+            {R.drawable.home_card_lidar, R.string.nav_lidar, R.string.lidar_card_subtitle, R.id.nav_lidar},
+            {R.drawable.home_card_remote, R.string.nav_remote, R.string.remote_subtitle, R.id.nav_remote},
     };
+
+    /**
+     * Where the artwork used to carry its text, as fractions of the card: the block starts just
+     * below the middle, inset from the left, and the type scales with the card.
+     */
+    private static final float TEXT_TOP = 0.545f;
+    private static final float TEXT_INSET = 0.066f;
+    private static final float TITLE_SIZE = 0.125f;
+    private static final float SUBTITLE_SIZE = 0.088f;
 
     /** Quick Status rows: {icon, label, nav target}. */
     private static final int[][] QUICK_STATUS = {
@@ -135,12 +145,40 @@ public class MainActivity extends BaseActivity {
             image.setImageResource(card[0]);
             view.setContentDescription(getString(card[1]));
             view.setClipToOutline(true); // round the artwork corners
-            view.setOnClickListener(v -> navigate(card[2]));
+            view.setOnClickListener(v -> navigate(card[3]));
+
+            ((TextView) view.findViewById(R.id.card_title)).setText(card[1]);
+            ((TextView) view.findViewById(R.id.card_subtitle)).setText(card[2]);
+            placeCardText(view);
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
                     LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
             if (i % columns > 0) lp.setMarginStart(gap);
             row.addView(view, lp);
         }
+    }
+
+    /**
+     * Sits the title and subtitle where the artwork used to have them: the card scales with the
+     * screen, so the position and the text size are fractions of its measured size rather than
+     * fixed dp. Re-applied whenever the card changes size, and skipped when it has not.
+     */
+    private void placeCardText(final View card) {
+        card.addOnLayoutChangeListener((v, left, top, right, bottom, ol, ot, or, ob) -> {
+            int width = right - left;
+            int height = bottom - top;
+            if (width == 0 || height == 0) return;
+            Object applied = v.getTag(R.id.card_text);
+            if (applied instanceof Integer && (Integer) applied == height) return;
+            v.setTag(R.id.card_text, height);
+
+            View text = v.findViewById(R.id.card_text);
+            TextView title = v.findViewById(R.id.card_title);
+            TextView subtitle = v.findViewById(R.id.card_subtitle);
+            int inset = Math.round(width * TEXT_INSET);
+            text.setPadding(inset, Math.round(height * TEXT_TOP), inset, 0);
+            title.setTextSize(TypedValue.COMPLEX_UNIT_PX, height * TITLE_SIZE);
+            subtitle.setTextSize(TypedValue.COMPLEX_UNIT_PX, height * SUBTITLE_SIZE);
+        });
     }
 }

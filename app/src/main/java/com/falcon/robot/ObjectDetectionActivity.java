@@ -68,6 +68,7 @@ public class ObjectDetectionActivity extends BaseActivity {
     private boolean permissionAsked;
     private boolean loadingModel;
     private String modelName;    // the model in use, null when none loaded
+    private String modelError;   // why the last load failed, null when it did not
     private String pendingModel; // the model being loaded right now
     private int lastTotal = -1;
 
@@ -163,6 +164,7 @@ public class ObjectDetectionActivity extends BaseActivity {
                 segmenter = new YoloSegmenter(this, model, 4);
             } catch (IOException | RuntimeException e) {
                 error = e.getMessage() != null ? e.getMessage() : e.toString();
+                android.util.Log.w("ObjectDetection", "Could not load " + model, e);
             }
             final YoloSegmenter loaded = segmenter;
             final String message = error;
@@ -173,9 +175,9 @@ public class ObjectDetectionActivity extends BaseActivity {
                     return;
                 }
                 modelName = loaded != null ? model : null;
+                modelError = message;
                 analyzer = new DetectionAnalyzer(loaded, analyzerListener);
                 applySettingsToAnalyzer();
-                if (message != null) toast(getString(R.string.detector_failed, model, message));
                 if (cameraProvider != null) bindCamera();
                 else requestCameraOrStart();
             });
@@ -323,7 +325,11 @@ public class ObjectDetectionActivity extends BaseActivity {
             analyzer.setConfidence(Float.parseFloat(threshold.getSelectedItem().toString()));
         }
         if (!analyzer.canDetect()) {
-            showCameraMessage(getString(R.string.detector_missing, YoloSegmenter.DEFAULT_MODEL));
+            // a model that is present but unusable is a different problem from a missing one,
+            // and the reason only shows up here
+            showCameraMessage(modelError != null
+                    ? getString(R.string.detector_failed, pendingModel, modelError)
+                    : getString(R.string.detector_missing, YoloSegmenter.DEFAULT_MODEL));
         } else {
             cameraMessage.setVisibility(View.GONE);
             maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks to show

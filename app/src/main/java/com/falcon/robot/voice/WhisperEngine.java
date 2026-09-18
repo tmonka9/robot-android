@@ -4,10 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,9 +19,10 @@ import java.util.List;
  *   adb push ggml-small.bin /sdcard/Android/data/com.falcon.robot/files/models/
  * </pre>
  *
- * <p>A model can also be shipped in {@code app/src/main/assets} instead;
- * {@link #installFromAssets} copies it into that folder on first use. That makes the APK as
- * large as the model, so it suits the small models better than {@code ggml-small.bin}.
+ * <p>A model shipped in {@code app/src/main/assets} is used as it is: the native side maps it
+ * straight out of the APK (which is why {@code build.gradle} keeps {@code .bin} files
+ * uncompressed), so it needs no copy and no extra room on the device. The APK grows by the size
+ * of the model.
  *
  * <p>All calls must be made from a background thread.
  */
@@ -120,34 +118,6 @@ public final class WhisperEngine {
         return listAssetModels(context).contains(modelName);
     }
 
-    /**
-     * Copies a bundled model out of the APK into the models folder, which is where the native
-     * side reads it from. Done once per install and slow for a large model (ggml-small is about
-     * half a gigabyte), so call it from a background thread.
-     */
-    public boolean installFromAssets(String modelName) {
-        File target = new File(getModelDir(context), modelName);
-        if (target.exists()) return true;
-        File partial = new File(target.getPath() + ".part");
-        try (InputStream in = context.getAssets().open(modelName);
-             OutputStream out = new FileOutputStream(partial)) {
-            byte[] buffer = new byte[1 << 16];
-            int read;
-            while ((read = in.read(buffer)) > 0) out.write(buffer, 0, read);
-        } catch (IOException e) {
-            Log.w(TAG, "Could not install " + modelName + " from assets", e);
-            //noinspection ResultOfMethodCallIgnored
-            partial.delete();
-            return false;
-        }
-        // rename only once the copy is complete, so an interrupted install is not mistaken
-        // for a usable model
-        if (partial.renameTo(target)) return true;
-        //noinspection ResultOfMethodCallIgnored
-        partial.delete();
-        return false;
-    }
-
     public boolean isReady() {
         return handle != 0;
     }
@@ -162,11 +132,15 @@ public final class WhisperEngine {
         if (handle != 0 && modelName.equals(loadedModel)) return true;
         release();
         File file = new File(getModelDir(context), modelName);
-        if (!file.exists()) {
-            Log.w(TAG, "Model not found: " + file);
+        if (file.exists()) {
+            handle = nativeInit(file.getAbsolutePath());
+        } else if (isBundled(context, modelName)) {
+            // read straight out of the APK, so a bundled model costs nothing extra on the device
+            handle = nativeInitAsset(context.getAssets(), modelName);
+        } else {
+            Log.w(TAG, "Model not found: " + file + " and not bundled in the APK");
             return false;
         }
-        handle = nativeInit(file.getAbsolutePath());
         loadedModel = handle != 0 ? modelName : null;
         return handle != 0;
     }
@@ -207,6 +181,8 @@ public final class WhisperEngine {
     }
 
     private static native long nativeInit(String modelPath);
+
+    private static native long nativeInitAsset(android.content.res.AssetManager assets, String assetName);
 
     private static native void nativeRelease(long handle);
 

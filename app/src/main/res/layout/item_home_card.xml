@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Home feature card: artwork cut from design/home.png; bound in MainActivity#buildCardGrid. -->
+<!--
+  Home feature card: artwork cut from design/home.png, with the title and subtitle drawn on top
+  so they follow the app language. The artwork's own text was cleared from the bottom-left area;
+  MainActivity#buildCardGrid places the text block back over it.
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -12,4 +16,28 @@
         android:id="@+id/card_image"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:id="@+id/card_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/card_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:singleLine="true"
+            android:textColor="@color/white" />
+
+        <TextView
+            android:id="@+id/card_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:lineSpacingMultiplier="0.95"
+            android:maxLines="2"
+            android:textColor="@color/card_subtitle" />
+    </LinearLayout>
 </FrameLayout>
