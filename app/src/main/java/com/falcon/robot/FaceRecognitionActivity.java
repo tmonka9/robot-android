@@ -63,7 +63,6 @@ public class FaceRecognitionActivity extends BaseActivity {
     private static final int MAX_HISTORY = 200;
     private static final int REGISTRATION_SAMPLES = 5;
     private static final long REGISTRATION_TIMEOUT_MS = 5000;
-    private static final Size ANALYSIS_SIZE = new Size(640, 480);
 
     private static final class HistoryEntry {
         final long time;
