@@ -12,7 +12,7 @@
 
     <include layout="@layout/view_page_header_rich" />
 
-    <ScrollView
+    <com.falcon.robot.widget.FitScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -28,7 +28,7 @@
             <LinearLayout
                 android:id="@+id/columns"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_weight="1.35">
 
                 <!-- Camera frame with detections -->
@@ -114,13 +114,19 @@
                         android:background="@color/divider" />
 
                     <!-- Filled by ObjectDetectionActivity#renderResults -->
-                    <LinearLayout
-                        android:id="@+id/result_list"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_marginTop="4dp"
                         android:layout_weight="1"
-                        android:orientation="vertical" />
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/result_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
                 </LinearLayout>
             </LinearLayout>
 
@@ -128,7 +134,7 @@
             <LinearLayout
                 android:id="@+id/columns_bottom"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_marginTop="@dimen/gap"
                 android:layout_weight="1">
 
@@ -151,12 +157,18 @@
                         android:background="@color/divider" />
 
                     <!-- Filled by ObjectDetectionActivity#addToggle -->
-                    <LinearLayout
-                        android:id="@+id/toggle_list"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:orientation="vertical" />
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/toggle_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
 
                     <View
                         android:layout_width="match_parent"
@@ -277,14 +289,20 @@
                         android:background="@color/divider" />
 
                     <!-- Filled by ObjectDetectionActivity#renderCounts -->
-                    <LinearLayout
-                        android:id="@+id/count_list"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:orientation="vertical" />
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/count_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </ScrollView>
+    </com.falcon.robot.widget.FitScrollView>
 </LinearLayout>

@@ -58,7 +58,6 @@ import java.util.concurrent.Executors;
  */
 public class VoiceRecognitionActivity extends BaseActivity {
 
-    private static final int HISTORY_ROWS = 7;
     private static final int MAX_HISTORY = 100;
 
     /** Artwork coordinates (voice_visual.png pixels) for the live overlays. */
@@ -680,7 +679,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private void renderHistory() {
         historyList.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
-        for (int i = history.size() - 1; i >= 0 && historyList.getChildCount() < HISTORY_ROWS; i--) {
+        for (int i = history.size() - 1; i >= 0; i--) {
             HistoryEntry entry = history.get(i);
             View row = inflater.inflate(R.layout.item_voice_history_row, historyList, false);
             ((TextView) row.findViewById(R.id.vh_time)).setText(dateTime.format(new Date(entry.time)));

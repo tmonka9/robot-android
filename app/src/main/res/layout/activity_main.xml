@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Home page content (inside the shell). -->
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.falcon.robot.widget.FitScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/home_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -16,7 +16,7 @@
         <LinearLayout
             android:id="@+id/columns"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
             android:layout_weight="1">
 
             <!-- Banner artwork from design/home.png; the title and robot always stay visible. -->
@@ -193,4 +193,4 @@
             android:layout_marginTop="@dimen/gap"
             android:orientation="vertical" />
     </LinearLayout>
-</ScrollView>
+</com.falcon.robot.widget.FitScrollView>

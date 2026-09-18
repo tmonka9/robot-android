@@ -12,7 +12,7 @@
 
     <include layout="@layout/view_page_header_rich" />
 
-    <ScrollView
+    <com.falcon.robot.widget.FitScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -28,7 +28,7 @@
             <LinearLayout
                 android:id="@+id/columns"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_weight="1.05">
 
                 <!-- Listening visual: artwork with live labels and waveform -->
@@ -403,7 +403,7 @@
             <LinearLayout
                 android:id="@+id/columns_bottom"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_marginTop="@dimen/gap"
                 android:layout_weight="1">
 
@@ -424,12 +424,18 @@
                         android:background="@color/divider" />
 
                     <!-- Filled by VoiceRecognitionActivity#setupVoiceControl -->
-                    <LinearLayout
-                        android:id="@+id/voice_toggles"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:orientation="vertical" />
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/voice_toggles"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
 
                     <View
                         android:layout_width="match_parent"
@@ -539,12 +545,18 @@
                     </LinearLayout>
 
                     <!-- Filled by VoiceRecognitionActivity#renderHistory -->
-                    <LinearLayout
-                        android:id="@+id/voice_history_list"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_weight="1"
-                        android:orientation="vertical" />
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/voice_history_list"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
                 </LinearLayout>
 
                 <!-- Advanced settings -->
@@ -592,13 +604,19 @@
                     </LinearLayout>
 
                     <!-- Filled by VoiceRecognitionActivity#renderAdvancedTab -->
-                    <LinearLayout
-                        android:id="@+id/adv_rows"
+                    <ScrollView
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
                         android:layout_marginTop="4dp"
                         android:layout_weight="1"
-                        android:orientation="vertical" />
+                        android:scrollbars="none">
+
+                        <LinearLayout
+                            android:id="@+id/adv_rows"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+                    </ScrollView>
 
                     <TextView
                         android:id="@+id/btn_apply_settings"
@@ -616,5 +634,5 @@
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </ScrollView>
+    </com.falcon.robot.widget.FitScrollView>
 </LinearLayout>

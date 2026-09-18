@@ -68,7 +68,6 @@ import java.util.concurrent.Executors;
  */
 public class FaceRecognitionActivity extends BaseActivity {
 
-    private static final int HISTORY_ROWS = 5;
     private static final int MAX_HISTORY = 200;
     private static final int REGISTRATION_SAMPLES = 5;
     private static final long REGISTRATION_TIMEOUT_MS = 5000;
@@ -646,7 +645,7 @@ public class FaceRecognitionActivity extends BaseActivity {
     private void renderHistory() {
         historyList.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(this);
-        for (int i = history.size() - 1; i >= 0 && historyList.getChildCount() < HISTORY_ROWS; i--) {
+        for (int i = history.size() - 1; i >= 0; i--) {
             HistoryEntry entry = history.get(i);
             View row = inflater.inflate(R.layout.item_face_history_row, historyList, false);
             boolean recognized = entry.record != null;

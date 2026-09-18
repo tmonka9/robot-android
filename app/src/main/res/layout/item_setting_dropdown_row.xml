@@ -2,8 +2,7 @@
 <!-- Label + dropdown row; bound in VoiceRecognitionActivity#renderAdvancedTab. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="0dp"
-    android:layout_weight="1"
+    android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:minHeight="46dp"
     android:orientation="horizontal"

@@ -12,7 +12,7 @@
 
     <include layout="@layout/view_page_header_rich" />
 
-    <ScrollView
+    <com.falcon.robot.widget.FitScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -28,7 +28,7 @@
             <LinearLayout
                 android:id="@+id/columns"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_weight="1.05">
 
                 <!-- Robot Status: robot artwork with live status overlays -->
@@ -505,7 +505,7 @@
             <LinearLayout
                 android:id="@+id/columns_bottom"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
                 android:layout_marginTop="@dimen/gap"
                 android:layout_weight="1">
 
@@ -878,5 +878,5 @@
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </ScrollView>
+    </com.falcon.robot.widget.FitScrollView>
 </LinearLayout>

@@ -59,8 +59,6 @@ public class ObjectDetectionActivity extends BaseActivity {
 
     /** Analysis resolution: the model letterboxes this down to its own input size. */
     private static final Size ANALYSIS_SIZE = new Size(640, 480);
-    private static final int RESULT_ROWS = 8;
-    private static final int COUNT_ROWS = 6;
 
     private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
 
@@ -399,7 +397,7 @@ public class ObjectDetectionActivity extends BaseActivity {
             resultList.addView(empty);
             return;
         }
-        for (int i = 0; i < objects.size() && i < RESULT_ROWS; i++) {
+        for (int i = 0; i < objects.size(); i++) {
             ObjectTracker.Snapshot object = objects.get(i);
             String label = object.id > 0
                     ? getString(R.string.track_label, object.id, object.label) : object.label;
@@ -435,14 +433,12 @@ public class ObjectDetectionActivity extends BaseActivity {
             counts.put(object.classId, count == null ? 1 : count + 1);
         }
         countList.removeAllViews();
-        int rows = 0;
         for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
-            if (rows++ >= COUNT_ROWS) break;
             int classId = entry.getKey();
             addRow(countList, CocoLabels.color(classId), CocoLabels.name(classId),
                     String.valueOf(entry.getValue()));
         }
-        if (rows == 0) {
+        if (counts.isEmpty()) {
             addRow(countList, color(R.color.text_muted), getString(R.string.total_seen),
                     String.valueOf(analyzer == null ? 0 : analyzer.getTotalSeen()));
         }
@@ -477,8 +473,9 @@ public class ObjectDetectionActivity extends BaseActivity {
         valueView.setTextSize(15);
         row.addView(valueView);
 
-        // rows share the panel height, but never shrink below 30dp (the list scrolls with the page)
-        list.addView(row, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f));
+        // fixed row height: the panel keeps its size and the list scrolls inside it
+        list.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(34)));
     }
 
     private int dp(int value) {
