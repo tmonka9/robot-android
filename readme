@@ -1,0 +1,5 @@
+
+
+pip install -U ultralytics
+yolo export model=yolo26n.pt format=tflite imgsz=640
+cp yolo26n_saved_model/yolo26n_float32.tflite app/src/main/assets/

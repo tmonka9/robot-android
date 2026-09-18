@@ -29,15 +29,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * YOLOv8 segmentation on TFLite: boxes, class scores and instance masks for one frame.
+ * YOLO detection and segmentation on TFLite: boxes, class scores and instance masks for one frame.
  *
  * <p>Exports differ, so the shapes are read from the model instead of assumed. Handled are:
  * predictions in one tensor, {@code [1, 4+classes+coefficients, anchors]} or its transpose, and
  * predictions split into a tensor each ({@code [1, anchors, 4]} boxes, {@code [1, anchors,
  * classes]} scores, {@code [1, anchors, 32]} coefficients); the mask prototypes as
  * {@code [1, h, w, 32]} or {@code [1, 32, h, w]}; float32 and quantized uint8/int8 tensors;
- * boxes in input pixels or normalised, as a centre and size or as corners. A plain detection
- * model such as yolov8n works too — without prototypes it simply has no masks.
+ * boxes in input pixels or normalised, as a centre and size or as corners; and the finished
+ * detections that NMS-free models such as YOLO26 and YOLOv10 return ({@code [1, 300, 6]}:
+ * x1, y1, x2, y2, score, class). A plain detection model such as yolov8n works too — without
+ * prototypes it simply has no masks.
  *
  * <p>The frame is letterboxed into the model's input (aspect ratio kept, grey padding) and the
  * boxes are mapped back to frame pixels. One instance belongs to one thread.
@@ -53,6 +55,8 @@ public final class YoloSegmenter implements Closeable {
 
     private static final int PADDING_GREY = 0xFF727272; // 114,114,114, as in the YOLO letterbox
     private static final int MAX_DETECTIONS = 50;
+    /** Above this many rows an output is raw anchors, not a finished detection list. */
+    private static final int MAX_FINAL_DETECTIONS = 1024;
     /** Mask probability above which a pixel belongs to the instance. */
     private static final float MASK_THRESHOLD = 0.5f;
 
@@ -167,6 +171,8 @@ public final class YoloSegmenter implements Closeable {
     private final int coefficients;
     /** Split exports differ on the box format; decided per frame in {@link #isCornerFormat}. */
     private final boolean detectBoxFormat;
+    /** NMS-free models (YOLO26, YOLOv10) return finished detections instead of raw anchors. */
+    private final boolean endToEnd;
 
     private final int protoIndex;
     private final Output proto;
@@ -233,7 +239,21 @@ public final class YoloSegmenter implements Closeable {
             }
         }
 
-        if (heads.size() == 1) {
+        if (heads.size() == 1 && proto == null && heads.get(0).channels == 6
+                && heads.get(0).anchors <= MAX_FINAL_DETECTIONS) {
+            // YOLO26 and the other NMS-free exports hand back finished detections, one row per
+            // object: x1, y1, x2, y2, score, class. A raw two-class model would also have six
+            // channels, but it would have thousands of rows rather than a few hundred.
+            Head head = heads.get(0);
+            boxHead = scoreHead = head;
+            coefficientHead = null;
+            boxOffset = 0;
+            scoreOffset = 4;
+            coefficientOffset = 0;
+            numClasses = 0; // the class comes as a number in the row, not as a score per class
+            endToEnd = true;
+            detectBoxFormat = false;
+        } else if (heads.size() == 1) {
             // one head: 4 box values, then the class scores, then the mask coefficients
             Head head = heads.get(0);
             boxHead = scoreHead = head;
@@ -242,6 +262,7 @@ public final class YoloSegmenter implements Closeable {
             scoreOffset = 4;
             coefficientOffset = 4 + (head.channels - 4 - coefficients);
             numClasses = head.channels - 4 - coefficients;
+            endToEnd = false;
             detectBoxFormat = false; // this layout is always centre/size
         } else {
             // separate heads: boxes have 4 channels, coefficients as many as the prototypes,
@@ -264,9 +285,12 @@ public final class YoloSegmenter implements Closeable {
             scoreOffset = 0;
             coefficientOffset = 0;
             numClasses = scores.channels;
+            endToEnd = false;
             detectBoxFormat = true;
         }
-        if (numClasses <= 0) throw new IOException("Unexpected output shape" + outputShapes());
+        if (!endToEnd && numClasses <= 0) {
+            throw new IOException("Unexpected output shape" + outputShapes());
+        }
         coefficientBuffer = new float[Math.max(1, coefficients)];
         Log.i(TAG, "Loaded " + modelName + ": " + describe() + outputShapes());
     }
@@ -289,7 +313,8 @@ public final class YoloSegmenter implements Closeable {
     }
 
     public String describe() {
-        return inputWidth + "×" + inputHeight + " · " + numClasses + " classes"
+        return inputWidth + "×" + inputHeight
+                + (endToEnd ? " · end-to-end" : " · " + numClasses + " classes")
                 + (hasMasks() ? " · masks" : "");
     }
 
@@ -334,12 +359,14 @@ public final class YoloSegmenter implements Closeable {
         float boxScaleY = largest > 2f ? 1f : inputHeight;
 
         // some exports give the corners instead of the centre and size
-        boolean corners = detectBoxFormat && isCornerFormat(candidates, boxScaleX, boxScaleY);
+        boolean corners = endToEnd || (detectBoxFormat && isCornerFormat(candidates, boxScaleX, boxScaleY));
         if (corners) {
             for (Candidate c : candidates) toCentreSize(c);
         }
 
-        List<Candidate> kept = suppressOverlaps(candidates, iou, boxScaleX, boxScaleY);
+        // an NMS-free model has already merged its boxes
+        List<Candidate> kept = endToEnd ? candidates
+                : suppressOverlaps(candidates, iou, boxScaleX, boxScaleY);
 
         List<Detection> result = new ArrayList<>(kept.size());
         for (Candidate c : kept) {
@@ -433,6 +460,7 @@ public final class YoloSegmenter implements Closeable {
     /** Anchors whose best class beats the threshold. */
     private List<Candidate> collectCandidates(float confidence) {
         List<Candidate> candidates = new ArrayList<>();
+        if (endToEnd) return collectFinalDetections(confidence, candidates);
         for (int a = 0; a < anchors; a++) {
             int bestClass = -1;
             float bestScore = confidence;
@@ -451,6 +479,27 @@ public final class YoloSegmenter implements Closeable {
             candidate.h = boxHead.get(boxOffset + 3, a);
             candidate.score = bestScore;
             candidate.classId = bestClass;
+            candidate.anchor = a;
+            candidates.add(candidate);
+        }
+        return candidates;
+    }
+
+    /**
+     * Rows of an NMS-free model: x1, y1, x2, y2, score, class. They come out sorted by score and
+     * padded with zero-score rows, so the first row below the threshold ends the list.
+     */
+    private List<Candidate> collectFinalDetections(float confidence, List<Candidate> candidates) {
+        for (int a = 0; a < anchors && candidates.size() < MAX_DETECTIONS; a++) {
+            float score = boxHead.get(scoreOffset, a);
+            if (score < confidence) break;
+            Candidate candidate = new Candidate();
+            candidate.cx = boxHead.get(boxOffset, a);       // x1, converted below
+            candidate.cy = boxHead.get(boxOffset + 1, a);   // y1
+            candidate.w = boxHead.get(boxOffset + 2, a);    // x2
+            candidate.h = boxHead.get(boxOffset + 3, a);    // y2
+            candidate.score = score;
+            candidate.classId = Math.round(boxHead.get(scoreOffset + 1, a));
             candidate.anchor = a;
             candidates.add(candidate);
         }
