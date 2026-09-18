@@ -1,8 +1,14 @@
 package com.falcon.robot;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
+import android.util.Size;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,43 +20,79 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.falcon.robot.widget.DetectionView;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageAnalysis;
+import androidx.camera.core.Preview;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.camera.core.resolutionselector.ResolutionStrategy;
+import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.view.PreviewView;
+import androidx.core.content.ContextCompat;
 
+import com.falcon.robot.detect.CocoLabels;
+import com.falcon.robot.detect.DetectionAnalyzer;
+import com.falcon.robot.detect.ObjectTracker;
+import com.falcon.robot.detect.YoloSegmenter;
+import com.falcon.robot.widget.TrackingOverlayView;
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * Object Detection page (design 06_Object_Detection): camera frame with bounding boxes,
- * detection results, detection settings and per-class counts.
+ * Object Detection page: live camera (CameraX) segmented by YOLOv8-seg
+ * ({@link YoloSegmenter}) and followed across frames by {@link ObjectTracker}, so every object
+ * keeps an id while it is in view.
  *
- * <p>The frame is a still lobby photo with simulated detections placed on the objects in it;
- * replace them with the camera stream and model output.
+ * <p>Without a detector model the camera still runs; the panels simply stay empty and the page
+ * says which file is missing.
  */
 public class ObjectDetectionActivity extends BaseActivity {
 
-    private static final int COLOR_ROBOT = 0xFFFF4D5E;
-    private static final int COLOR_PLANT = 0xFF22D3EE;
-    private static final int COLOR_DESK = 0xFFFFC53D;
-    private static final int COLOR_DOOR = 0xFFB45CFF;
+    /** Analysis resolution: the model letterboxes this down to its own input size. */
+    private static final Size ANALYSIS_SIZE = new Size(640, 480);
+    private static final int RESULT_ROWS = 8;
+    private static final int COUNT_ROWS = 6;
 
-    /** Classes shown in Detected Objects, in display order. */
-    private static final int[] CLASS_NAMES = {R.string.cls_robot, R.string.cls_plant, R.string.cls_desk, R.string.cls_door};
-    private static final int[] CLASS_COLORS = {COLOR_ROBOT, COLOR_PLANT, COLOR_DESK, COLOR_DOOR};
+    private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
 
-    private final Random random = new Random();
+    private DetectionAnalyzer analyzer;
+    private ProcessCameraProvider cameraProvider;
+    private int lensFacing = CameraSelector.LENS_FACING_BACK;
+    private boolean permissionAsked;
+    private boolean loadingModel;
+    private String modelName;    // the model in use, null when none loaded
+    private String pendingModel; // the model being loaded right now
+    private int lastTotal = -1;
 
-    private DetectionView detectionView;
+    private PreviewView previewView;
+    private TrackingOverlayView overlay;
+    private TextView cameraMessage;
     private LinearLayout resultList;
     private LinearLayout countList;
     private TextView totalCount;
     private TextView totalTrend;
     private TextView feedInfo;
-    private Spinner model;
+    private Spinner modelSpinner;
     private Switch enableSwitch;
-    private int lastTotal = -1;
+    private Switch boxSwitch;
+    private Switch labelSwitch;
+    private Switch maskSwitch;
+    private Switch trackSwitch;
+
+    private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) startCamera();
+                else showCameraMessage(getString(R.string.camera_permission_needed));
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,16 +108,18 @@ public class ObjectDetectionActivity extends BaseActivity {
         totalCount = findViewById(R.id.total_count);
         totalTrend = findViewById(R.id.total_trend);
         feedInfo = findViewById(R.id.feed_info);
-        TextView live = findViewById(R.id.feed_live);
-        live.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.dot_red, 0, 0, 0);
+        ((TextView) findViewById(R.id.feed_live))
+                .setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.dot_red, 0, 0, 0);
         setIcon(findViewById(R.id.settings_title), R.drawable.ic_crosshair, 22, 0, Gravity.START);
 
-        detectionView = findViewById(R.id.detection_view);
-        detectionView.setImage(R.drawable.remote_camera_front);
-        detectionView.setDetections(sampleDetections());
+        previewView = findViewById(R.id.camera_preview);
+        previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
+        overlay = findViewById(R.id.tracking_overlay);
+        cameraMessage = findViewById(R.id.camera_message);
 
         setupSettings();
-        detectionView.setOnDetectionsChangedListener(this::render);
+        render(new ArrayList<>());
+        loadModelThenStartCamera(selectedModel());
     }
 
     @Override
@@ -89,44 +133,173 @@ public class ObjectDetectionActivity extends BaseActivity {
         refreshRichHeader();
     }
 
-    /** Detections placed on the objects in remote_camera_front.png (651 x 350 px). */
-    private List<DetectionView.Detection> sampleDetections() {
-        List<DetectionView.Detection> list = new ArrayList<>();
-        list.add(box(R.string.cls_robot, COLOR_ROBOT, 0.94f, 242, 138, 362, 350));
-        list.add(box(R.string.cls_plant, COLOR_PLANT, 0.88f, 0, 70, 122, 345));
-        list.add(box(R.string.cls_plant, COLOR_PLANT, 0.81f, 588, 195, 651, 345));
-        list.add(box(R.string.cls_plant, COLOR_PLANT, 0.74f, 400, 105, 465, 185));
-        list.add(box(R.string.cls_desk, COLOR_DESK, 0.69f, 452, 172, 512, 235));
-        list.add(box(R.string.cls_plant, COLOR_PLANT, 0.63f, 500, 140, 552, 262));
-        list.add(box(R.string.cls_door, COLOR_DOOR, 0.58f, 560, 70, 596, 290));
-        list.add(box(R.string.cls_plant, COLOR_PLANT, 0.52f, 205, 118, 252, 183));
-        return list;
+    @Override
+    protected void onDestroy() {
+        if (cameraProvider != null) cameraProvider.unbindAll();
+        final DetectionAnalyzer current = analyzer;
+        if (current != null) cameraExecutor.execute(current::close);
+        cameraExecutor.shutdown();
+        super.onDestroy();
     }
 
-    private DetectionView.Detection box(int label, int color, float confidence, float l, float t, float r, float b) {
-        float w = 651f;
-        float h = 350f;
-        return new DetectionView.Detection(getString(label), color, confidence, l / w, t / h, r / w, b / h);
+    // ---- model + camera --------------------------------------------------------------------
+
+    /** Loads the detector off the UI thread, then opens the camera. */
+    private void loadModelThenStartCamera(final String model) {
+        pendingModel = model;
+        if (model == null) {
+            analyzer = new DetectionAnalyzer(null, analyzerListener);
+            applySettingsToAnalyzer();
+            requestCameraOrStart();
+            return;
+        }
+        loadingModel = true;
+        feedInfo.setText(getString(R.string.loading_model, model));
+        final DetectionAnalyzer previous = analyzer;
+        cameraExecutor.execute(() -> {
+            if (previous != null) previous.close();
+            YoloSegmenter segmenter = null;
+            String error = null;
+            try {
+                segmenter = new YoloSegmenter(this, model, 4);
+            } catch (IOException | RuntimeException e) {
+                error = e.getMessage() != null ? e.getMessage() : e.toString();
+            }
+            final YoloSegmenter loaded = segmenter;
+            final String message = error;
+            runOnUiThread(() -> {
+                loadingModel = false;
+                if (isDestroyed()) {
+                    if (loaded != null) cameraExecutor.execute(loaded::close);
+                    return;
+                }
+                modelName = loaded != null ? model : null;
+                analyzer = new DetectionAnalyzer(loaded, analyzerListener);
+                applySettingsToAnalyzer();
+                if (message != null) toast(getString(R.string.detector_failed, model, message));
+                if (cameraProvider != null) bindCamera();
+                else requestCameraOrStart();
+            });
+        });
     }
+
+    private void requestCameraOrStart() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startCamera();
+        } else if (!permissionAsked) {
+            permissionAsked = true;
+            cameraPermission.launch(Manifest.permission.CAMERA);
+        } else {
+            // the system stops showing the dialog after repeated denials: open app settings
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", getPackageName(), null)));
+        }
+    }
+
+    private void startCamera() {
+        final ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(this);
+        future.addListener(() -> {
+            try {
+                cameraProvider = future.get();
+                bindCamera();
+            } catch (Exception e) {
+                showCameraMessage(getString(R.string.camera_unavailable));
+            }
+        }, ContextCompat.getMainExecutor(this));
+    }
+
+    private void bindCamera() {
+        if (cameraProvider == null || analyzer == null || isDestroyed()) return;
+        cameraProvider.unbindAll();
+        overlay.clear();
+
+        CameraSelector selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
+        try {
+            if (!cameraProvider.hasCamera(selector)) {
+                // fall back to the other lens (e.g. tablets without a back camera)
+                lensFacing = lensFacing == CameraSelector.LENS_FACING_BACK
+                        ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
+                selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
+                if (!cameraProvider.hasCamera(selector)) {
+                    showCameraMessage(getString(R.string.camera_unavailable));
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            showCameraMessage(getString(R.string.camera_unavailable));
+            return;
+        }
+
+        Preview preview = new Preview.Builder().build();
+        preview.setSurfaceProvider(previewView.getSurfaceProvider());
+
+        ImageAnalysis analysis = new ImageAnalysis.Builder()
+                .setResolutionSelector(new ResolutionSelector.Builder()
+                        .setResolutionStrategy(new ResolutionStrategy(ANALYSIS_SIZE,
+                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+                        .build())
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .build();
+        analysis.setAnalyzer(cameraExecutor, analyzer);
+
+        try {
+            cameraProvider.bindToLifecycle(this, selector, preview, analysis);
+            if (analyzer.canDetect()) cameraMessage.setVisibility(View.GONE);
+        } catch (Exception e) {
+            showCameraMessage(getString(R.string.camera_unavailable));
+        }
+    }
+
+    private void showCameraMessage(String message) {
+        cameraMessage.setText(message);
+        cameraMessage.setVisibility(View.VISIBLE);
+        overlay.clear();
+    }
+
+    private final DetectionAnalyzer.Listener analyzerListener = (objects, width, height, inferenceMs) -> {
+        overlay.setObjects(objects, width, height, lensFacing == CameraSelector.LENS_FACING_FRONT);
+        render(objects);
+        if (!loadingModel) {
+            feedInfo.setText(modelName == null ? getString(R.string.no_detector)
+                    : getString(R.string.inference_info, modelName, (int) inferenceMs));
+        }
+    };
 
     // ---- settings --------------------------------------------------------------------------
 
     private void setupSettings() {
         LinearLayout toggles = findViewById(R.id.toggle_list);
         enableSwitch = addToggle(toggles, R.drawable.ic_scan, R.string.enable_detection, on -> {
-            detectionView.setDetecting(on);
+            if (analyzer != null) analyzer.setDetectionEnabled(on);
             findViewById(R.id.feed_live).setAlpha(on ? 1f : 0.4f);
         });
-        addToggle(toggles, R.drawable.ic_crosshair, R.string.show_boxes, detectionView::setShowBoxes);
-        addToggle(toggles, R.drawable.ic_note, R.string.show_labels, detectionView::setShowLabels);
-        addToggle(toggles, R.drawable.ic_bolt, R.string.realtime_inference, detectionView::setLive);
+        boxSwitch = addToggle(toggles, R.drawable.ic_crosshair, R.string.show_boxes, overlay::setShowBoxes);
+        labelSwitch = addToggle(toggles, R.drawable.ic_note, R.string.show_labels, overlay::setShowLabels);
+        maskSwitch = addToggle(toggles, R.drawable.ic_layers, R.string.show_masks, on -> {
+            overlay.setShowMasks(on);
+            if (analyzer != null) analyzer.setMasksEnabled(on);
+        });
+        trackSwitch = addToggle(toggles, R.drawable.ic_follow, R.string.track_objects, on -> {
+            overlay.setShowTrails(on);
+            if (analyzer != null) analyzer.setTrackingEnabled(on);
+        });
 
-        model = bindSpinner(R.id.spinner_model, R.array.object_models, 0);
-        model.setOnItemSelectedListener(new SimpleItemListener() {
+        List<CharSequence> models = new ArrayList<>(YoloSegmenter.listModels(this));
+        if (models.isEmpty()) models.add(getString(R.string.none));
+        modelSpinner = findViewById(R.id.spinner_model);
+        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, models);
+        adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        modelSpinner.setAdapter(adapter);
+        modelSpinner.setOnItemSelectedListener(new SimpleItemListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                RobotSession.get().send("DETECTION MODEL " + parent.getItemAtPosition(position));
-                render(detectionView.getVisibleDetections());
+                // fires once on the initial selection too, which the model already being
+                // loaded takes care of
+                String selected = selectedModel();
+                if (selected == null || selected.equals(pendingModel)) return;
+                RobotSession.get().send("DETECTION MODEL " + selected);
+                loadModelThenStartCamera(selected);
             }
         });
 
@@ -135,10 +308,38 @@ public class ObjectDetectionActivity extends BaseActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 float value = Float.parseFloat(parent.getItemAtPosition(position).toString());
-                detectionView.setThreshold(value);
+                if (analyzer != null) analyzer.setConfidence(value);
                 RobotSession.get().send("DETECTION THRESHOLD " + value);
             }
         });
+    }
+
+    /** Pushes the switch and spinner state onto a freshly created analyzer. */
+    private void applySettingsToAnalyzer() {
+        analyzer.setDetectionEnabled(enableSwitch.isChecked());
+        analyzer.setMasksEnabled(maskSwitch.isChecked());
+        analyzer.setTrackingEnabled(trackSwitch.isChecked());
+        Spinner threshold = findViewById(R.id.spinner_threshold);
+        if (threshold.getSelectedItem() != null) {
+            analyzer.setConfidence(Float.parseFloat(threshold.getSelectedItem().toString()));
+        }
+        if (!analyzer.canDetect()) {
+            showCameraMessage(getString(R.string.detector_missing, YoloSegmenter.DEFAULT_MODEL));
+        } else {
+            cameraMessage.setVisibility(View.GONE);
+            maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks to show
+        }
+    }
+
+    /** Selected file name, or null when there is no model to choose. */
+    private String selectedModel() {
+        Object selected = modelSpinner == null ? null : modelSpinner.getSelectedItem();
+        if (selected == null) {
+            List<String> models = YoloSegmenter.listModels(this);
+            return models.isEmpty() ? null : models.get(0);
+        }
+        String name = selected.toString();
+        return name.endsWith(".tflite") ? name : null;
     }
 
     private interface OnToggle {
@@ -181,36 +382,41 @@ public class ObjectDetectionActivity extends BaseActivity {
 
     // ---- results ---------------------------------------------------------------------------
 
-    private void render(List<DetectionView.Detection> visible) {
-        renderResults(visible);
-        renderCounts(visible);
-        if (model != null) {
-            feedInfo.setText(getString(R.string.inference_info, model.getSelectedItem(), 18 + random.nextInt(9)));
-        }
+    private void render(List<ObjectTracker.Snapshot> objects) {
+        renderResults(objects);
+        renderCounts(objects);
     }
 
-    /** Detection Result: every visible detection, highest confidence first. */
-    private void renderResults(List<DetectionView.Detection> visible) {
+    /** Detection Result: one row per tracked object, most confident first. */
+    private void renderResults(List<ObjectTracker.Snapshot> objects) {
         resultList.removeAllViews();
-        if (visible.isEmpty()) {
+        if (objects.isEmpty()) {
             TextView empty = new TextView(this);
-            empty.setText(enableSwitch == null || enableSwitch.isChecked() ? R.string.no_detections : R.string.detection_disabled);
+            empty.setText(emptyMessage());
             empty.setTextColor(color(R.color.text_secondary));
             empty.setTextSize(14);
             empty.setPadding(dp(8), dp(12), 0, 0);
             resultList.addView(empty);
             return;
         }
-        List<DetectionView.Detection> sorted = new ArrayList<>(visible);
-        Collections.sort(sorted, (a, b) -> Float.compare(b.confidence, a.confidence));
-        for (DetectionView.Detection d : sorted) {
-            addRow(resultList, d.color, d.label, getString(R.string.confidence_value, d.confidence));
+        for (int i = 0; i < objects.size() && i < RESULT_ROWS; i++) {
+            ObjectTracker.Snapshot object = objects.get(i);
+            String label = object.id > 0
+                    ? getString(R.string.track_label, object.id, object.label) : object.label;
+            addRow(resultList, CocoLabels.color(object.classId), label,
+                    getString(R.string.confidence_value, object.score));
         }
     }
 
-    /** Detected Objects: total with trend, and a count for every class. */
-    private void renderCounts(List<DetectionView.Detection> visible) {
-        int total = visible.size();
+    private int emptyMessage() {
+        if (analyzer == null || !analyzer.canDetect()) return R.string.no_detector;
+        if (enableSwitch != null && !enableSwitch.isChecked()) return R.string.detection_disabled;
+        return R.string.no_detections;
+    }
+
+    /** Detected Objects: how many are tracked right now, and how many of each class. */
+    private void renderCounts(List<ObjectTracker.Snapshot> objects) {
+        int total = objects.size();
         totalCount.setText(String.valueOf(total));
         if (lastTotal >= 0 && total != lastTotal) {
             boolean up = total > lastTotal;
@@ -222,12 +428,23 @@ public class ObjectDetectionActivity extends BaseActivity {
         }
         lastTotal = total;
 
+        // classes in view, most common first; insertion order keeps the list from jumping around
+        Map<Integer, Integer> counts = new LinkedHashMap<>();
+        for (ObjectTracker.Snapshot object : objects) {
+            Integer count = counts.get(object.classId);
+            counts.put(object.classId, count == null ? 1 : count + 1);
+        }
         countList.removeAllViews();
-        for (int i = 0; i < CLASS_NAMES.length; i++) {
-            String name = getString(CLASS_NAMES[i]);
-            int count = 0;
-            for (DetectionView.Detection d : visible) if (d.label.equals(name)) count++;
-            addRow(countList, CLASS_COLORS[i], name, String.valueOf(count));
+        int rows = 0;
+        for (Map.Entry<Integer, Integer> entry : counts.entrySet()) {
+            if (rows++ >= COUNT_ROWS) break;
+            int classId = entry.getKey();
+            addRow(countList, CocoLabels.color(classId), CocoLabels.name(classId),
+                    String.valueOf(entry.getValue()));
+        }
+        if (rows == 0) {
+            addRow(countList, color(R.color.text_muted), getString(R.string.total_seen),
+                    String.valueOf(analyzer == null ? 0 : analyzer.getTotalSeen()));
         }
     }
 

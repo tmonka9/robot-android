@@ -41,10 +41,28 @@
                     android:padding="6dp"
                     android:tag="1.64">
 
-                    <com.falcon.robot.widget.DetectionView
-                        android:id="@+id/detection_view"
+                    <androidx.camera.view.PreviewView
+                        android:id="@+id/camera_preview"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
+
+                    <com.falcon.robot.widget.TrackingOverlayView
+                        android:id="@+id/tracking_overlay"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <TextView
+                        android:id="@+id/camera_message"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:layout_margin="24dp"
+                        android:background="@drawable/bg_feed_label"
+                        android:gravity="center"
+                        android:padding="14dp"
+                        android:textColor="@color/white"
+                        android:textSize="14sp"
+                        android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/feed_live"
