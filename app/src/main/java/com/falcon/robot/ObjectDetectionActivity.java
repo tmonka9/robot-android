@@ -100,6 +100,7 @@ public class ObjectDetectionActivity extends BaseActivity {
         ((ImageView) findViewById(R.id.header_icon)).setColorFilter(color(R.color.orange), PorterDuff.Mode.SRC_IN);
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
+        CocoLabels.init(this); // class names in the app language
 
         resultList = findViewById(R.id.result_list);
         countList = findViewById(R.id.count_list);

@@ -108,10 +108,12 @@ public class VoiceRecognitionActivity extends BaseActivity {
     }
 
     private final SimpleDateFormat dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-    private final SimpleDateFormat clock = new SimpleDateFormat("h:mm a", Locale.US);
     private final List<HistoryEntry> history = new ArrayList<>();
     private final int[][] advancedSelection = new int[ADVANCED.length][4];
     private final ExecutorService transcriber = Executors.newSingleThreadExecutor();
+
+    /** Spoken clock, in the device format and the app language (set in onCreate). */
+    private java.text.DateFormat clock;
 
     private WhisperEngine engine;
     private SpeechRecorder recorder;
@@ -158,12 +160,13 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
 
+        clock = android.text.format.DateFormat.getTimeFormat(this);
         engine = new WhisperEngine(this);
         recorder = new SpeechRecorder(recorderListener);
         customPhrases = new CustomPhrases(this);
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
-            if (ttsReady) tts.setLanguage(Locale.US);
+            if (ttsReady) setSpeechLanguage();
         });
 
         setupListening();
@@ -379,6 +382,15 @@ public class VoiceRecognitionActivity extends BaseActivity {
         if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "voice-result");
     }
 
+    /** The robot answers in the app language, falling back to English when no voice is installed. */
+    private void setSpeechLanguage() {
+        Locale locale = new Locale(LocaleHelper.effectiveLanguage(this));
+        int result = tts.setLanguage(locale);
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts.setLanguage(Locale.US);
+        }
+    }
+
     private void showMicrophoneMenu(View anchor) {
         final String[] devices = getResources().getStringArray(R.array.microphones);
         PopupMenu menu = new PopupMenu(this, anchor);
@@ -409,7 +421,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
                 return;
             }
             if (sendCommand("VOICE_COMMAND " + currentAction.command)) {
-                toast(getString(R.string.sent_command, currentAction.name));
+                toast(getString(R.string.sent_command, getString(currentAction.labelRes)));
                 addHistory(transcript, R.string.result_executed, -1f);
             }
         });
@@ -444,11 +456,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
         } else {
             SpannableStringBuilder label = new SpannableStringBuilder(getString(R.string.execute_label));
             int start = label.length();
-            label.append(currentAction.name);
+            label.append(getString(currentAction.labelRes));
             label.setSpan(new ForegroundColorSpan(color(R.color.teal)), start, label.length(),
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             name.setText(label);
-            description.setText(currentAction.description);
+            description.setText(currentAction.descriptionRes);
             icon.setImageResource(iconFor(currentAction));
         }
         icon.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
@@ -504,7 +516,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         int gap = Math.round(6 * getResources().getDisplayMetrics().density);
 
         for (final CustomPhrases.Phrase phrase : customPhrases.getAll()) {
-            if (!matches(query, phrase.text, phrase.action.name)) continue;
+            if (!matches(query, phrase.text, getString(phrase.action.labelRes))) continue;
             View row = addCommandRow(inflater, gap, phrase.text, phrase.action, false);
             row.setOnLongClickListener(v -> {
                 customPhrases.remove(phrase);
@@ -513,8 +525,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
             });
         }
         for (final VoiceCommands.Action action : VoiceCommands.actions()) {
-            String phrase = VoiceCommands.examplePhrase(action);
-            if (!matches(query, phrase, action.name)) continue;
+            String phrase = VoiceCommands.examplePhrase(action, LocaleHelper.effectiveLanguage(this));
+            if (!matches(query, phrase, getString(action.labelRes))) continue;
             addCommandRow(inflater, gap, phrase, action, true);
         }
     }
@@ -534,7 +546,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         ((TextView) row.findViewById(R.id.db_name)).setText(phrase);
         row.findViewById(R.id.db_id).setVisibility(View.GONE);
-        ((TextView) row.findViewById(R.id.db_department)).setText(action.name);
+        ((TextView) row.findViewById(R.id.db_department)).setText(action.labelRes);
         TextView chip = row.findViewById(R.id.db_active);
         chip.setText(builtIn ? R.string.built_in : R.string.custom_phrase);
         chip.setTextColor(color(builtIn ? R.color.text_muted : R.color.teal));
@@ -552,7 +564,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         input.setHint(R.string.enter_phrase);
         final Spinner spinner = new Spinner(this);
         List<CharSequence> names = new ArrayList<>();
-        for (VoiceCommands.Action a : actions) names.add(a.name);
+        for (VoiceCommands.Action a : actions) names.add(getString(a.labelRes));
         ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, names);
         adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
         spinner.setAdapter(adapter);

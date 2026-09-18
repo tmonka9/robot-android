@@ -12,6 +12,7 @@ import android.widget.TextView;
 public class SettingsActivity extends BaseActivity {
 
     private View connectionRow;
+    private View languageRow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,6 +22,8 @@ public class SettingsActivity extends BaseActivity {
         LinearLayout list = findViewById(R.id.settings_list);
         connectionRow = addRow(list, R.drawable.ic_wifi, R.string.settings_connection, "",
                 v -> showConnectionDialog());
+        languageRow = addRow(list, R.drawable.ic_language, R.string.settings_language,
+                languageSummary(), v -> showLanguageDialog());
         addRow(list, R.drawable.ic_camera, R.string.settings_camera,
                 getString(R.string.settings_camera_sub), v -> toast(R.string.coming_soon));
         addRow(list, R.drawable.ic_chip, R.string.settings_ai,
@@ -35,6 +38,8 @@ public class SettingsActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         onConnectionChanged();
+        // the system language can change while the app is in the background
+        ((TextView) languageRow.findViewById(R.id.row_subtitle)).setText(languageSummary());
     }
 
     @Override
@@ -46,6 +51,33 @@ public class SettingsActivity extends BaseActivity {
         String state = session.isConnected() ? connectionLabel() : getString(R.string.status_disconnected);
         ((TextView) connectionRow.findViewById(R.id.row_subtitle))
                 .setText(getString(R.string.connection_summary, address, state));
+    }
+
+    // ---- language --------------------------------------------------------------------------
+
+    /** "App display language  ·  English" */
+    private String languageSummary() {
+        return getString(R.string.settings_language_sub) + "  ·  "
+                + getString(LocaleHelper.labelOf(LocaleHelper.getLanguage(this)));
+    }
+
+    private void showLanguageDialog() {
+        final String[] languages = LocaleHelper.LANGUAGES;
+        CharSequence[] labels = new CharSequence[languages.length];
+        for (int i = 0; i < languages.length; i++) labels[i] = getString(LocaleHelper.labelOf(languages[i]));
+        final String current = LocaleHelper.getLanguage(this);
+
+        new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
+                .setTitle(R.string.settings_language)
+                .setSingleChoiceItems(labels, LocaleHelper.indexOf(current), (dialog, which) -> {
+                    dialog.dismiss();
+                    if (languages[which].equals(current)) return;
+                    LocaleHelper.setLanguage(this, languages[which]);
+                    // every open page checks the language in onResume and rebuilds itself
+                    recreate();
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private View addRow(LinearLayout list, int icon, int title, CharSequence subtitle,

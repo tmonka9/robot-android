@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Robot Control</string>
+    <string name="splash_step_init">システムを初期化しています…</string>
+    <string name="splash_step_models">AIモデルを読み込んでいます…</string>
+    <string name="splash_step_sensors">カメラとLiDARを起動しています…</string>
+    <string name="splash_step_services">サービスに接続しています…</string>
+    <string name="splash_step_ready">システム準備完了</string>
+    <string name="splash_version">バージョン %s</string>
+
+    <!-- Sidebar -->
+    <string name="nav_home">ホーム</string>
+    <string name="nav_robot">ロボット制御</string>
+    <string name="nav_remote">遠隔操作</string>
+    <string name="nav_face">顔認識</string>
+    <string name="nav_voice">音声認識</string>
+    <string name="nav_object">物体検出</string>
+    <string name="nav_settings">設定</string>
+    <string name="back">戻る</string>
+
+    <!-- Home -->
+    <string name="nav_lidar">LiDAR SLAM</string>
+    <string name="system_online">システム稼働中</string>
+    <string name="robot_offline">ロボット未接続 · タップして接続</string>
+    <string name="network">ネットワーク</string>
+    <string name="network_connected">接続済み</string>
+    <string name="network_offline">オフライン</string>
+    <string name="quick_status">ステータス概要</string>
+    <string name="qs_robot">ロボット</string>
+    <string name="qs_camera">カメラ</string>
+    <string name="qs_lidar">LiDAR</string>
+    <string name="qs_ai_model">AIモデル</string>
+    <string name="value_ready">準備完了</string>
+    <string name="value_online">オンライン</string>
+    <string name="value_loaded">読み込み済み</string>
+    <string name="value_offline">オフライン</string>
+    <string name="date_format">yyyy-MM-dd  EEE</string>
+
+    <!-- LiDAR SLAM -->
+    <string name="lidar_title">LiDAR &amp; SLAM</string>
+    <string name="lidar_subtitle">マッピング  •  自己位置推定  •  ナビゲーション</string>
+    <string name="lidar_mapping">マッピング</string>
+    <string name="lidar_localization">自己位置推定</string>
+    <string name="lidar_navigation">ナビゲーション</string>
+    <string name="map_quality">マップ品質</string>
+    <string name="slam_status">SLAM状態</string>
+    <string name="state_running">実行中</string>
+    <string name="state_paused">一時停止</string>
+    <string name="state_stable">安定</string>
+    <string name="state_ready">準備完了</string>
+    <string name="state_active">動作中</string>
+    <string name="state_good">良好</string>
+    <string name="view_3d">3Dビュー</string>
+    <string name="view_top">上面ビュー</string>
+    <string name="view_map">マップビュー</string>
+    <string name="robot_pose">ロボット姿勢</string>
+    <string name="pose_meters">%.2f m</string>
+    <string name="pose_degrees">%.1f°</string>
+    <string name="yaw">ヨー</string>
+    <string name="lidar_data">LiDARデータ</string>
+    <string name="lidar_range_label">範囲: 0.1 - %d m</string>
+    <string name="points">点群数</string>
+    <string name="control">操作</string>
+    <string name="start_mapping">マッピング開始</string>
+    <string name="pause_mapping">マッピング一時停止</string>
+    <string name="save_map">マップ保存</string>
+    <string name="load_map">マップ読み込み</string>
+    <string name="auto_navigation">自動ナビゲーション</string>
+    <string name="follow_mode">追従モード</string>
+    <string name="navigation_target">目的地</string>
+    <string name="set_target">目的地設定</string>
+    <string name="rotate_left">左旋回</string>
+    <string name="rotate_right">右旋回</string>
+    <string name="goal_dock">充電ドック</string>
+    <string name="goal_entrance">入口</string>
+    <string name="goal_kitchen">キッチン</string>
+    <string name="goal_office">オフィス</string>
+    <string name="log">ログ</string>
+    <string name="clear">クリア</string>
+    <string name="legend_robot">ロボット</string>
+    <string name="legend_path">経路</string>
+    <string name="legend_obstacle">障害物</string>
+    <string name="legend_wall">壁</string>
+    <string name="legend_explored">探索済み</string>
+    <string name="legend_unexplored">未探索</string>
+    <string name="lidar_range">LiDAR範囲</string>
+    <string name="meters">%d m</string>
+    <string name="mapping_mode">マッピングモード</string>
+    <string name="update_rate">更新レート</string>
+    <string name="apply">適用</string>
+    <string-array name="lidar_resolutions">
+        <item>高 (0.1°)</item>
+        <item>中 (0.25°)</item>
+        <item>低 (0.5°)</item>
+    </string-array>
+    <string-array name="mapping_modes">
+        <item>RTAB-Map</item>
+        <item>Cartographer</item>
+        <item>GMapping</item>
+    </string-array>
+    <string-array name="update_rates">
+        <item>10 Hz</item>
+        <item>20 Hz</item>
+        <item>5 Hz</item>
+    </string-array>
+    <string-array name="saved_maps">
+        <item>Office_Floor1</item>
+        <item>Warehouse_A</item>
+        <item>Lobby_Demo</item>
+    </string-array>
+    <!-- log messages -->
+    <string name="log_slam_initialized">SLAMの初期化が完了しました</string>
+    <string name="log_map_updated">マップを更新しました。点群数: %,d</string>
+    <string name="log_localization_stable">自己位置推定が安定しました</string>
+    <string name="log_target_set">目的地を設定しました: %1$s (%2$.2f, %3$.2f)</string>
+    <string name="log_robot_moving">ロボットが移動しています…</string>
+    <string name="log_obstacle">障害物を検出しました (ID: %d)</string>
+    <string name="log_replanning">経路を再計画しています…</string>
+    <string name="log_reached">目的地に到達しました</string>
+    <string name="log_mapping_started">マッピングを開始しました</string>
+    <string name="log_mapping_paused">マッピングを一時停止しました</string>
+    <string name="log_stopped">マッピングとナビゲーションを停止しました</string>
+    <string name="log_map_saved">マップを保存しました (%,d 点)</string>
+    <string name="log_map_loaded">マップを読み込みました: %s</string>
+    <string name="log_command">コマンド: %s</string>
+    <string name="log_setting">%1$s: %2$s</string>
+    <string name="log_settings_applied">設定を適用しました: %1$d m、%2$s、%3$s、%4$s</string>
+    <string name="log_snapshot">スナップショットを保存しました</string>
+    <string name="log_centered">ロボットを中心に表示しました</string>
+    <string name="log_path_layer">経路レイヤー %s</string>
+    <string name="on">オン</string>
+    <string name="off">オフ</string>
+
+    <!-- Common status -->
+    <string name="status_disconnected">未接続 · タップして接続</string>
+    <string name="status_connecting">接続しています…</string>
+    <string name="status_connected_short">接続済み</string>
+    <string name="status_offline_short">オフライン</string>
+    <string name="status_listening">音声待機中…</string>
+    <string name="status_paused">一時停止</string>
+    <string name="not_connected">先にロボットに接続してください</string>
+    <string name="sent_command">送信: %s</string>
+    <string name="placeholder_value">--</string>
+    <string name="percent">%d%%</string>
+
+    <!-- Robot Control -->
+    <string name="movement_control">移動制御</string>
+    <string name="speed">速度</string>
+    <string name="battery">バッテリー</string>
+    <string name="mode">モード</string>
+    <string name="robot_subtitle">ロボットの移動と動作を制御します。</string>
+    <string name="robot_status">ロボット状態</string>
+    <string name="temperature">温度</string>
+    <string name="mode_remote">遠隔操作</string>
+    <string name="speed_slow">低速</string>
+    <string name="speed_normal">標準</string>
+    <string name="speed_fast">高速</string>
+    <string name="demo_battery">78%</string>
+    <string name="demo_temperature">36°C</string>
+    <string name="position">位置</string>
+    <string name="position_x">X:  %.2f m</string>
+    <string name="position_y">Y:  %.2f m</string>
+    <string name="position_z">Z:  %.2f m</string>
+    <string name="position_reset">位置をリセットしました</string>
+    <string name="camera_view">カメラ映像</string>
+    <string name="cam_front">前方</string>
+    <string name="cam_rear">後方</string>
+    <string name="cam_left">左</string>
+    <string name="cam_right">右</string>
+    <string name="camera_settings">カメラ設定</string>
+    <string name="brightness">明るさ</string>
+    <string name="contrast">コントラスト</string>
+    <string name="saturation">彩度</string>
+    <string name="resolution">解像度</string>
+    <string name="fps">FPS</string>
+    <string-array name="camera_resolutions">
+        <item>1080P</item>
+        <item>720P</item>
+        <item>480P</item>
+    </string-array>
+    <string-array name="camera_resolution_sizes">
+        <item>1920 × 1080</item>
+        <item>1280 × 720</item>
+        <item>854 × 480</item>
+    </string-array>
+    <string-array name="camera_fps">
+        <item>30</item>
+        <item>60</item>
+        <item>15</item>
+    </string-array>
+    <string name="feed_info">%1$s  ·  %2$s FPS</string>
+    <string name="act_turn_left">左旋回</string>
+    <string name="act_turn_right">右旋回</string>
+    <string name="act_reset">リセット</string>
+    <string name="arm_control">アーム制御</string>
+    <string name="arm_left">左アーム</string>
+    <string name="arm_right">右アーム</string>
+    <string name="arm_head">ヘッド</string>
+    <string name="arm_waist">腰部</string>
+    <string name="preset_pose">プリセット姿勢</string>
+    <string name="pose_t">Tポーズ</string>
+    <string name="qa_go_home">ホームへ戻る</string>
+    <string name="qa_start_patrol">巡回開始</string>
+    <string name="qa_stop_patrol">巡回停止</string>
+    <string name="qa_follow_me">追従開始</string>
+    <string name="qa_stop_follow">追従停止</string>
+    <string name="qa_shutdown">シャットダウン</string>
+    <string name="shutdown_confirm">ロボットをシャットダウンしますか？</string>
+    <string name="cancel">キャンセル</string>
+    <string name="custom_actions">カスタム動作</string>
+    <string name="custom_action">動作 %d</string>
+    <string name="robot_tip">仮想ジョイスティックまたはプリセットボタンでロボットを操作します。</string>
+    <string name="pose_stand">起立</string>
+    <string name="pose_sit">着座</string>
+    <string name="pose_wave">手を振る</string>
+
+    <!-- Remote Control -->
+    <string name="remote_subtitle">リモート端末からロボットを操作します。</string>
+    <string name="quick_actions">クイック操作</string>
+    <string name="act_forward">前進</string>
+    <string name="act_backward">後退</string>
+    <string name="act_stop">停止</string>
+    <string name="camera_view_named">カメラ映像 (ロボット %s)</string>
+    <string name="online">オンライン</string>
+    <string name="connection">接続</string>
+    <string name="position_estimated">位置 (推定)</string>
+    <string name="map_2d">2D</string>
+    <string name="map_3d">3D</string>
+    <string name="legend_target">目的地</string>
+    <string name="control_mode">制御モード</string>
+    <string name="mode_manual">手動</string>
+    <string name="mode_autonomous">自律</string>
+    <string name="mode_follow">追従</string>
+    <string name="mode_path">経路</string>
+    <string name="pose_pick">ピック</string>
+    <string name="pose_point">指差し</string>
+    <string name="pose_crouch">しゃがむ</string>
+    <string name="pose_custom">カスタム</string>
+    <string name="camera_recording">カメラ・録画</string>
+    <string name="take_photo">写真撮影</string>
+    <string name="start_video">録画開始</string>
+    <string name="stop_video">録画停止</string>
+    <string name="record">録音</string>
+    <string name="stop_record">録音停止</string>
+    <string name="gallery">ギャラリー</string>
+    <string name="gallery_empty">撮影データなし</string>
+    <string name="switch_camera">カメラ切り替え</string>
+    <string name="operation_log">操作ログ</string>
+    <string name="log_robot_connected">ロボットに接続しました</string>
+    <string name="log_robot_disconnected">ロボットとの接続を切断しました</string>
+    <string name="log_camera_started">カメラ映像を開始しました (%s)</string>
+    <string name="log_movement">移動コマンド: %s</string>
+    <string name="log_speed">速度を %d%% に設定しました</string>
+    <string name="log_pose">姿勢: %s</string>
+    <string name="log_arm">アーム制御: %s</string>
+    <string name="log_mode">制御モード: %s</string>
+    <string name="log_action">動作: %s</string>
+    <string name="log_photo">写真を保存しました: %s</string>
+    <string name="log_video_started">録画を開始しました</string>
+    <string name="log_video_saved">動画を保存しました: %s</string>
+    <string name="log_audio_started">録音を開始しました</string>
+    <string name="log_audio_saved">音声を保存しました: %s</string>
+
+    <!-- Face Recognition -->
+    <string name="face_subtitle">顔の検出・識別・管理</string>
+    <string name="status">状態</string>
+    <string name="time">時刻</string>
+    <string name="face_database">顔データベース</string>
+    <string name="face_registered">%s を登録しました</string>
+    <string name="face_removed">%s を削除しました</string>
+    <string name="live_camera">ライブカメラ (%s)</string>
+    <string name="recognized">認識済み</string>
+    <string name="unrecognized">未認識</string>
+    <string name="profile">プロフィール</string>
+    <string name="unknown_person">不明</string>
+    <string name="name">名前</string>
+    <string name="id_label">ID</string>
+    <string name="similarity">類似度</string>
+    <string name="department">部署</string>
+    <string name="position_title">役職</string>
+    <string name="access_time">通過時刻</string>
+    <string name="similarity_value">%.1f%%</string>
+    <string name="open_door">ドア解錠</string>
+    <string name="add_to_log">ログに追加</string>
+    <string name="more">その他</string>
+    <string name="door_opened">%s のためにドアを解錠しました</string>
+    <string name="added_to_log">%s をログに追加しました</string>
+    <string name="toggle_active">有効 / 無効を切り替え</string>
+    <string name="remove_from_database">データベースから削除</string>
+    <string name="active">有効</string>
+    <string name="inactive">無効</string>
+    <string name="search_faces">名前またはIDで検索…</string>
+    <string name="add_face">顔を登録</string>
+    <string name="save">保存</string>
+    <string name="enter_name">名前を入力してください</string>
+    <string name="snapshot_saved">スナップショットを保存しました</string>
+    <string name="recognition_history">認識履歴</string>
+    <string name="view_all">すべて表示</string>
+    <string name="image">画像</string>
+    <string name="history_line">%1$s   %2$s   %3$s   %4$s</string>
+    <string name="detection_statistics">検出統計</string>
+    <string name="total_faces">登録顔数</string>
+    <string name="todays_records">本日の記録</string>
+    <string name="recognitions">認識回数</string>
+    <string name="face_detection_settings">顔検出設定</string>
+    <string name="face_detection">顔検出</string>
+    <string name="face_recognition_toggle">顔認識</string>
+    <string name="recognition_mode">認識モード</string>
+    <string name="similarity_threshold">類似度しきい値</string>
+    <string name="database">データベース</string>
+    <string name="camera">カメラ</string>
+    <string-array name="recognition_modes">
+        <item>高精度</item>
+        <item>バランス</item>
+        <item>高速</item>
+    </string-array>
+    <!-- Database filter: index 0 all, 1 active only, 2 inactive only -->
+    <string-array name="face_databases">
+        <item>全ユーザー</item>
+        <item>有効ユーザー</item>
+        <item>無効ユーザー</item>
+    </string-array>
+    <!-- Camera choice: index 0 front (lens facing the user), 1 back -->
+    <string-array name="camera_sources">
+        <item>フロントカメラ</item>
+        <item>リアカメラ</item>
+    </string-array>
+    <string name="face_label_face">顔</string>
+    <string name="camera_permission_needed">顔認識にはカメラの権限が必要です。\nタップして許可してください。</string>
+    <string name="camera_unavailable">カメラを利用できません</string>
+    <string name="model_missing">顔検出のみ動作します。認識を有効にするには mobilefacenet.tflite を app/src/main/assets に追加してください</string>
+    <string name="model_failed">mobilefacenet.tflite を読み込めませんでした: %s</string>
+    <string name="frame_info">%1$d × %2$d  ·  %3$d ms</string>
+    <string name="snapshot_saved_to">スナップショットを保存しました: %s</string>
+    <string name="snapshot_failed">スナップショットを保存できませんでした</string>
+    <string name="look_at_camera">カメラを見てください…</string>
+    <string name="registration_failed">顔を取得できませんでした。カメラに顔を向けてもう一度お試しください。</string>
+    <string name="recognition_unavailable">顔認識には mobilefacenet.tflite が必要です</string>
+    <string name="empty_database">登録された顔がありません。\n+ をタップして追加してください。</string>
+    <string name="empty_history">検出された顔はありません</string>
+    <string name="waiting_for_face">顔を待機しています…</string>
+
+    <!-- Voice Recognition -->
+    <string name="voice_subtitle">音声コマンドの認識と実行</string>
+    <string name="stop">停止</string>
+    <string name="speak_now">お話しください…</string>
+    <string name="microphone">マイク</string>
+    <string-array name="microphones">
+        <item>既定のデバイス</item>
+        <item>マイクアレイ</item>
+        <item>USBマイク</item>
+        <item>Bluetoothヘッドセット</item>
+    </string-array>
+    <string name="recognition_result">認識結果</string>
+    <string name="text">テキスト</string>
+    <string name="confidence">信頼度</string>
+    <string name="language">言語</string>
+    <string name="command_action">コマンド動作</string>
+    <string name="execute_label">実行: </string>
+    <string name="voice_database">音声コマンド</string>
+    <string name="add_voice">フレーズ追加</string>
+    <string name="search_by_name">コマンドを検索…</string>
+    <string name="voice_control">音声制御</string>
+    <string name="vc_command">音声コマンド制御</string>
+    <string name="vc_command_sub">ロボットの音声コマンドを有効にします</string>
+    <string name="vc_wake">ウェイクワード (Hey Robot)</string>
+    <string name="vc_wake_sub">ウェイクワードで待機モードを開始します</string>
+    <string name="vc_continuous">常時待機</string>
+    <string name="vc_continuous_sub">常に音声を待機します</string>
+    <string name="vc_noise">ノイズ低減</string>
+    <string name="vc_noise_sub">騒音環境での認識精度を改善します</string>
+    <string name="wake_word">ウェイクワード</string>
+    <string name="wake_word_title">ウェイクワード (%s)</string>
+    <string name="voice_history">音声コマンド履歴</string>
+    <string name="command">コマンド</string>
+    <string name="result">結果</string>
+    <string name="result_executed">実行済み</string>
+    <string name="result_answered">応答済み</string>
+    <string name="result_not_sent">未送信</string>
+    <string name="advanced_settings">詳細設定</string>
+    <string name="tab_speech_model">音声モデル</string>
+    <string name="tab_language">言語</string>
+    <string name="tab_hotword">ホットワード</string>
+    <string name="tab_audio">オーディオ</string>
+    <string name="apply_settings">設定を適用</string>
+    <string name="time_answer">現在 %s です</string>
+    <string name="status_processing">処理中…</string>
+    <string name="result_no_match">該当なし</string>
+    <string name="mic_permission_needed">音声コマンドにはマイクの権限が必要です</string>
+    <string name="engine_unavailable">音声エンジンが未ビルドです。whisper.cpp を app/src/main/cpp に追加してください</string>
+    <string name="model_not_found">%1$s を %2$s に配置してください</string>
+    <string name="loading_model">%s を読み込んでいます…</string>
+    <string name="installing_model">%s をアプリから展開しています…</string>
+    <string name="model_loaded">%s を読み込みました</string>
+    <string name="model_load_failed">%s を読み込めませんでした</string>
+    <string name="mic_error">マイクエラー: %s</string>
+    <string name="tap_mic_to_speak">マイクをタップして話してください</string>
+    <string name="quoted">“%1$s”</string>
+    <string name="built_in">内蔵</string>
+    <string name="custom_phrase">カスタム</string>
+    <string name="add_phrase">フレーズ追加</string>
+    <string name="enter_phrase">読み上げるフレーズ</string>
+    <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
+    <!-- Advanced settings rows: label + options, grouped by tab -->
+    <string name="adv_model_type">モデル種別</string>
+    <!-- replaced at runtime by the ggml models found on the device -->
+    <string-array name="adv_model_type_options">
+        <item>ggml-small.bin</item>
+    </string-array>
+    <string name="adv_engine">認識エンジン</string>
+    <string-array name="adv_engine_options">
+        <item>ONNX Runtime</item>
+        <item>TensorFlow Lite</item>
+        <item>NNAPI</item>
+    </string-array>
+    <string name="adv_sample_rate">サンプリングレート</string>
+    <string-array name="adv_sample_rate_options">
+        <item>16 kHz</item>
+        <item>22.05 kHz</item>
+        <item>44.1 kHz</item>
+    </string-array>
+    <string name="adv_audio_input">音声入力</string>
+    <string-array name="adv_audio_input_options">
+        <item>マイクアレイ</item>
+        <item>内蔵マイク</item>
+        <item>USBマイク</item>
+    </string-array>
+    <string name="adv_recognition_language">認識言語</string>
+    <string name="adv_response_language">応答言語</string>
+    <string-array name="adv_language_options">
+        <item>自動検出</item>
+        <item>英語</item>
+        <item>韓国語</item>
+        <item>中国語 (標準語)</item>
+        <item>日本語</item>
+        <item>スペイン語</item>
+        <item>ドイツ語</item>
+    </string-array>
+    <!-- whisper language codes, matching adv_language_options -->
+    <string-array name="adv_language_codes">
+        <item>auto</item>
+        <item>en</item>
+        <item>ko</item>
+        <item>zh</item>
+        <item>ja</item>
+        <item>es</item>
+        <item>de</item>
+    </string-array>
+    <string name="adv_auto_detect">言語の自動検出</string>
+    <string-array name="adv_on_off_options">
+        <item>オフ</item>
+        <item>オン</item>
+    </string-array>
+    <string name="adv_punctuation">句読点の自動付与</string>
+    <string name="adv_hotword_engine">ウェイクワードエンジン</string>
+    <string-array name="adv_hotword_engine_options">
+        <item>Porcupine</item>
+        <item>Snowboy</item>
+        <item>内蔵</item>
+    </string-array>
+    <string name="adv_sensitivity">感度</string>
+    <string-array name="adv_sensitivity_options">
+        <item>中</item>
+        <item>高</item>
+        <item>低</item>
+    </string-array>
+    <string name="adv_timeout">待機タイムアウト</string>
+    <string-array name="adv_timeout_options">
+        <item>5 s</item>
+        <item>10 s</item>
+        <item>30 s</item>
+    </string-array>
+    <string name="adv_confirm_sound">確認音</string>
+    <string-array name="adv_confirm_sound_options">
+        <item>ビープ音</item>
+        <item>音声</item>
+        <item>なし</item>
+    </string-array>
+    <string name="adv_noise_suppression">ノイズ抑制</string>
+    <string-array name="adv_noise_options">
+        <item>標準</item>
+        <item>強</item>
+        <item>オフ</item>
+    </string-array>
+    <string name="adv_echo_cancel">エコーキャンセル</string>
+    <string name="adv_gain">入力ゲイン</string>
+    <string-array name="adv_gain_options">
+        <item>自動</item>
+        <item>低</item>
+        <item>高</item>
+    </string-array>
+    <string name="adv_output_volume">出力音量</string>
+    <string-array name="adv_volume_options">
+        <item>70%</item>
+        <item>50%</item>
+        <item>100%</item>
+    </string-array>
+
+    <!-- Object Detection -->
+    <string name="object_subtitle">物体をリアルタイムに検出・識別</string>
+    <string name="detection_result">検出結果</string>
+    <string name="detection_settings">検出設定</string>
+    <string name="detected_objects">検出された物体</string>
+    <string name="enable_detection">検出を有効化</string>
+    <string name="show_boxes">バウンディングボックス表示</string>
+    <string name="show_labels">ラベル表示</string>
+    <string name="show_masks">セグメンテーションマスク</string>
+    <string name="track_objects">物体追跡</string>
+    <string name="track_label">#%1$d %2$s</string>
+    <string name="total_seen">検出累計</string>
+    <string name="none">モデルなし</string>
+    <string name="no_detector">検出モデルなし</string>
+    <string name="detector_missing">YOLOv8-seg モデル (%1$s) を app/src/main/assets または models フォルダーに追加してください</string>
+    <string name="detector_failed">%1$s を読み込めませんでした: %2$s</string>
+    <string name="model">モデル</string>
+    <string name="confidence_threshold">信頼度しきい値</string>
+    <string name="total">合計</string>
+    <string name="no_detections">しきい値を超える物体はありません</string>
+    <string name="detection_disabled">検出はオフです</string>
+    <string name="live">LIVE</string>
+    <string name="inference_info">%1$s  ·  %2$d ms</string>
+    <string name="confidence_value">%.2f</string>
+    <string-array name="confidence_thresholds">
+        <item>0.3</item>
+        <item>0.4</item>
+        <item>0.5</item>
+        <item>0.6</item>
+        <item>0.7</item>
+        <item>0.8</item>
+    </string-array>
+
+    <!-- Settings -->
+    <string name="settings_connection">ロボット接続</string>
+    <string name="settings_camera">カメラ設定</string>
+    <string name="settings_camera_sub">Webカメラ / RTSPカメラ</string>
+    <string name="settings_ai">AIモデル設定</string>
+    <string name="settings_ai_sub">モデル / パフォーマンス</string>
+    <string name="settings_db">データベース管理</string>
+    <string name="settings_db_sub">顔データベース / 物体データベース</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_sub">アプリの表示言語</string>
+    <string name="language_system">システムの既定</string>
+
+    <string name="settings_system">システム設定</string>
+    <string name="settings_system_sub">言語 / デバイス / このアプリについて</string>
+    <string name="coming_soon">現在ご利用いただけません</string>
+    <string name="about_message">AI Robot Control\nバージョン %s</string>
+
+    <!-- Connection dialog -->
+    <string name="wifi">Wi-Fi</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="ip_address">IPアドレス</string>
+    <string name="port">ポート</string>
+    <string name="connect">接続</string>
+    <string name="disconnect">切断</string>
+    <string name="close">閉じる</string>
+    <string name="invalid_port">有効なポート番号を入力してください</string>
+    <string name="connected_via">接続済み · %s</string>
+    <string name="connection_summary">%1$s · %2$s</string>
+    <!-- Voice command names and descriptions (VoiceCommands); the names are display text only,
+         stored phrases key off the English action name. -->
+    <string name="cmd_stop">停止</string>
+    <string name="cmd_stop_desc">ロボットがすべての動作を停止します。</string>
+    <string name="cmd_home">ホームへ戻る</string>
+    <string name="cmd_home_desc">ロボットがホーム位置に戻ります。</string>
+    <string name="cmd_forward">前進</string>
+    <string name="cmd_forward_desc">ロボットが前進します。</string>
+    <string name="cmd_backward">後退</string>
+    <string name="cmd_backward_desc">ロボットが後退します。</string>
+    <string name="cmd_left">左旋回</string>
+    <string name="cmd_left_desc">ロボットが左に旋回します。</string>
+    <string name="cmd_right">右旋回</string>
+    <string name="cmd_right_desc">ロボットが右に旋回します。</string>
+    <string name="cmd_door">ドアを開ける</string>
+    <string name="cmd_door_desc">ロボットがドアを開けます。</string>
+    <string name="cmd_mapping">マッピング開始</string>
+    <string name="cmd_mapping_desc">ロボットがマップの作成を開始します。</string>
+    <string name="cmd_stand">起立</string>
+    <string name="cmd_stand_desc">ロボットが立ち上がります。</string>
+    <string name="cmd_sit">着座</string>
+    <string name="cmd_sit_desc">ロボットが座ります。</string>
+    <string name="cmd_wave">手を振る</string>
+    <string name="cmd_wave_desc">ロボットが手を振って挨拶します。</string>
+    <string name="cmd_dance">ダンス</string>
+    <string name="cmd_dance_desc">ロボットがダンスをします。</string>
+    <string name="cmd_follow">追従</string>
+    <string name="cmd_follow_desc">ロボットがあなたに追従します。</string>
+    <string name="cmd_time">時刻を伝える</string>
+    <string name="cmd_time_desc">ロボットが現在の時刻を伝えます。</string>
+
+
+    <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
+    <string-array name="coco_labels">
+        <item>人</item>
+        <item>自転車</item>
+        <item>車</item>
+        <item>オートバイ</item>
+        <item>飛行機</item>
+        <item>バス</item>
+        <item>電車</item>
+        <item>トラック</item>
+        <item>ボート</item>
+        <item>信号機</item>
+        <item>消火栓</item>
+        <item>停止標識</item>
+        <item>パーキングメーター</item>
+        <item>ベンチ</item>
+        <item>鳥</item>
+        <item>猫</item>
+        <item>犬</item>
+        <item>馬</item>
+        <item>羊</item>
+        <item>牛</item>
+        <item>象</item>
+        <item>熊</item>
+        <item>シマウマ</item>
+        <item>キリン</item>
+        <item>リュックサック</item>
+        <item>傘</item>
+        <item>ハンドバッグ</item>
+        <item>ネクタイ</item>
+        <item>スーツケース</item>
+        <item>フリスビー</item>
+        <item>スキー板</item>
+        <item>スノーボード</item>
+        <item>ボール</item>
+        <item>凧</item>
+        <item>野球バット</item>
+        <item>野球グローブ</item>
+        <item>スケートボード</item>
+        <item>サーフボード</item>
+        <item>テニスラケット</item>
+        <item>ボトル</item>
+        <item>ワイングラス</item>
+        <item>コップ</item>
+        <item>フォーク</item>
+        <item>ナイフ</item>
+        <item>スプーン</item>
+        <item>ボウル</item>
+        <item>バナナ</item>
+        <item>りんご</item>
+        <item>サンドイッチ</item>
+        <item>オレンジ</item>
+        <item>ブロッコリー</item>
+        <item>にんじん</item>
+        <item>ホットドッグ</item>
+        <item>ピザ</item>
+        <item>ドーナツ</item>
+        <item>ケーキ</item>
+        <item>椅子</item>
+        <item>ソファ</item>
+        <item>鉢植え</item>
+        <item>ベッド</item>
+        <item>ダイニングテーブル</item>
+        <item>トイレ</item>
+        <item>テレビ</item>
+        <item>ノートパソコン</item>
+        <item>マウス</item>
+        <item>リモコン</item>
+        <item>キーボード</item>
+        <item>携帯電話</item>
+        <item>電子レンジ</item>
+        <item>オーブン</item>
+        <item>トースター</item>
+        <item>シンク</item>
+        <item>冷蔵庫</item>
+        <item>本</item>
+        <item>時計</item>
+        <item>花瓶</item>
+        <item>はさみ</item>
+        <item>テディベア</item>
+        <item>ドライヤー</item>
+        <item>歯ブラシ</item>
+    </string-array>
+</resources>

@@ -50,10 +50,22 @@ public abstract class BaseActivity extends ComponentActivity {
     private final Handler uiHandler = new Handler(Looper.getMainLooper());
     private int currentNav;
     private AlertDialog connectionDialog;
+    private String appliedLanguage;
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        appliedLanguage = LocaleHelper.getLanguage(base);
+        super.attachBaseContext(LocaleHelper.wrap(base));
+    }
 
     @Override
     protected void onResume() {
         super.onResume();
+        // a page built before the language was changed still shows the old one
+        if (appliedLanguage != null && !appliedLanguage.equals(LocaleHelper.getLanguage(this))) {
+            recreate();
+            return;
+        }
         enterFullScreen();
         refreshSystemStatus();
     }

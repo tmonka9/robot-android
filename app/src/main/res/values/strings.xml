@@ -537,6 +537,13 @@
     <string name="settings_ai_sub">Models / Performance</string>
     <string name="settings_db">Database Management</string>
     <string name="settings_db_sub">Face Database / Object Database</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_sub">App display language</string>
+    <string name="language_system">System default</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_chinese" translatable="false">中文</string>
+    <string name="language_japanese" translatable="false">日本語</string>
+
     <string name="settings_system">System Settings</string>
     <string name="settings_system_sub">Language / Device / About</string>
     <string name="coming_soon">Not available yet</string>
@@ -553,4 +560,119 @@
     <string name="invalid_port">Enter a valid port</string>
     <string name="connected_via">Connected · %s</string>
     <string name="connection_summary">%1$s · %2$s</string>
+    <!-- Voice command names and descriptions (VoiceCommands); the names are display text only,
+         stored phrases key off the English action name. -->
+    <string name="cmd_stop">Stop</string>
+    <string name="cmd_stop_desc">Robot will stop all movement.</string>
+    <string name="cmd_home">Go Home</string>
+    <string name="cmd_home_desc">Robot will return to the home position.</string>
+    <string name="cmd_forward">Move Forward</string>
+    <string name="cmd_forward_desc">Robot will move forward.</string>
+    <string name="cmd_backward">Move Backward</string>
+    <string name="cmd_backward_desc">Robot will move backward.</string>
+    <string name="cmd_left">Turn Left</string>
+    <string name="cmd_left_desc">Robot will turn left.</string>
+    <string name="cmd_right">Turn Right</string>
+    <string name="cmd_right_desc">Robot will turn right.</string>
+    <string name="cmd_door">Open Door</string>
+    <string name="cmd_door_desc">Robot will open the door.</string>
+    <string name="cmd_mapping">Start Mapping</string>
+    <string name="cmd_mapping_desc">Robot will start building a map.</string>
+    <string name="cmd_stand">Stand</string>
+    <string name="cmd_stand_desc">Robot will stand up.</string>
+    <string name="cmd_sit">Sit</string>
+    <string name="cmd_sit_desc">Robot will sit down.</string>
+    <string name="cmd_wave">Wave</string>
+    <string name="cmd_wave_desc">Robot will wave hello.</string>
+    <string name="cmd_dance">Dance</string>
+    <string name="cmd_dance_desc">Robot will dance.</string>
+    <string name="cmd_follow">Follow Me</string>
+    <string name="cmd_follow_desc">Robot will follow you.</string>
+    <string name="cmd_time">Tell Time</string>
+    <string name="cmd_time_desc">Robot will tell the current time.</string>
+
+
+    <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
+    <string-array name="coco_labels">
+        <item>person</item>
+        <item>bicycle</item>
+        <item>car</item>
+        <item>motorcycle</item>
+        <item>airplane</item>
+        <item>bus</item>
+        <item>train</item>
+        <item>truck</item>
+        <item>boat</item>
+        <item>traffic light</item>
+        <item>fire hydrant</item>
+        <item>stop sign</item>
+        <item>parking meter</item>
+        <item>bench</item>
+        <item>bird</item>
+        <item>cat</item>
+        <item>dog</item>
+        <item>horse</item>
+        <item>sheep</item>
+        <item>cow</item>
+        <item>elephant</item>
+        <item>bear</item>
+        <item>zebra</item>
+        <item>giraffe</item>
+        <item>backpack</item>
+        <item>umbrella</item>
+        <item>handbag</item>
+        <item>tie</item>
+        <item>suitcase</item>
+        <item>frisbee</item>
+        <item>skis</item>
+        <item>snowboard</item>
+        <item>sports ball</item>
+        <item>kite</item>
+        <item>baseball bat</item>
+        <item>baseball glove</item>
+        <item>skateboard</item>
+        <item>surfboard</item>
+        <item>tennis racket</item>
+        <item>bottle</item>
+        <item>wine glass</item>
+        <item>cup</item>
+        <item>fork</item>
+        <item>knife</item>
+        <item>spoon</item>
+        <item>bowl</item>
+        <item>banana</item>
+        <item>apple</item>
+        <item>sandwich</item>
+        <item>orange</item>
+        <item>broccoli</item>
+        <item>carrot</item>
+        <item>hot dog</item>
+        <item>pizza</item>
+        <item>donut</item>
+        <item>cake</item>
+        <item>chair</item>
+        <item>couch</item>
+        <item>potted plant</item>
+        <item>bed</item>
+        <item>dining table</item>
+        <item>toilet</item>
+        <item>tv</item>
+        <item>laptop</item>
+        <item>mouse</item>
+        <item>remote</item>
+        <item>keyboard</item>
+        <item>cell phone</item>
+        <item>microwave</item>
+        <item>oven</item>
+        <item>toaster</item>
+        <item>sink</item>
+        <item>refrigerator</item>
+        <item>book</item>
+        <item>clock</item>
+        <item>vase</item>
+        <item>scissors</item>
+        <item>teddy bear</item>
+        <item>hair drier</item>
+        <item>toothbrush</item>
+    </string-array>
 </resources>

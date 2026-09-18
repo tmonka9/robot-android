@@ -1,0 +1,673 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Robot Control</string>
+    <string name="splash_step_init">正在初始化系统…</string>
+    <string name="splash_step_models">正在加载 AI 模型…</string>
+    <string name="splash_step_sensors">正在启动摄像头和 LiDAR…</string>
+    <string name="splash_step_services">正在连接服务…</string>
+    <string name="splash_step_ready">系统就绪</string>
+    <string name="splash_version">版本 %s</string>
+
+    <!-- Sidebar -->
+    <string name="nav_home">首页</string>
+    <string name="nav_robot">机器人控制</string>
+    <string name="nav_remote">远程控制</string>
+    <string name="nav_face">人脸识别</string>
+    <string name="nav_voice">语音识别</string>
+    <string name="nav_object">目标检测</string>
+    <string name="nav_settings">设置</string>
+    <string name="back">返回</string>
+
+    <!-- Home -->
+    <string name="nav_lidar">LiDAR SLAM</string>
+    <string name="system_online">系统在线</string>
+    <string name="robot_offline">机器人离线 · 点击连接</string>
+    <string name="network">网络</string>
+    <string name="network_connected">已连接</string>
+    <string name="network_offline">已断开</string>
+    <string name="quick_status">状态概览</string>
+    <string name="qs_robot">机器人</string>
+    <string name="qs_camera">摄像头</string>
+    <string name="qs_lidar">LiDAR</string>
+    <string name="qs_ai_model">AI 模型</string>
+    <string name="value_ready">就绪</string>
+    <string name="value_online">在线</string>
+    <string name="value_loaded">已加载</string>
+    <string name="value_offline">离线</string>
+    <string name="date_format">yyyy-MM-dd  EEE</string>
+
+    <!-- LiDAR SLAM -->
+    <string name="lidar_title">LiDAR 与 SLAM</string>
+    <string name="lidar_subtitle">建图  •  定位  •  导航</string>
+    <string name="lidar_mapping">建图</string>
+    <string name="lidar_localization">定位</string>
+    <string name="lidar_navigation">导航</string>
+    <string name="map_quality">地图质量</string>
+    <string name="slam_status">SLAM 状态</string>
+    <string name="state_running">运行中</string>
+    <string name="state_paused">已暂停</string>
+    <string name="state_stable">稳定</string>
+    <string name="state_ready">就绪</string>
+    <string name="state_active">已启用</string>
+    <string name="state_good">良好</string>
+    <string name="view_3d">3D 视图</string>
+    <string name="view_top">俯视图</string>
+    <string name="view_map">地图视图</string>
+    <string name="robot_pose">机器人位姿</string>
+    <string name="pose_meters">%.2f m</string>
+    <string name="pose_degrees">%.1f°</string>
+    <string name="yaw">偏航角</string>
+    <string name="lidar_data">LiDAR 数据</string>
+    <string name="lidar_range_label">量程：0.1 - %d m</string>
+    <string name="points">点数</string>
+    <string name="control">控制</string>
+    <string name="start_mapping">开始建图</string>
+    <string name="pause_mapping">暂停建图</string>
+    <string name="save_map">保存地图</string>
+    <string name="load_map">载入地图</string>
+    <string name="auto_navigation">自动导航</string>
+    <string name="follow_mode">跟随模式</string>
+    <string name="navigation_target">导航目标</string>
+    <string name="set_target">设定目标</string>
+    <string name="rotate_left">左转</string>
+    <string name="rotate_right">右转</string>
+    <string name="goal_dock">充电桩</string>
+    <string name="goal_entrance">入口</string>
+    <string name="goal_kitchen">茶水间</string>
+    <string name="goal_office">办公区</string>
+    <string name="log">日志</string>
+    <string name="clear">清空</string>
+    <string name="legend_robot">机器人</string>
+    <string name="legend_path">路径</string>
+    <string name="legend_obstacle">障碍物</string>
+    <string name="legend_wall">墙体</string>
+    <string name="legend_explored">已探索</string>
+    <string name="legend_unexplored">未探索</string>
+    <string name="lidar_range">LiDAR 量程</string>
+    <string name="meters">%d m</string>
+    <string name="mapping_mode">建图模式</string>
+    <string name="update_rate">刷新频率</string>
+    <string name="apply">应用</string>
+    <string-array name="lidar_resolutions">
+        <item>高 (0.1°)</item>
+        <item>中 (0.25°)</item>
+        <item>低 (0.5°)</item>
+    </string-array>
+    <string-array name="mapping_modes">
+        <item>RTAB-Map</item>
+        <item>Cartographer</item>
+        <item>GMapping</item>
+    </string-array>
+    <string-array name="update_rates">
+        <item>10 Hz</item>
+        <item>20 Hz</item>
+        <item>5 Hz</item>
+    </string-array>
+    <string-array name="saved_maps">
+        <item>Office_Floor1</item>
+        <item>Warehouse_A</item>
+        <item>Lobby_Demo</item>
+    </string-array>
+    <!-- log messages -->
+    <string name="log_slam_initialized">SLAM 初始化成功</string>
+    <string name="log_map_updated">地图已更新，点数：%,d</string>
+    <string name="log_localization_stable">定位稳定</string>
+    <string name="log_target_set">已设定导航目标：%1$s (%2$.2f, %3$.2f)</string>
+    <string name="log_robot_moving">机器人移动中…</string>
+    <string name="log_obstacle">检测到障碍物 (ID: %d)</string>
+    <string name="log_replanning">正在重新规划路径…</string>
+    <string name="log_reached">已到达目标点</string>
+    <string name="log_mapping_started">建图已开始</string>
+    <string name="log_mapping_paused">建图已暂停</string>
+    <string name="log_stopped">建图与导航已停止</string>
+    <string name="log_map_saved">地图已保存（%,d 个点）</string>
+    <string name="log_map_loaded">已载入地图：%s</string>
+    <string name="log_command">指令：%s</string>
+    <string name="log_setting">%1$s：%2$s</string>
+    <string name="log_settings_applied">设置已应用：%1$d m、%2$s、%3$s、%4$s</string>
+    <string name="log_snapshot">截图已保存</string>
+    <string name="log_centered">视图已居中至机器人</string>
+    <string name="log_path_layer">路径图层：%s</string>
+    <string name="on">开启</string>
+    <string name="off">关闭</string>
+
+    <!-- Common status -->
+    <string name="status_disconnected">未连接 · 点击连接</string>
+    <string name="status_connecting">连接中…</string>
+    <string name="status_connected_short">已连接</string>
+    <string name="status_offline_short">离线</string>
+    <string name="status_listening">聆听中…</string>
+    <string name="status_paused">已暂停</string>
+    <string name="not_connected">请先连接机器人</string>
+    <string name="sent_command">已发送：%s</string>
+    <string name="placeholder_value">--</string>
+    <string name="percent">%d%%</string>
+
+    <!-- Robot Control -->
+    <string name="movement_control">运动控制</string>
+    <string name="speed">速度</string>
+    <string name="battery">电量</string>
+    <string name="mode">模式</string>
+    <string name="robot_subtitle">控制机器人的移动与动作。</string>
+    <string name="robot_status">机器人状态</string>
+    <string name="temperature">温度</string>
+    <string name="mode_remote">远程控制</string>
+    <string name="speed_slow">低速</string>
+    <string name="speed_normal">常速</string>
+    <string name="speed_fast">高速</string>
+    <string name="demo_battery">78%</string>
+    <string name="demo_temperature">36°C</string>
+    <string name="position">位置</string>
+    <string name="position_x">X:  %.2f m</string>
+    <string name="position_y">Y:  %.2f m</string>
+    <string name="position_z">Z:  %.2f m</string>
+    <string name="position_reset">位置已复位</string>
+    <string name="camera_view">摄像头画面</string>
+    <string name="cam_front">前</string>
+    <string name="cam_rear">后</string>
+    <string name="cam_left">左</string>
+    <string name="cam_right">右</string>
+    <string name="camera_settings">摄像头设置</string>
+    <string name="brightness">亮度</string>
+    <string name="contrast">对比度</string>
+    <string name="saturation">饱和度</string>
+    <string name="resolution">分辨率</string>
+    <string name="fps">帧率</string>
+    <string-array name="camera_resolutions">
+        <item>1080P</item>
+        <item>720P</item>
+        <item>480P</item>
+    </string-array>
+    <string-array name="camera_resolution_sizes">
+        <item>1920 × 1080</item>
+        <item>1280 × 720</item>
+        <item>854 × 480</item>
+    </string-array>
+    <string-array name="camera_fps">
+        <item>30</item>
+        <item>60</item>
+        <item>15</item>
+    </string-array>
+    <string name="feed_info">%1$s  ·  %2$s FPS</string>
+    <string name="act_turn_left">左转</string>
+    <string name="act_turn_right">右转</string>
+    <string name="act_reset">复位</string>
+    <string name="arm_control">机械臂控制</string>
+    <string name="arm_left">左臂</string>
+    <string name="arm_right">右臂</string>
+    <string name="arm_head">头部</string>
+    <string name="arm_waist">腰部</string>
+    <string name="preset_pose">预设姿态</string>
+    <string name="pose_t">T 字姿态</string>
+    <string name="qa_go_home">返回原点</string>
+    <string name="qa_start_patrol">开始巡逻</string>
+    <string name="qa_stop_patrol">停止巡逻</string>
+    <string name="qa_follow_me">跟随我</string>
+    <string name="qa_stop_follow">停止跟随</string>
+    <string name="qa_shutdown">关机</string>
+    <string name="shutdown_confirm">确定关闭机器人？</string>
+    <string name="cancel">取消</string>
+    <string name="custom_actions">自定义动作</string>
+    <string name="custom_action">动作 %d</string>
+    <string name="robot_tip">使用虚拟摇杆或预设按钮控制机器人。</string>
+    <string name="pose_stand">站立</string>
+    <string name="pose_sit">坐下</string>
+    <string name="pose_wave">挥手</string>
+
+    <!-- Remote Control -->
+    <string name="remote_subtitle">通过远程设备控制机器人。</string>
+    <string name="quick_actions">快捷操作</string>
+    <string name="act_forward">前进</string>
+    <string name="act_backward">后退</string>
+    <string name="act_stop">停止</string>
+    <string name="camera_view_named">摄像头画面（机器人 %s）</string>
+    <string name="online">在线</string>
+    <string name="connection">连接</string>
+    <string name="position_estimated">位置（估算）</string>
+    <string name="map_2d">2D</string>
+    <string name="map_3d">3D</string>
+    <string name="legend_target">目标点</string>
+    <string name="control_mode">控制模式</string>
+    <string name="mode_manual">手动</string>
+    <string name="mode_autonomous">自主</string>
+    <string name="mode_follow">跟随</string>
+    <string name="mode_path">路径</string>
+    <string name="pose_pick">抓取</string>
+    <string name="pose_point">指向</string>
+    <string name="pose_crouch">蹲下</string>
+    <string name="pose_custom">自定义</string>
+    <string name="camera_recording">摄像与录制</string>
+    <string name="take_photo">拍照</string>
+    <string name="start_video">开始录像</string>
+    <string name="stop_video">停止录像</string>
+    <string name="record">录音</string>
+    <string name="stop_record">停止录音</string>
+    <string name="gallery">相册</string>
+    <string name="gallery_empty">暂无录制内容</string>
+    <string name="switch_camera">切换摄像头</string>
+    <string name="operation_log">操作日志</string>
+    <string name="log_robot_connected">机器人连接成功</string>
+    <string name="log_robot_disconnected">机器人已断开</string>
+    <string name="log_camera_started">摄像头视频流已启动（%s）</string>
+    <string name="log_movement">移动指令：%s</string>
+    <string name="log_speed">速度已设为 %d%%</string>
+    <string name="log_pose">姿态：%s</string>
+    <string name="log_arm">机械臂控制：%s</string>
+    <string name="log_mode">控制模式：%s</string>
+    <string name="log_action">动作：%s</string>
+    <string name="log_photo">已拍照：%s</string>
+    <string name="log_video_started">已开始录像</string>
+    <string name="log_video_saved">视频已保存：%s</string>
+    <string name="log_audio_started">已开始录音</string>
+    <string name="log_audio_saved">录音已保存：%s</string>
+
+    <!-- Face Recognition -->
+    <string name="face_subtitle">检测、识别并管理人脸</string>
+    <string name="status">状态</string>
+    <string name="time">时间</string>
+    <string name="face_database">人脸库</string>
+    <string name="face_registered">已注册 %s</string>
+    <string name="face_removed">已删除 %s</string>
+    <string name="live_camera">实时画面（%s）</string>
+    <string name="recognized">已识别</string>
+    <string name="unrecognized">未识别</string>
+    <string name="profile">档案</string>
+    <string name="unknown_person">未知</string>
+    <string name="name">姓名</string>
+    <string name="id_label">ID</string>
+    <string name="similarity">相似度</string>
+    <string name="department">部门</string>
+    <string name="position_title">职位</string>
+    <string name="access_time">通行时间</string>
+    <string name="similarity_value">%.1f%%</string>
+    <string name="open_door">开门</string>
+    <string name="add_to_log">记入日志</string>
+    <string name="more">更多</string>
+    <string name="door_opened">已为 %s 开门</string>
+    <string name="added_to_log">已将 %s 记入日志</string>
+    <string name="toggle_active">启用 / 停用</string>
+    <string name="remove_from_database">从人脸库中删除</string>
+    <string name="active">已启用</string>
+    <string name="inactive">已停用</string>
+    <string name="search_faces">按姓名或 ID 搜索…</string>
+    <string name="add_face">添加人脸</string>
+    <string name="save">保存</string>
+    <string name="enter_name">请输入姓名</string>
+    <string name="snapshot_saved">截图已保存</string>
+    <string name="recognition_history">识别记录</string>
+    <string name="view_all">查看全部</string>
+    <string name="image">图像</string>
+    <string name="history_line">%1$s   %2$s   %3$s   %4$s</string>
+    <string name="detection_statistics">检测统计</string>
+    <string name="total_faces">人脸总数</string>
+    <string name="todays_records">今日记录</string>
+    <string name="recognitions">识别次数</string>
+    <string name="face_detection_settings">人脸检测设置</string>
+    <string name="face_detection">人脸检测</string>
+    <string name="face_recognition_toggle">人脸识别</string>
+    <string name="recognition_mode">识别模式</string>
+    <string name="similarity_threshold">相似度阈值</string>
+    <string name="database">数据库</string>
+    <string name="camera">摄像头</string>
+    <string-array name="recognition_modes">
+        <item>高精度</item>
+        <item>均衡</item>
+        <item>快速</item>
+    </string-array>
+    <!-- Database filter: index 0 all, 1 active only, 2 inactive only -->
+    <string-array name="face_databases">
+        <item>全部用户</item>
+        <item>已启用用户</item>
+        <item>已停用用户</item>
+    </string-array>
+    <!-- Camera choice: index 0 front (lens facing the user), 1 back -->
+    <string-array name="camera_sources">
+        <item>前置摄像头</item>
+        <item>后置摄像头</item>
+    </string-array>
+    <string name="face_label_face">人脸</string>
+    <string name="camera_permission_needed">人脸识别需要摄像头权限。\n点击授予权限。</string>
+    <string name="camera_unavailable">摄像头不可用</string>
+    <string name="model_missing">仅人脸检测：将 mobilefacenet.tflite 放入 app/src/main/assets 即可启用识别</string>
+    <string name="model_failed">无法加载 mobilefacenet.tflite：%s</string>
+    <string name="frame_info">%1$d × %2$d  ·  %3$d ms</string>
+    <string name="snapshot_saved_to">截图已保存：%s</string>
+    <string name="snapshot_failed">截图保存失败</string>
+    <string name="look_at_camera">请注视摄像头…</string>
+    <string name="registration_failed">未采集到人脸，请正对摄像头后重试。</string>
+    <string name="recognition_unavailable">人脸识别需要 mobilefacenet.tflite</string>
+    <string name="empty_database">尚未注册人脸。\n点击 + 添加。</string>
+    <string name="empty_history">尚未检测到人脸</string>
+    <string name="waiting_for_face">等待人脸…</string>
+
+    <!-- Voice Recognition -->
+    <string name="voice_subtitle">识别并执行语音指令</string>
+    <string name="stop">停止</string>
+    <string name="speak_now">请开始说话…</string>
+    <string name="microphone">麦克风</string>
+    <string-array name="microphones">
+        <item>默认设备</item>
+        <item>麦克风阵列</item>
+        <item>USB 麦克风</item>
+        <item>蓝牙耳机</item>
+    </string-array>
+    <string name="recognition_result">识别结果</string>
+    <string name="text">文本</string>
+    <string name="confidence">置信度</string>
+    <string name="language">语言</string>
+    <string name="command_action">指令动作</string>
+    <string name="execute_label">执行： </string>
+    <string name="voice_database">语音指令</string>
+    <string name="add_voice">添加短语</string>
+    <string name="search_by_name">搜索指令…</string>
+    <string name="voice_control">语音控制</string>
+    <string name="vc_command">语音指令控制</string>
+    <string name="vc_command_sub">启用机器人语音指令</string>
+    <string name="vc_wake">唤醒词（Hey Robot）</string>
+    <string name="vc_wake_sub">通过唤醒词进入聆听模式</string>
+    <string name="vc_continuous">持续聆听</string>
+    <string name="vc_continuous_sub">始终保持聆听状态</string>
+    <string name="vc_noise">降噪</string>
+    <string name="vc_noise_sub">提升嘈杂环境下的识别率</string>
+    <string name="wake_word">唤醒词</string>
+    <string name="wake_word_title">唤醒词（%s）</string>
+    <string name="voice_history">语音指令记录</string>
+    <string name="command">指令</string>
+    <string name="result">结果</string>
+    <string name="result_executed">已执行</string>
+    <string name="result_answered">已应答</string>
+    <string name="result_not_sent">未发送</string>
+    <string name="advanced_settings">高级设置</string>
+    <string name="tab_speech_model">语音模型</string>
+    <string name="tab_language">语言</string>
+    <string name="tab_hotword">唤醒词</string>
+    <string name="tab_audio">音频</string>
+    <string name="apply_settings">应用设置</string>
+    <string name="time_answer">现在是 %s</string>
+    <string name="status_processing">处理中…</string>
+    <string name="result_no_match">无匹配</string>
+    <string name="mic_permission_needed">语音指令需要麦克风权限</string>
+    <string name="engine_unavailable">语音引擎未编译：请将 whisper.cpp 放入 app/src/main/cpp</string>
+    <string name="model_not_found">请将 %1$s 放入 %2$s</string>
+    <string name="loading_model">正在加载 %s…</string>
+    <string name="installing_model">正在从应用中释放 %s…</string>
+    <string name="model_loaded">%s 已加载</string>
+    <string name="model_load_failed">无法加载 %s</string>
+    <string name="mic_error">麦克风错误：%s</string>
+    <string name="tap_mic_to_speak">点击麦克风开始说话</string>
+    <string name="quoted">“%1$s”</string>
+    <string name="built_in">内置</string>
+    <string name="custom_phrase">自定义</string>
+    <string name="add_phrase">添加短语</string>
+    <string name="enter_phrase">要说的短语</string>
+    <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
+    <!-- Advanced settings rows: label + options, grouped by tab -->
+    <string name="adv_model_type">模型类型</string>
+    <!-- replaced at runtime by the ggml models found on the device -->
+    <string-array name="adv_model_type_options">
+        <item>ggml-small.bin</item>
+    </string-array>
+    <string name="adv_engine">识别引擎</string>
+    <string-array name="adv_engine_options">
+        <item>ONNX Runtime</item>
+        <item>TensorFlow Lite</item>
+        <item>NNAPI</item>
+    </string-array>
+    <string name="adv_sample_rate">采样率</string>
+    <string-array name="adv_sample_rate_options">
+        <item>16 kHz</item>
+        <item>22.05 kHz</item>
+        <item>44.1 kHz</item>
+    </string-array>
+    <string name="adv_audio_input">音频输入</string>
+    <string-array name="adv_audio_input_options">
+        <item>麦克风阵列</item>
+        <item>内置麦克风</item>
+        <item>USB 麦克风</item>
+    </string-array>
+    <string name="adv_recognition_language">识别语言</string>
+    <string name="adv_response_language">应答语言</string>
+    <string-array name="adv_language_options">
+        <item>自动检测</item>
+        <item>英语</item>
+        <item>韩语</item>
+        <item>中文（普通话）</item>
+        <item>日语</item>
+        <item>西班牙语</item>
+        <item>德语</item>
+    </string-array>
+    <!-- whisper language codes, matching adv_language_options -->
+    <string-array name="adv_language_codes">
+        <item>auto</item>
+        <item>en</item>
+        <item>ko</item>
+        <item>zh</item>
+        <item>ja</item>
+        <item>es</item>
+        <item>de</item>
+    </string-array>
+    <string name="adv_auto_detect">自动检测语言</string>
+    <string-array name="adv_on_off_options">
+        <item>关闭</item>
+        <item>开启</item>
+    </string-array>
+    <string name="adv_punctuation">自动标点</string>
+    <string name="adv_hotword_engine">唤醒词引擎</string>
+    <string-array name="adv_hotword_engine_options">
+        <item>Porcupine</item>
+        <item>Snowboy</item>
+        <item>内置</item>
+    </string-array>
+    <string name="adv_sensitivity">灵敏度</string>
+    <string-array name="adv_sensitivity_options">
+        <item>中</item>
+        <item>高</item>
+        <item>低</item>
+    </string-array>
+    <string name="adv_timeout">聆听超时</string>
+    <string-array name="adv_timeout_options">
+        <item>5 s</item>
+        <item>10 s</item>
+        <item>30 s</item>
+    </string-array>
+    <string name="adv_confirm_sound">确认提示音</string>
+    <string-array name="adv_confirm_sound_options">
+        <item>提示音</item>
+        <item>语音</item>
+        <item>无</item>
+    </string-array>
+    <string name="adv_noise_suppression">噪声抑制</string>
+    <string-array name="adv_noise_options">
+        <item>标准</item>
+        <item>强</item>
+        <item>关闭</item>
+    </string-array>
+    <string name="adv_echo_cancel">回声消除</string>
+    <string name="adv_gain">输入增益</string>
+    <string-array name="adv_gain_options">
+        <item>自动</item>
+        <item>低</item>
+        <item>高</item>
+    </string-array>
+    <string name="adv_output_volume">输出音量</string>
+    <string-array name="adv_volume_options">
+        <item>70%</item>
+        <item>50%</item>
+        <item>100%</item>
+    </string-array>
+
+    <!-- Object Detection -->
+    <string name="object_subtitle">实时检测并识别目标</string>
+    <string name="detection_result">检测结果</string>
+    <string name="detection_settings">检测设置</string>
+    <string name="detected_objects">检测到的目标</string>
+    <string name="enable_detection">启用检测</string>
+    <string name="show_boxes">显示检测框</string>
+    <string name="show_labels">显示标签</string>
+    <string name="show_masks">分割掩膜</string>
+    <string name="track_objects">目标跟踪</string>
+    <string name="track_label">#%1$d %2$s</string>
+    <string name="total_seen">累计目标</string>
+    <string name="none">无模型</string>
+    <string name="no_detector">未加载检测模型</string>
+    <string name="detector_missing">请将 YOLOv8-seg 模型（%1$s）放入 app/src/main/assets 或 models 文件夹</string>
+    <string name="detector_failed">无法加载 %1$s：%2$s</string>
+    <string name="model">模型</string>
+    <string name="confidence_threshold">置信度阈值</string>
+    <string name="total">总计</string>
+    <string name="no_detections">无高于阈值的目标</string>
+    <string name="detection_disabled">检测已关闭</string>
+    <string name="live">实时</string>
+    <string name="inference_info">%1$s  ·  %2$d ms</string>
+    <string name="confidence_value">%.2f</string>
+    <string-array name="confidence_thresholds">
+        <item>0.3</item>
+        <item>0.4</item>
+        <item>0.5</item>
+        <item>0.6</item>
+        <item>0.7</item>
+        <item>0.8</item>
+    </string-array>
+
+    <!-- Settings -->
+    <string name="settings_connection">机器人连接</string>
+    <string name="settings_camera">摄像头设置</string>
+    <string name="settings_camera_sub">USB 摄像头 / RTSP 摄像头</string>
+    <string name="settings_ai">AI 模型设置</string>
+    <string name="settings_ai_sub">模型 / 性能</string>
+    <string name="settings_db">数据库管理</string>
+    <string name="settings_db_sub">人脸库 / 目标库</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_sub">应用显示语言</string>
+    <string name="language_system">跟随系统</string>
+
+    <string name="settings_system">系统设置</string>
+    <string name="settings_system_sub">语言 / 设备 / 关于</string>
+    <string name="coming_soon">暂未开放</string>
+    <string name="about_message">AI Robot Control\n版本 %s</string>
+
+    <!-- Connection dialog -->
+    <string name="wifi">Wi-Fi</string>
+    <string name="bluetooth">蓝牙</string>
+    <string name="ip_address">IP 地址</string>
+    <string name="port">端口</string>
+    <string name="connect">连接</string>
+    <string name="disconnect">断开</string>
+    <string name="close">关闭</string>
+    <string name="invalid_port">请输入有效端口</string>
+    <string name="connected_via">已连接 · %s</string>
+    <string name="connection_summary">%1$s · %2$s</string>
+
+    <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
+    <string name="cmd_stop">停止</string>
+    <string name="cmd_stop_desc">机器人将停止所有运动。</string>
+    <string name="cmd_home">返回原点</string>
+    <string name="cmd_home_desc">机器人将返回原点。</string>
+    <string name="cmd_forward">前进</string>
+    <string name="cmd_forward_desc">机器人将向前移动。</string>
+    <string name="cmd_backward">后退</string>
+    <string name="cmd_backward_desc">机器人将向后移动。</string>
+    <string name="cmd_left">左转</string>
+    <string name="cmd_left_desc">机器人将向左转。</string>
+    <string name="cmd_right">右转</string>
+    <string name="cmd_right_desc">机器人将向右转。</string>
+    <string name="cmd_door">开门</string>
+    <string name="cmd_door_desc">机器人将打开门。</string>
+    <string name="cmd_mapping">开始建图</string>
+    <string name="cmd_mapping_desc">机器人将开始构建地图。</string>
+    <string name="cmd_stand">站立</string>
+    <string name="cmd_stand_desc">机器人将站起来。</string>
+    <string name="cmd_sit">坐下</string>
+    <string name="cmd_sit_desc">机器人将坐下。</string>
+    <string name="cmd_wave">挥手</string>
+    <string name="cmd_wave_desc">机器人将挥手致意。</string>
+    <string name="cmd_dance">跳舞</string>
+    <string name="cmd_dance_desc">机器人将跳舞。</string>
+    <string name="cmd_follow">跟随我</string>
+    <string name="cmd_follow_desc">机器人将跟随您。</string>
+    <string name="cmd_time">报时</string>
+    <string name="cmd_time_desc">机器人将播报当前时间。</string>
+
+    <string-array name="coco_labels">
+        <item>人</item>
+        <item>自行车</item>
+        <item>汽车</item>
+        <item>摩托车</item>
+        <item>飞机</item>
+        <item>公交车</item>
+        <item>火车</item>
+        <item>卡车</item>
+        <item>船</item>
+        <item>交通灯</item>
+        <item>消防栓</item>
+        <item>停车标志</item>
+        <item>停车计时器</item>
+        <item>长椅</item>
+        <item>鸟</item>
+        <item>猫</item>
+        <item>狗</item>
+        <item>马</item>
+        <item>羊</item>
+        <item>牛</item>
+        <item>大象</item>
+        <item>熊</item>
+        <item>斑马</item>
+        <item>长颈鹿</item>
+        <item>背包</item>
+        <item>雨伞</item>
+        <item>手提包</item>
+        <item>领带</item>
+        <item>行李箱</item>
+        <item>飞盘</item>
+        <item>滑雪板</item>
+        <item>单板滑雪板</item>
+        <item>运动球</item>
+        <item>风筝</item>
+        <item>棒球棒</item>
+        <item>棒球手套</item>
+        <item>滑板</item>
+        <item>冲浪板</item>
+        <item>网球拍</item>
+        <item>瓶子</item>
+        <item>酒杯</item>
+        <item>杯子</item>
+        <item>叉子</item>
+        <item>刀</item>
+        <item>勺子</item>
+        <item>碗</item>
+        <item>香蕉</item>
+        <item>苹果</item>
+        <item>三明治</item>
+        <item>橙子</item>
+        <item>西兰花</item>
+        <item>胡萝卜</item>
+        <item>热狗</item>
+        <item>披萨</item>
+        <item>甜甜圈</item>
+        <item>蛋糕</item>
+        <item>椅子</item>
+        <item>沙发</item>
+        <item>盆栽</item>
+        <item>床</item>
+        <item>餐桌</item>
+        <item>马桶</item>
+        <item>电视</item>
+        <item>笔记本电脑</item>
+        <item>鼠标</item>
+        <item>遥控器</item>
+        <item>键盘</item>
+        <item>手机</item>
+        <item>微波炉</item>
+        <item>烤箱</item>
+        <item>烤面包机</item>
+        <item>水槽</item>
+        <item>冰箱</item>
+        <item>书</item>
+        <item>时钟</item>
+        <item>花瓶</item>
+        <item>剪刀</item>
+        <item>泰迪熊</item>
+        <item>吹风机</item>
+        <item>牙刷</item>
+    </string-array>
+</resources>
