@@ -9,3 +9,8 @@
 .cxx
 local.properties
 /app/build
+# whisper.cpp sources (cloned locally, not committed)
+app/src/main/cpp/whisper.cpp/
+
+# speech models (large binaries, pushed to the device instead)
+*.bin

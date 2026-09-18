@@ -18,6 +18,9 @@ public class WaveformView extends View {
     private final float barWidth;
     private final float barGap;
 
+    private final float[] levels = new float[BAR_COUNT];
+    private int levelIndex;
+    private boolean liveLevels;
     private boolean active = true;
     private int barColor = 0x8A6DFF;
 
@@ -43,6 +46,25 @@ public class WaveformView extends View {
         invalidate();
     }
 
+    /**
+     * Feeds a real microphone level (0..1). The first call switches the view from its animated
+     * placeholder to showing measured levels, scrolling right to left.
+     */
+    public void pushLevel(float level) {
+        liveLevels = true;
+        levels[levelIndex % levels.length] = Math.max(0f, Math.min(1f, level));
+        levelIndex++;
+        invalidate();
+    }
+
+    /** Back to the animated placeholder (e.g. when the microphone stops). */
+    public void clearLevels() {
+        liveLevels = false;
+        levelIndex = 0;
+        java.util.Arrays.fill(levels, 0f);
+        invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         float h = getHeight();
@@ -58,7 +80,12 @@ public class WaveformView extends View {
             // taller in the middle, tapering to the edges
             float envelope = 1f - Math.abs(i - mid) / (float) (mid + 1);
             float level;
-            if (active) {
+            if (liveLevels) {
+                // oldest sample on the left, newest on the right
+                int slot = (levelIndex - count + i + levels.length * 2) % levels.length;
+                level = 0.06f + 0.94f * levels[slot];
+                envelope = 1f;
+            } else if (active) {
                 double wave = Math.sin(t * 7 + i * 0.9) * 0.5 + Math.sin(t * 11.3 + i * 1.7) * 0.5;
                 level = 0.2f + 0.8f * envelope * (float) Math.abs(wave);
             } else {
@@ -74,6 +101,6 @@ public class WaveformView extends View {
             x += barWidth + barGap;
         }
 
-        if (active && isShown()) postInvalidateOnAnimation();
+        if (active && !liveLevels && isShown()) postInvalidateOnAnimation();
     }
 }

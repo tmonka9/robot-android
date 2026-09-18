@@ -344,7 +344,6 @@
     <string name="voice_subtitle">Recognize and process voice commands</string>
     <string name="stop">Stop</string>
     <string name="speak_now">Speak now…</string>
-    <string name="tap_mic_to_listen">Tap the microphone to listen</string>
     <string name="microphone">Microphone</string>
     <string-array name="microphones">
         <item>Default Device</item>
@@ -353,16 +352,14 @@
         <item>Bluetooth Headset</item>
     </string-array>
     <string name="recognition_result">Recognition Result</string>
-    <string name="quoted">“%s”</string>
     <string name="text">Text</string>
     <string name="confidence">Confidence</string>
     <string name="language">Language</string>
     <string name="command_action">Command Action</string>
     <string name="execute_label">Execute: </string>
-    <string name="voice_database">Voice Database</string>
-    <string name="add_voice">Add Voice</string>
-    <string name="search_by_name">Search by name…</string>
-    <string name="id_value">ID: %s</string>
+    <string name="voice_database">Voice Commands</string>
+    <string name="add_voice">Add Phrase</string>
+    <string name="search_by_name">Search commands…</string>
     <string name="voice_control">Voice Control</string>
     <string name="vc_command">Voice Command Control</string>
     <string name="vc_command_sub">Enable voice commands for the robot</string>
@@ -386,47 +383,28 @@
     <string name="tab_hotword">Hotword</string>
     <string name="tab_audio">Audio</string>
     <string name="apply_settings">Apply Settings</string>
-    <string name="settings_applied">Settings applied</string>
     <string name="time_answer">It is %s</string>
-    <string name="voice_profile_removed">Removed voice profile %s</string>
-    <string name="voice_profile_added">Added voice profile %s</string>
+    <string name="status_processing">Processing…</string>
+    <string name="result_no_match">No match</string>
+    <string name="mic_permission_needed">Microphone permission is required for voice commands</string>
+    <string name="engine_unavailable">Speech engine not built: add whisper.cpp to app/src/main/cpp</string>
+    <string name="model_not_found">Put %1$s in %2$s</string>
+    <string name="loading_model">Loading %s…</string>
+    <string name="model_loaded">%s loaded</string>
+    <string name="model_load_failed">Could not load %s</string>
+    <string name="mic_error">Microphone error: %s</string>
+    <string name="tap_mic_to_speak">Tap the microphone and speak</string>
+    <string name="quoted">“%1$s”</string>
+    <string name="built_in">Built-in</string>
+    <string name="custom_phrase">Custom</string>
+    <string name="add_phrase">Add Phrase</string>
+    <string name="enter_phrase">Phrase to say</string>
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
-    <string-array name="voice_phrases">
-        <item>Go to home</item>
-        <item>Move forward</item>
-        <item>Turn left</item>
-        <item>Stop</item>
-        <item>What time is it</item>
-        <item>Open door</item>
-        <item>Start mapping</item>
-        <item>Wave hello</item>
-    </string-array>
-    <string-array name="voice_actions">
-        <item>Go Home</item>
-        <item>Move Forward</item>
-        <item>Turn Left</item>
-        <item>Stop</item>
-        <item>Tell Time</item>
-        <item>Open Door</item>
-        <item>Start Mapping</item>
-        <item>Wave</item>
-    </string-array>
-    <string-array name="voice_action_descriptions">
-        <item>Robot will return to the home position.</item>
-        <item>Robot will move forward.</item>
-        <item>Robot will turn left.</item>
-        <item>Robot will stop all movement.</item>
-        <item>Robot will tell the current time.</item>
-        <item>Robot will open the door.</item>
-        <item>Robot will start building a map.</item>
-        <item>Robot will wave hello.</item>
-    </string-array>
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <string name="adv_model_type">Model Type</string>
+    <!-- replaced at runtime by the ggml models found on the device -->
     <string-array name="adv_model_type_options">
-        <item>DeepSpeech (Local)</item>
-        <item>Whisper (Local)</item>
-        <item>Cloud ASR</item>
+        <item>ggml-small.bin</item>
     </string-array>
     <string name="adv_engine">Recognition Engine</string>
     <string-array name="adv_engine_options">
@@ -449,11 +427,23 @@
     <string name="adv_recognition_language">Recognition Language</string>
     <string name="adv_response_language">Response Language</string>
     <string-array name="adv_language_options">
-        <item>English (US)</item>
-        <item>English (UK)</item>
-        <item>Chinese (Mandarin)</item>
+        <item>Auto detect</item>
+        <item>English</item>
         <item>Korean</item>
+        <item>Chinese (Mandarin)</item>
         <item>Japanese</item>
+        <item>Spanish</item>
+        <item>German</item>
+    </string-array>
+    <!-- whisper language codes, matching adv_language_options -->
+    <string-array name="adv_language_codes">
+        <item>auto</item>
+        <item>en</item>
+        <item>ko</item>
+        <item>zh</item>
+        <item>ja</item>
+        <item>es</item>
+        <item>de</item>
     </string-array>
     <string name="adv_auto_detect">Auto Detect Language</string>
     <string-array name="adv_on_off_options">

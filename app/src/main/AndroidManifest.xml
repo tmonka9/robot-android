@@ -10,6 +10,12 @@
         android:name="android.hardware.camera.any"
         android:required="false" />
 
+    <!-- Speech recognition (whisper.cpp) -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
+
     <application
         android:allowBackup="true"
         android:label="@string/app_name"

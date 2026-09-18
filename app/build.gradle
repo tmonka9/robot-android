@@ -12,6 +12,25 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        // whisper.cpp (speech recognition) is built from app/src/main/cpp
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_shared'
+                cppFlags '-O3 -fexceptions -frtti'
+            }
+        }
+        ndk {
+            // 64-bit ARM for the tablet, x86_64 for the emulator
+            abiFilters 'arm64-v8a', 'x86_64'
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+            version '3.22.1'
+        }
     }
 
     buildTypes {

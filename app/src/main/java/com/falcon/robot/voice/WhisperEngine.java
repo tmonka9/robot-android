@@ -1,0 +1,151 @@
+package com.falcon.robot.voice;
+
+import android.content.Context;
+import android.util.Log;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * whisper.cpp speech recognition (see {@code app/src/main/cpp}).
+ *
+ * <p>Models are ggml files such as {@code ggml-small.bin}. They are far too large for the APK,
+ * so they are read from the device:
+ *
+ * <pre>
+ *   adb push ggml-small.bin /sdcard/Android/data/com.falcon.robot/files/models/
+ * </pre>
+ *
+ * <p>{@link #getModelDir} is that folder; the app's private {@code files/models} folder is used
+ * as a fallback. All calls must be made from a background thread.
+ */
+public final class WhisperEngine {
+
+    private static final String TAG = "WhisperEngine";
+    public static final String DEFAULT_MODEL = "ggml-small.bin";
+
+    private static boolean libraryLoaded;
+
+    static {
+        try {
+            System.loadLibrary("whisper_jni");
+            libraryLoaded = true;
+        } catch (UnsatisfiedLinkError e) {
+            Log.e(TAG, "libwhisper_jni.so is missing", e);
+        }
+    }
+
+    public static final class Result {
+        public final String text;
+        /** Average token probability reported by whisper, 0..1. */
+        public final float confidence;
+
+        Result(String text, float confidence) {
+            this.text = text;
+            this.confidence = confidence;
+        }
+    }
+
+    private final Context context;
+    private long handle;
+    private String loadedModel;
+
+    public WhisperEngine(Context context) {
+        this.context = context.getApplicationContext();
+    }
+
+    public static boolean isLibraryAvailable() {
+        return libraryLoaded;
+    }
+
+    /** Folder the models are read from (created if missing). */
+    public static File getModelDir(Context context) {
+        File external = context.getExternalFilesDir(null);
+        File dir = new File(external != null ? external : context.getFilesDir(), "models");
+        //noinspection ResultOfMethodCallIgnored
+        dir.mkdirs();
+        return dir;
+    }
+
+    /** ggml model files found on the device, newest first. */
+    public static List<String> listModels(Context context) {
+        List<String> names = new ArrayList<>();
+        File[] files = getModelDir(context).listFiles();
+        if (files != null) {
+            for (File f : files) {
+                if (f.isFile() && f.getName().endsWith(".bin")) names.add(f.getName());
+            }
+        }
+        Collections.sort(names);
+        return names;
+    }
+
+    public boolean isReady() {
+        return handle != 0;
+    }
+
+    public String getLoadedModel() {
+        return loadedModel;
+    }
+
+    /** Loads a model; returns false when the library, the file or the model itself is unusable. */
+    public boolean load(String modelName) {
+        if (!libraryLoaded) return false;
+        if (handle != 0 && modelName.equals(loadedModel)) return true;
+        release();
+        File file = new File(getModelDir(context), modelName);
+        if (!file.exists()) {
+            Log.w(TAG, "Model not found: " + file);
+            return false;
+        }
+        handle = nativeInit(file.getAbsolutePath());
+        loadedModel = handle != 0 ? modelName : null;
+        return handle != 0;
+    }
+
+    /**
+     * Transcribes 16 kHz mono audio.
+     *
+     * @param language whisper language code ("en", "ko", …) or "auto"
+     */
+    public Result transcribe(float[] audio, String language, boolean translate, int threads) {
+        if (handle == 0) return null;
+        String raw = nativeTranscribe(handle, audio, threads, language, translate);
+        if (raw == null) return null;
+        int tab = raw.indexOf('\t');
+        float confidence = 0f;
+        String text = raw;
+        if (tab >= 0) {
+            try {
+                confidence = Float.parseFloat(raw.substring(0, tab));
+            } catch (NumberFormatException ignored) {
+                // keep 0
+            }
+            text = raw.substring(tab + 1);
+        }
+        return new Result(text.trim(), confidence);
+    }
+
+    public void release() {
+        if (handle != 0) {
+            nativeRelease(handle);
+            handle = 0;
+            loadedModel = null;
+        }
+    }
+
+    public static String systemInfo() {
+        return libraryLoaded ? nativeSystemInfo() : "whisper_jni not loaded";
+    }
+
+    private static native long nativeInit(String modelPath);
+
+    private static native void nativeRelease(long handle);
+
+    private static native String nativeTranscribe(long handle, float[] audio, int threads,
+                                                  String language, boolean translate);
+
+    private static native String nativeSystemInfo();
+}

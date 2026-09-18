@@ -1,11 +1,11 @@
 package com.falcon.robot;
 
+import android.Manifest;
 import android.app.AlertDialog;
+import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
@@ -28,42 +28,43 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+
+import com.falcon.robot.voice.CustomPhrases;
+import com.falcon.robot.voice.SpeechRecorder;
+import com.falcon.robot.voice.VoiceCommands;
+import com.falcon.robot.voice.WhisperEngine;
 import com.falcon.robot.widget.CoverImageView;
 import com.falcon.robot.widget.WaveformView;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
- * Voice Recognition page (design/voice.png): listening visual, recognition result with command
- * action, voice profiles, voice control switches, command history and advanced ASR settings.
+ * Voice Recognition page: records at 16 kHz, transcribes with whisper.cpp
+ * ({@code ggml-small.bin}, see {@link WhisperEngine}) and matches robot commands in the
+ * transcript with {@link VoiceCommands}.
  *
- * <p>Speech recognition is simulated: while listening, a sample command is "heard" periodically.
- * Replace {@link #simulateRecognition} with results from the real recognizer. Playback of results
- * uses Android's built-in text-to-speech.
+ * <p>Without the native library or a model file the page still shows the microphone level and
+ * commands can be run by tapping them, but nothing is transcribed.
  */
 public class VoiceRecognitionActivity extends BaseActivity {
 
-    private static final long RECOGNITION_INTERVAL_MS = 7000;
     private static final int HISTORY_ROWS = 7;
+    private static final int MAX_HISTORY = 100;
 
     /** Artwork coordinates (voice_visual.png pixels) for the live overlays. */
     private static final RectF MIC_RECT = new RectF(205, 75, 405, 275);
     private static final RectF HINT_RECT = new RectF(180, 292, 430, 326);
     private static final RectF WAVE_RECT = new RectF(170, 342, 450, 400);
-
-    /** Robot command per entry of R.array.voice_phrases (null = answered by voice, no robot action). */
-    private static final String[] ROBOT_COMMANDS = {
-            "GO_HOME", "MOVE FORWARD", "TURN LEFT", "STOP", null, "DOOR OPEN", "SLAM MAPPING START", "POSE WAVE",
-    };
-    private static final int[] ACTION_ICONS = {
-            R.drawable.ic_home, R.drawable.ic_arrow_up, R.drawable.ic_arrow_left, R.drawable.ic_square,
-            R.drawable.ic_history, R.drawable.ic_lock_open, R.drawable.ic_map, R.drawable.ic_pose_wave,
-    };
 
     /** Advanced settings: per tab, rows of {label, options array}. */
     private static final int[][][] ADVANCED = {
@@ -93,24 +94,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
             },
     };
 
-    private static final class Profile {
-        final String name;
-        final String id;
-        final int photo;
-        boolean active = true;
-
-        Profile(String name, String id, int photo) {
-            this.name = name;
-            this.id = id;
-            this.photo = photo;
-        }
-    }
-
     private static final class HistoryEntry {
         final long time;
         final String command;
         final int result; // string resource
-        final float confidence;
+        final float confidence; // percent, < 0 = unknown
 
         HistoryEntry(long time, String command, int result, float confidence) {
             this.time = time;
@@ -120,24 +108,23 @@ public class VoiceRecognitionActivity extends BaseActivity {
         }
     }
 
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Random random = new Random();
     private final SimpleDateFormat dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-    private final List<Profile> profiles = new ArrayList<>();
+    private final SimpleDateFormat clock = new SimpleDateFormat("h:mm a", Locale.US);
     private final List<HistoryEntry> history = new ArrayList<>();
     private final int[][] advancedSelection = new int[ADVANCED.length][4];
+    private final ExecutorService transcriber = Executors.newSingleThreadExecutor();
 
-    private String[] phrases;
-    private String[] actions;
-    private String[] descriptions;
-    private int currentCommand;
-    private int nextCommand = 1;
-    private int nextVoiceId = 128;
-    private int advancedTab;
-    private boolean listening = true;
-
+    private WhisperEngine engine;
+    private SpeechRecorder recorder;
+    private CustomPhrases customPhrases;
     private TextToSpeech tts;
     private boolean ttsReady;
+    private boolean listening;
+    private boolean transcribing;
+    private int advancedTab;
+    private String wakeWordText = "Hey Robot";
+    private String transcript = "";
+    private VoiceCommands.Action currentAction;
 
     private CoverImageView visual;
     private View micHit;
@@ -145,8 +132,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private WaveformView liveWave;
     private TextView listenState;
     private TextView micDevice;
-    private LinearLayout profileList;
-    private EditText profileSearch;
+    private LinearLayout commandList;
+    private EditText commandSearch;
     private LinearLayout historyList;
     private LinearLayout advancedRows;
     private TextView[] advancedTabs;
@@ -156,14 +143,13 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private Switch noiseSwitch;
     private TextView wakeWord;
     private TextView wakeTitle;
+    private Spinner modelSpinner;
 
-    private final Runnable recognitionLoop = new Runnable() {
-        @Override
-        public void run() {
-            if (listening) simulateRecognition();
-            handler.postDelayed(this, RECOGNITION_INTERVAL_MS);
-        }
-    };
+    private final ActivityResultLauncher<String> micPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) setListening(true);
+                else toast(R.string.mic_permission_needed);
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,10 +159,9 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
 
-        phrases = getResources().getStringArray(R.array.voice_phrases);
-        actions = getResources().getStringArray(R.array.voice_actions);
-        descriptions = getResources().getStringArray(R.array.voice_action_descriptions);
-
+        engine = new WhisperEngine(this);
+        recorder = new SpeechRecorder(recorderListener);
+        customPhrases = new CustomPhrases(this);
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
             if (ttsReady) tts.setLanguage(Locale.US);
@@ -184,33 +169,36 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
         setupListening();
         setupResult();
-        setupProfiles();
+        setupCommands();
         setupVoiceControl();
         setupHistory();
         setupAdvanced();
 
-        showRecognized(0, 98.6f, System.currentTimeMillis());
-        setListening(true);
+        renderResult();
+        renderHistory();
+        renderCommands();
+        loadSelectedModel();
+        setListening(false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshRichHeader();
-        handler.removeCallbacks(recognitionLoop);
-        handler.postDelayed(recognitionLoop, RECOGNITION_INTERVAL_MS);
     }
 
     @Override
     protected void onPause() {
-        handler.removeCallbacks(recognitionLoop);
+        setListening(false);
         super.onPause();
     }
 
     @Override
     protected void onDestroy() {
-        handler.removeCallbacksAndMessages(null);
+        if (recorder != null) recorder.stop();
         if (tts != null) tts.shutdown();
+        transcriber.execute(() -> engine.release());
+        transcriber.shutdown();
         super.onDestroy();
     }
 
@@ -219,22 +207,20 @@ public class VoiceRecognitionActivity extends BaseActivity {
         refreshRichHeader();
     }
 
-    // ---- listening visual ------------------------------------------------------------------
+    // ---- microphone ------------------------------------------------------------------------
 
     private void setupListening() {
         visual = findViewById(R.id.voice_visual);
-        visual.setFocus(0.2f, 0f, 0.8f, 1f); // keep the microphone and its waveforms centred
-        findViewById(R.id.listen_panel).setClipToOutline(true);
         micHit = findViewById(R.id.mic_hit);
         speakHint = findViewById(R.id.speak_hint);
         liveWave = findViewById(R.id.live_wave);
-        liveWave.setBarColor(0x22D3EE);
         listenState = findViewById(R.id.listen_state);
         micDevice = findViewById(R.id.mic_device);
         micDevice.setText(getResources().getStringArray(R.array.microphones)[0]);
-        ((ImageView) findViewById(R.id.mic_selector_icon)).setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+        ((ImageView) findViewById(R.id.mic_selector_icon))
+                .setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
 
-        micHit.setOnClickListener(v -> setListening(!listening));
+        micHit.setOnClickListener(v -> toggleListening());
         findViewById(R.id.mic_selector).setOnClickListener(this::showMicrophoneMenu);
         visual.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> v.post(this::placeListeningOverlays));
     }
@@ -259,15 +245,139 @@ public class VoiceRecognitionActivity extends BaseActivity {
         view.setY(rect.top);
     }
 
+    private void toggleListening() {
+        if (listening) {
+            setListening(false);
+            return;
+        }
+        if (!engine.isReady()) {
+            toast(engineProblem());
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            setListening(true);
+        } else {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO);
+        }
+    }
+
     private void setListening(boolean on) {
         listening = on;
-        listenState.setText(on ? R.string.status_listening : R.string.status_paused);
-        listenState.setTextColor(color(on ? R.color.teal : R.color.text_secondary));
-        findViewById(R.id.listen_dot).setBackgroundResource(on ? R.drawable.dot_teal : R.drawable.dot_gray);
-        speakHint.setText(on ? R.string.speak_now : R.string.tap_mic_to_listen);
+        if (on) {
+            recorder.setNoiseSuppression(noiseSwitch == null || noiseSwitch.isChecked());
+            recorder.start();
+        } else {
+            recorder.stop();
+            liveWave.clearLevels();
+        }
         liveWave.setActive(on);
-        visual.animate().alpha(on ? 1f : 0.55f).setDuration(250).start();
-        RobotSession.get().send("VOICE LISTEN " + (on ? "ON" : "OFF"));
+        visual.animate().alpha(on ? 1f : 0.6f).setDuration(250).start();
+        updateStatus();
+        sendCommand("VOICE LISTEN " + (on ? "ON" : "OFF"));
+    }
+
+    private void updateStatus() {
+        int text;
+        int colorRes;
+        if (transcribing) {
+            text = R.string.status_processing;
+            colorRes = R.color.amber;
+        } else if (listening) {
+            text = R.string.status_listening;
+            colorRes = R.color.teal;
+        } else {
+            text = R.string.status_paused;
+            colorRes = R.color.text_secondary;
+        }
+        listenState.setText(text);
+        listenState.setTextColor(color(colorRes));
+        findViewById(R.id.listen_dot).setBackgroundResource(listening ? R.drawable.dot_teal : R.drawable.dot_gray);
+        speakHint.setText(listening ? R.string.speak_now : R.string.tap_mic_to_speak);
+    }
+
+    private String engineProblem() {
+        if (!WhisperEngine.isLibraryAvailable()) return getString(R.string.engine_unavailable);
+        return getString(R.string.model_not_found, selectedModel(),
+                WhisperEngine.getModelDir(this).getAbsolutePath());
+    }
+
+    private final SpeechRecorder.Listener recorderListener = new SpeechRecorder.Listener() {
+        @Override
+        public void onLevel(float level, boolean speaking) {
+            liveWave.pushLevel(level);
+        }
+
+        @Override
+        public void onUtterance(float[] samples) {
+            transcribe(samples);
+        }
+
+        @Override
+        public void onError(String message) {
+            listening = false;
+            updateStatus();
+            toast(getString(R.string.mic_error, message));
+        }
+    };
+
+    /** Runs whisper on one utterance; only one at a time, speech during processing is dropped. */
+    private void transcribe(final float[] samples) {
+        if (transcribing || !engine.isReady()) return;
+        transcribing = true;
+        updateStatus();
+        final String language = languageCode();
+        final int threads = Math.max(2, Runtime.getRuntime().availableProcessors() - 1);
+        transcriber.execute(() -> {
+            final WhisperEngine.Result result = engine.transcribe(samples, language, false, threads);
+            runOnUiThread(() -> {
+                transcribing = false;
+                updateStatus();
+                if (result != null && !result.text.isEmpty()) {
+                    handleTranscript(result.text, result.confidence * 100f, true);
+                }
+            });
+        });
+    }
+
+    /** Applies the wake word, matches a command and runs it. */
+    private void handleTranscript(String text, float confidence, boolean spoken) {
+        if (spoken && wakeSwitch.isChecked()) {
+            if (!VoiceCommands.containsWakeWord(text, wakeWordText)) return; // not addressed to the robot
+            String rest = VoiceCommands.stripWakeWord(text, wakeWordText);
+            if (rest != null && !rest.isEmpty()) text = rest;
+        }
+        transcript = text;
+        VoiceCommands.Action action = customPhrases.match(text);
+        if (action == null) action = VoiceCommands.match(text);
+        currentAction = action;
+
+        int result;
+        if (action == null) {
+            result = R.string.result_no_match;
+        } else if (action.command == null) {
+            speak(getString(R.string.time_answer, clock.format(new Date())));
+            result = R.string.result_answered;
+        } else if (!commandSwitch.isChecked()) {
+            result = R.string.result_not_sent; // voice command control is off
+        } else {
+            result = RobotSession.get().send("VOICE_COMMAND " + action.command)
+                    ? R.string.result_executed : R.string.result_not_sent;
+        }
+
+        addHistory(text, result, confidence);
+        renderResult(confidence);
+        if (spoken && !continuousSwitch.isChecked()) setListening(false);
+    }
+
+    private void addHistory(String command, int result, float confidence) {
+        history.add(new HistoryEntry(System.currentTimeMillis(), command, result, confidence));
+        while (history.size() > MAX_HISTORY) history.remove(0);
+        renderHistory();
+    }
+
+    private void speak(String text) {
+        if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "voice-result");
     }
 
     private void showMicrophoneMenu(View anchor) {
@@ -276,204 +386,268 @@ public class VoiceRecognitionActivity extends BaseActivity {
         for (int i = 0; i < devices.length; i++) menu.getMenu().add(0, i, i, devices[i]);
         menu.setOnMenuItemClickListener(item -> {
             micDevice.setText(devices[item.getItemId()]);
-            RobotSession.get().send("VOICE MIC " + devices[item.getItemId()]);
             return true;
         });
         menu.show();
     }
 
-    // ---- recognition -----------------------------------------------------------------------
-
-    /** Simulated recognizer: "hears" the next sample command. */
-    private void simulateRecognition() {
-        if (!commandSwitch.isChecked()) return;
-        int index = nextCommand++ % phrases.length;
-        float confidence = 90f + random.nextFloat() * 9.5f;
-        long now = System.currentTimeMillis();
-        showRecognized(index, confidence, now);
-        history.add(new HistoryEntry(now, phrases[index], runCommand(index), confidence));
-        renderHistory();
-        if (!continuousSwitch.isChecked()) setListening(false); // single-shot listening
-    }
-
-    /** Executes a recognized command and returns the history result string. */
-    private int runCommand(int index) {
-        String command = ROBOT_COMMANDS[index];
-        if (command == null) {
-            speak(getString(R.string.time_answer, new SimpleDateFormat("h:mm a", Locale.US).format(new Date())));
-            return R.string.result_answered;
-        }
-        return RobotSession.get().send("VOICE_COMMAND " + command) ? R.string.result_executed : R.string.result_not_sent;
-    }
-
-    private void showRecognized(int index, float confidence, long time) {
-        currentCommand = index;
-        ((TextView) findViewById(R.id.result_quote)).setText(getString(R.string.quoted, phrases[index]));
-        ((TextView) findViewById(R.id.result_text)).setText(phrases[index]);
-        ((TextView) findViewById(R.id.result_confidence)).setText(getString(R.string.similarity_value, confidence));
-        ((ProgressBar) findViewById(R.id.result_confidence_bar)).setProgress(Math.round(confidence * 10));
-        ((TextView) findViewById(R.id.result_language)).setText(
-                getResources().getStringArray(R.array.adv_language_options)[advancedSelection[1][0]]);
-        ((TextView) findViewById(R.id.result_time)).setText(dateTime.format(new Date(time)));
-
-        SpannableStringBuilder name = new SpannableStringBuilder(getString(R.string.execute_label));
-        int start = name.length();
-        name.append(actions[index]);
-        name.setSpan(new ForegroundColorSpan(color(R.color.teal)), start, name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        ((TextView) findViewById(R.id.action_name)).setText(name);
-        ((TextView) findViewById(R.id.action_desc)).setText(descriptions[index]);
-        ImageView icon = findViewById(R.id.action_icon);
-        icon.setImageResource(ACTION_ICONS[index]);
-        icon.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
-    }
-
-    private void speak(String text) {
-        if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "voice-result");
-    }
-
-    // ---- result panel ----------------------------------------------------------------------
+    // ---- result + command action -----------------------------------------------------------
 
     private void setupResult() {
-        setIcon(findViewById(R.id.result_title), R.drawable.ic_check_circle, 24, color(R.color.teal), Gravity.START);
-        setIcon(findViewById(R.id.action_title), R.drawable.ic_robot, 24, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.result_title), R.drawable.ic_check_circle, 22, color(R.color.teal), Gravity.START);
+        setIcon(findViewById(R.id.action_title), R.drawable.ic_robot, 22, color(R.color.cyan), Gravity.START);
         int white = color(R.color.text_primary);
         ((ImageView) findViewById(R.id.btn_speak)).setColorFilter(white, PorterDuff.Mode.SRC_IN);
         ((ImageView) findViewById(R.id.btn_execute)).setColorFilter(white, PorterDuff.Mode.SRC_IN);
 
-        findViewById(R.id.btn_speak).setOnClickListener(v -> speak(phrases[currentCommand]));
+        findViewById(R.id.btn_speak).setOnClickListener(v -> {
+            if (!transcript.isEmpty()) speak(transcript);
+        });
         findViewById(R.id.btn_execute).setOnClickListener(v -> {
-            String command = ROBOT_COMMANDS[currentCommand];
-            if (command == null) {
-                runCommand(currentCommand);
+            if (currentAction == null) return;
+            if (currentAction.command == null) {
+                speak(getString(R.string.time_answer, clock.format(new Date())));
                 return;
             }
-            if (sendCommand("VOICE_COMMAND " + command)) {
-                toast(getString(R.string.sent_command, actions[currentCommand]));
-                history.add(new HistoryEntry(System.currentTimeMillis(), phrases[currentCommand],
-                        R.string.result_executed, -1f));
-                renderHistory();
+            if (sendCommand("VOICE_COMMAND " + currentAction.command)) {
+                toast(getString(R.string.sent_command, currentAction.name));
+                addHistory(transcript, R.string.result_executed, -1f);
             }
         });
     }
 
-    // ---- voice profiles --------------------------------------------------------------------
+    private void renderResult() {
+        renderResult(-1f);
+    }
 
-    private void setupProfiles() {
+    private void renderResult(float confidence) {
+        String dash = getString(R.string.placeholder_value);
+        ((TextView) findViewById(R.id.result_quote)).setText(
+                transcript.isEmpty() ? getString(R.string.tap_mic_to_speak) : getString(R.string.quoted, transcript));
+        ((TextView) findViewById(R.id.result_text)).setText(transcript.isEmpty() ? dash : transcript);
+        ((TextView) findViewById(R.id.result_confidence)).setText(confidence >= 0
+                ? getString(R.string.similarity_value, confidence) : dash);
+        ((ProgressBar) findViewById(R.id.result_confidence_bar)) // max is 1000
+                .setProgress(Math.round(Math.max(0f, confidence) * 10f));
+        String[] languages = getResources().getStringArray(R.array.adv_language_options);
+        ((TextView) findViewById(R.id.result_language)).setText(languages[advancedSelection[1][0]]);
+        ((TextView) findViewById(R.id.result_time)).setText(
+                transcript.isEmpty() ? dash : dateTime.format(new Date()));
+
+        TextView name = findViewById(R.id.action_name);
+        TextView description = findViewById(R.id.action_desc);
+        ImageView icon = findViewById(R.id.action_icon);
+        if (currentAction == null) {
+            name.setText(transcript.isEmpty() ? getString(R.string.tap_mic_to_speak)
+                    : getString(R.string.result_no_match));
+            description.setText("");
+            icon.setImageResource(R.drawable.ic_mic);
+        } else {
+            SpannableStringBuilder label = new SpannableStringBuilder(getString(R.string.execute_label));
+            int start = label.length();
+            label.append(currentAction.name);
+            label.setSpan(new ForegroundColorSpan(color(R.color.teal)), start, label.length(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            name.setText(label);
+            description.setText(currentAction.description);
+            icon.setImageResource(iconFor(currentAction));
+        }
+        icon.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+    }
+
+    private static int iconFor(VoiceCommands.Action action) {
+        String command = action.command;
+        if (command == null) return R.drawable.ic_history;
+        if (command.startsWith("MOVE FORWARD")) return R.drawable.ic_arrow_up;
+        if (command.startsWith("MOVE BACKWARD")) return R.drawable.ic_arrow_down;
+        if (command.startsWith("TURN LEFT")) return R.drawable.ic_arrow_left;
+        if (command.startsWith("TURN RIGHT")) return R.drawable.ic_arrow_right;
+        if (command.startsWith("STOP")) return R.drawable.ic_square;
+        if (command.startsWith("GO_HOME")) return R.drawable.ic_home;
+        if (command.startsWith("DOOR")) return R.drawable.ic_lock_open;
+        if (command.startsWith("SLAM")) return R.drawable.ic_map;
+        if (command.startsWith("FOLLOW")) return R.drawable.ic_follow;
+        return R.drawable.ic_robot;
+    }
+
+    // ---- voice command list ----------------------------------------------------------------
+
+    private void setupCommands() {
         setIcon(findViewById(R.id.voice_db_title), R.drawable.ic_mic, 22, color(R.color.cyan), Gravity.START);
         TextView add = findViewById(R.id.btn_add_voice);
         setIcon(add, R.drawable.ic_add, 16, color(R.color.text_primary), Gravity.START);
-        add.setOnClickListener(v -> showAddVoiceDialog());
+        add.setOnClickListener(v -> showAddPhraseDialog());
 
-        profiles.add(new Profile("Emma Wilson", "00123", R.drawable.face_portrait_emma));
-        profiles.add(new Profile("James Miller", "00124", R.drawable.face_avatar_james));
-        profiles.add(new Profile("Sophia Davis", "00125", R.drawable.face_avatar_sophia));
-        profiles.add(new Profile("Daniel Brown", "00126", R.drawable.face_avatar_daniel));
-        profiles.add(new Profile("Olivia Taylor", "00127", R.drawable.face_avatar_olivia));
-
-        profileList = findViewById(R.id.voice_db_list);
-        profileSearch = findViewById(R.id.voice_search);
-        setIcon(profileSearch, R.drawable.ic_search, 18, color(R.color.text_secondary), Gravity.START);
-        profileSearch.addTextChangedListener(new TextWatcher() {
+        commandList = findViewById(R.id.voice_db_list);
+        commandSearch = findViewById(R.id.voice_search);
+        setIcon(commandSearch, R.drawable.ic_search, 18, color(R.color.text_secondary), Gravity.START);
+        commandSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                renderProfiles();
+                renderCommands();
             }
 
             @Override
             public void afterTextChanged(Editable s) {
             }
         });
-        renderProfiles();
     }
 
-    private void renderProfiles() {
-        profileList.removeAllViews();
-        String query = profileSearch.getText().toString().trim().toLowerCase(Locale.US);
+    /** Built-in commands plus the user's own phrases; tapping a row runs it. */
+    private void renderCommands() {
+        commandList.removeAllViews();
+        String query = commandSearch.getText().toString().trim().toLowerCase(Locale.US);
         LayoutInflater inflater = LayoutInflater.from(this);
         int gap = Math.round(6 * getResources().getDisplayMetrics().density);
-        for (final Profile profile : profiles) {
-            if (!query.isEmpty() && !profile.name.toLowerCase(Locale.US).contains(query) && !profile.id.contains(query)) {
-                continue;
-            }
-            // reuses the Face Database row: name / ID / active chip
-            View row = inflater.inflate(R.layout.item_face_db_row, profileList, false);
-            bindPhoto(row.findViewById(R.id.db_photo), profile.photo);
-            ((TextView) row.findViewById(R.id.db_name)).setText(profile.name);
-            row.findViewById(R.id.db_id).setVisibility(View.GONE);
-            ((TextView) row.findViewById(R.id.db_department)).setText(getString(R.string.id_value, profile.id));
-            TextView active = row.findViewById(R.id.db_active);
-            active.setText(profile.active ? R.string.active : R.string.inactive);
-            active.setTextColor(color(profile.active ? R.color.teal : R.color.text_muted));
-            active.setBackgroundResource(profile.active ? R.drawable.bg_chip_green : R.drawable.bg_table_box);
-            row.setOnClickListener(v -> showProfileMenu(v, profile));
-            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) row.getLayoutParams();
-            if (profileList.getChildCount() > 0) lp.topMargin = gap;
-            profileList.addView(row, lp);
+
+        for (final CustomPhrases.Phrase phrase : customPhrases.getAll()) {
+            if (!matches(query, phrase.text, phrase.action.name)) continue;
+            View row = addCommandRow(inflater, gap, phrase.text, phrase.action, false);
+            row.setOnLongClickListener(v -> {
+                customPhrases.remove(phrase);
+                renderCommands();
+                return true;
+            });
+        }
+        for (final VoiceCommands.Action action : VoiceCommands.actions()) {
+            String phrase = VoiceCommands.examplePhrase(action);
+            if (!matches(query, phrase, action.name)) continue;
+            addCommandRow(inflater, gap, phrase, action, true);
         }
     }
 
-    private void bindPhoto(ImageView view, int photo) {
-        view.setClipToOutline(true);
-        if (photo != 0) {
-            view.setImageResource(photo);
-            view.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            view.clearColorFilter();
-        } else {
-            view.setImageResource(R.drawable.ic_mic);
-            view.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            view.setColorFilter(color(R.color.blue_light), PorterDuff.Mode.SRC_IN);
-        }
+    private static boolean matches(String query, String phrase, String name) {
+        return query.isEmpty() || phrase.toLowerCase(Locale.US).contains(query)
+                || name.toLowerCase(Locale.US).contains(query);
     }
 
-    private void showProfileMenu(View anchor, final Profile profile) {
-        PopupMenu menu = new PopupMenu(this, anchor);
-        menu.getMenu().add(0, 1, 0, R.string.toggle_active);
-        menu.getMenu().add(0, 2, 1, R.string.remove_from_database);
-        menu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == 1) {
-                profile.active = !profile.active;
-            } else {
-                profiles.remove(profile);
-                toast(getString(R.string.voice_profile_removed, profile.name));
-            }
-            renderProfiles();
-            return true;
-        });
-        menu.show();
+    /** Reuses the face database row: icon / phrase / action name / built-in chip. */
+    private View addCommandRow(LayoutInflater inflater, int gap, final String phrase,
+                               final VoiceCommands.Action action, boolean builtIn) {
+        View row = inflater.inflate(R.layout.item_face_db_row, commandList, false);
+        ImageView icon = row.findViewById(R.id.db_photo);
+        icon.setImageResource(iconFor(action));
+        icon.setColorFilter(color(R.color.blue_light), PorterDuff.Mode.SRC_IN);
+        icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        ((TextView) row.findViewById(R.id.db_name)).setText(phrase);
+        row.findViewById(R.id.db_id).setVisibility(View.GONE);
+        ((TextView) row.findViewById(R.id.db_department)).setText(action.name);
+        TextView chip = row.findViewById(R.id.db_active);
+        chip.setText(builtIn ? R.string.built_in : R.string.custom_phrase);
+        chip.setTextColor(color(builtIn ? R.color.text_muted : R.color.teal));
+        chip.setBackgroundResource(builtIn ? R.drawable.bg_table_box : R.drawable.bg_chip_green);
+        row.setOnClickListener(v -> handleTranscript(phrase, -1f, false));
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) row.getLayoutParams();
+        if (commandList.getChildCount() > 0) lp.topMargin = gap;
+        commandList.addView(row, lp);
+        return row;
     }
 
-    private void showAddVoiceDialog() {
+    private void showAddPhraseDialog() {
+        final List<VoiceCommands.Action> actions = VoiceCommands.actions();
         final EditText input = textInput(null);
+        input.setHint(R.string.enter_phrase);
+        final Spinner spinner = new Spinner(this);
+        List<CharSequence> names = new ArrayList<>();
+        for (VoiceCommands.Action a : actions) names.add(a.name);
+        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, names);
+        adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        spinner.setAdapter(adapter);
+        spinner.setBackgroundResource(R.drawable.bg_input);
+
+        float density = getResources().getDisplayMetrics().density;
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int pad = Math.round(24 * density);
+        content.setPadding(pad, pad / 2, pad, 0);
+        content.addView(input);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Math.round(46 * density));
+        lp.topMargin = Math.round(10 * density);
+        content.addView(spinner, lp);
+
         final AlertDialog dialog = new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
-                .setTitle(R.string.add_voice)
-                .setView(wrapInput(input))
+                .setTitle(R.string.add_phrase)
+                .setView(content)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.save, null)
                 .create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String name = input.getText().toString().trim();
-            if (name.isEmpty()) {
-                input.setError(getString(R.string.enter_name));
+            String text = input.getText().toString().trim();
+            if (text.isEmpty()) {
+                input.setError(getString(R.string.enter_phrase));
                 return;
             }
-            Profile profile = new Profile(name, String.format(Locale.US, "%05d", nextVoiceId++), 0);
-            profiles.add(profile);
-            RobotSession.get().send("VOICE ENROLL " + profile.id);
-            toast(getString(R.string.voice_profile_added, name));
-            renderProfiles();
+            customPhrases.add(text, actions.get(spinner.getSelectedItemPosition()));
+            renderCommands();
             dialog.dismiss();
         }));
         dialog.show();
+    }
+
+    // ---- voice control ---------------------------------------------------------------------
+
+    private void setupVoiceControl() {
+        setIcon(findViewById(R.id.control_title), R.drawable.ic_settings, 22, color(R.color.text_primary), Gravity.START);
+        LinearLayout toggles = findViewById(R.id.voice_toggles);
+        commandSwitch = addToggle(toggles, R.drawable.ic_mic, R.string.vc_command, R.string.vc_command_sub, true);
+        wakeSwitch = addToggle(toggles, R.drawable.ic_bolt, R.string.vc_wake, R.string.vc_wake_sub, false);
+        wakeTitle = ((View) wakeSwitch.getParent()).findViewById(R.id.toggle_title);
+        continuousSwitch = addToggle(toggles, R.drawable.ic_refresh, R.string.vc_continuous, R.string.vc_continuous_sub, true);
+        noiseSwitch = addToggle(toggles, R.drawable.ic_tune, R.string.vc_noise, R.string.vc_noise_sub, true);
+        noiseSwitch.setOnCheckedChangeListener((b, on) -> {
+            recorder.setNoiseSuppression(on);
+            if (listening) { // restart so the effect applies to a new recording session
+                setListening(false);
+                setListening(true);
+            }
+        });
+
+        wakeWord = findViewById(R.id.wake_word);
+        setWakeWord(wakeWordText);
+        ((ImageView) findViewById(R.id.btn_edit_wake)).setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+        findViewById(R.id.btn_edit_wake).setOnClickListener(v -> {
+            final EditText input = textInput(wakeWordText);
+            new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
+                    .setTitle(R.string.wake_word)
+                    .setView(wrapInput(input))
+                    .setNegativeButton(R.string.cancel, null)
+                    .setPositiveButton(R.string.save, (d, w) -> {
+                        String word = input.getText().toString().trim();
+                        if (!word.isEmpty()) setWakeWord(word);
+                    })
+                    .show();
+        });
+    }
+
+    private void setWakeWord(String word) {
+        wakeWordText = word;
+        wakeWord.setText(word);
+        wakeTitle.setText(getString(R.string.wake_word_title, word));
+    }
+
+    private Switch addToggle(LinearLayout parent, int icon, int title, int subtitle, boolean checked) {
+        View row = LayoutInflater.from(this).inflate(R.layout.item_voice_toggle_row, parent, false);
+        ImageView iconView = row.findViewById(R.id.toggle_icon);
+        iconView.setImageResource(icon);
+        iconView.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+        ((TextView) row.findViewById(R.id.toggle_title)).setText(title);
+        ((TextView) row.findViewById(R.id.toggle_subtitle)).setText(subtitle);
+        Switch toggle = row.findViewById(R.id.toggle_switch);
+        toggle.setChecked(checked);
+        parent.addView(row);
+        return toggle;
     }
 
     private EditText textInput(String value) {
         EditText input = new EditText(this);
         input.setSingleLine(true);
         input.setTextColor(color(R.color.text_primary));
+        input.setHintTextColor(color(R.color.text_muted));
         input.setBackgroundResource(R.drawable.bg_input);
         int pad = Math.round(12 * getResources().getDisplayMetrics().density);
         input.setPadding(pad, pad, pad, pad);
@@ -492,55 +666,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
         return frame;
     }
 
-    // ---- voice control ---------------------------------------------------------------------
-
-    private void setupVoiceControl() {
-        setIcon(findViewById(R.id.control_title), R.drawable.ic_settings, 22, color(R.color.text_primary), Gravity.START);
-        LinearLayout toggles = findViewById(R.id.voice_toggles);
-        commandSwitch = addToggle(toggles, R.drawable.ic_mic, R.string.vc_command, R.string.vc_command_sub, true, "VOICE COMMANDS");
-        wakeSwitch = addToggle(toggles, R.drawable.ic_bolt, R.string.vc_wake, R.string.vc_wake_sub, true, "VOICE WAKE_WORD");
-        wakeTitle = (TextView) ((View) wakeSwitch.getParent()).findViewById(R.id.toggle_title);
-        continuousSwitch = addToggle(toggles, R.drawable.ic_refresh, R.string.vc_continuous, R.string.vc_continuous_sub, false, "VOICE CONTINUOUS");
-        noiseSwitch = addToggle(toggles, R.drawable.ic_tune, R.string.vc_noise, R.string.vc_noise_sub, true, "VOICE NOISE_REDUCTION");
-
-        wakeWord = findViewById(R.id.wake_word);
-        setWakeWord("Hey Robot");
-        ((ImageView) findViewById(R.id.btn_edit_wake)).setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
-        findViewById(R.id.btn_edit_wake).setOnClickListener(v -> {
-            final EditText input = textInput(wakeWord.getText().toString());
-            new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
-                    .setTitle(R.string.wake_word)
-                    .setView(wrapInput(input))
-                    .setNegativeButton(R.string.cancel, null)
-                    .setPositiveButton(R.string.save, (d, w) -> {
-                        String word = input.getText().toString().trim();
-                        if (word.isEmpty()) return;
-                        setWakeWord(word);
-                        RobotSession.get().send("VOICE WAKE_WORD_TEXT " + word);
-                    })
-                    .show();
-        });
-    }
-
-    private void setWakeWord(String word) {
-        wakeWord.setText(word);
-        wakeTitle.setText(getString(R.string.wake_word_title, word));
-    }
-
-    private Switch addToggle(LinearLayout parent, int icon, int title, int subtitle, boolean checked, final String command) {
-        View row = LayoutInflater.from(this).inflate(R.layout.item_voice_toggle_row, parent, false);
-        ImageView iconView = row.findViewById(R.id.toggle_icon);
-        iconView.setImageResource(icon);
-        iconView.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
-        ((TextView) row.findViewById(R.id.toggle_title)).setText(title);
-        ((TextView) row.findViewById(R.id.toggle_subtitle)).setText(subtitle);
-        Switch toggle = row.findViewById(R.id.toggle_switch);
-        toggle.setChecked(checked);
-        toggle.setOnCheckedChangeListener((b, on) -> RobotSession.get().send(command + " " + (on ? "ON" : "OFF")));
-        parent.addView(row);
-        return toggle;
-    }
-
     // ---- history ---------------------------------------------------------------------------
 
     private void setupHistory() {
@@ -550,17 +675,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
             history.clear();
             renderHistory();
         });
-
-        long now = System.currentTimeMillis();
-        float[] confidences = {90.5f, 94.3f, 92.7f, 99.1f, 95.8f, 96.2f, 98.6f};
-        int[] commandIndex = {6, 5, 4, 3, 2, 1, 0};
-        long[] ago = {802_000, 609_000, 424_000, 221_000, 126_000, 33_000, 0};
-        for (int i = 0; i < commandIndex.length; i++) {
-            int index = commandIndex[i];
-            int result = ROBOT_COMMANDS[index] == null ? R.string.result_answered : R.string.result_executed;
-            history.add(new HistoryEntry(now - ago[i], phrases[index], result, confidences[i]));
-        }
-        renderHistory();
     }
 
     private void renderHistory() {
@@ -576,7 +690,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
             result.setTextColor(color(entry.result == R.string.result_executed ? R.color.teal
                     : entry.result == R.string.result_answered ? R.color.blue_light : R.color.amber));
             ((TextView) row.findViewById(R.id.vh_confidence)).setText(entry.confidence >= 0
-                    ? getString(R.string.similarity_value, entry.confidence) : "-");
+                    ? getString(R.string.similarity_value, entry.confidence)
+                    : getString(R.string.placeholder_value));
             historyList.addView(row);
         }
     }
@@ -596,18 +711,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         }
         TextView apply = findViewById(R.id.btn_apply_settings);
         setIcon(apply, R.drawable.ic_check, 18, color(R.color.white), Gravity.START);
-        apply.setOnClickListener(v -> {
-            StringBuilder command = new StringBuilder("VOICE CONFIG");
-            for (int t = 0; t < ADVANCED.length; t++) {
-                for (int r = 0; r < ADVANCED[t].length; r++) {
-                    command.append(' ').append(t).append('.').append(r).append('=').append(advancedSelection[t][r]);
-                }
-            }
-            RobotSession.get().send(command.toString());
-            ((TextView) findViewById(R.id.result_language)).setText(
-                    getResources().getStringArray(R.array.adv_language_options)[advancedSelection[1][0]]);
-            toast(R.string.settings_applied);
-        });
+        apply.setOnClickListener(v -> loadSelectedModel());
         renderAdvancedTab(0);
     }
 
@@ -615,20 +719,32 @@ public class VoiceRecognitionActivity extends BaseActivity {
         advancedTab = tab;
         for (int i = 0; i < advancedTabs.length; i++) advancedTabs[i].setSelected(i == tab);
         advancedRows.removeAllViews();
+        if (tab != 0) modelSpinner = null;
         LayoutInflater inflater = LayoutInflater.from(this);
         for (int r = 0; r < ADVANCED[tab].length; r++) {
             final int rowIndex = r;
             View row = inflater.inflate(R.layout.item_setting_dropdown_row, advancedRows, false);
             ((TextView) row.findViewById(R.id.setting_label)).setText(ADVANCED[tab][r][0]);
             Spinner spinner = row.findViewById(R.id.setting_spinner);
-            ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, ADVANCED[tab][r][1], R.layout.item_spinner);
+            ArrayAdapter<CharSequence> adapter;
+            if (tab == 0 && r == 0) {
+                // the model list comes from the device, not from resources
+                List<CharSequence> models = new ArrayList<>(WhisperEngine.listModels(this));
+                if (models.isEmpty()) models.add(WhisperEngine.DEFAULT_MODEL);
+                adapter = new ArrayAdapter<>(this, R.layout.item_spinner, models);
+                modelSpinner = spinner;
+            } else {
+                adapter = ArrayAdapter.createFromResource(this, ADVANCED[tab][r][1], R.layout.item_spinner);
+            }
             adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
             spinner.setAdapter(adapter);
-            spinner.setSelection(advancedSelection[tab][r]);
+            if (advancedSelection[tab][r] < adapter.getCount()) spinner.setSelection(advancedSelection[tab][r]);
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    if (advancedTab == tab) advancedSelection[tab][rowIndex] = position;
+                    if (advancedTab != tab) return;
+                    advancedSelection[tab][rowIndex] = position;
+                    if (tab == 1 && rowIndex == 0) renderResult();
                 }
 
                 @Override
@@ -637,5 +753,40 @@ public class VoiceRecognitionActivity extends BaseActivity {
             });
             advancedRows.addView(row);
         }
+    }
+
+    private String selectedModel() {
+        if (modelSpinner != null && modelSpinner.getSelectedItem() != null) {
+            return modelSpinner.getSelectedItem().toString();
+        }
+        List<String> models = WhisperEngine.listModels(this);
+        return models.isEmpty() ? WhisperEngine.DEFAULT_MODEL : models.get(0);
+    }
+
+    /** whisper language code from the Language tab. */
+    private String languageCode() {
+        String[] codes = getResources().getStringArray(R.array.adv_language_codes);
+        int index = advancedSelection[1][0];
+        return index < codes.length ? codes[index] : "auto";
+    }
+
+    /** Loads the selected ggml model in the background (a few seconds for ggml-small). */
+    private void loadSelectedModel() {
+        if (!WhisperEngine.isLibraryAvailable()) {
+            toast(R.string.engine_unavailable);
+            return;
+        }
+        final String model = selectedModel();
+        final File file = new File(WhisperEngine.getModelDir(this), model);
+        if (!file.exists()) {
+            toast(getString(R.string.model_not_found, model, file.getParent()));
+            return;
+        }
+        toast(getString(R.string.loading_model, model));
+        transcriber.execute(() -> {
+            final boolean ok = engine.load(model);
+            runOnUiThread(() -> toast(ok ? getString(R.string.model_loaded, model)
+                    : getString(R.string.model_load_failed, model)));
+        });
     }
 }
