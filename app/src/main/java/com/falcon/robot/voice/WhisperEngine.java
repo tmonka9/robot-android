@@ -29,6 +29,8 @@ import java.util.List;
 public final class WhisperEngine {
 
     private static final String TAG = "WhisperEngine";
+    /** What the stub reports when whisper.cpp was not compiled in (see cpp/whisper_jni_stub.cpp). */
+    private static final String STUB_MARKER = "whisper.cpp not built";
     public static final String DEFAULT_MODEL = "ggml-small.bin";
 
     private static boolean libraryLoaded;
@@ -63,6 +65,15 @@ public final class WhisperEngine {
 
     public static boolean isLibraryAvailable() {
         return libraryLoaded;
+    }
+
+    /**
+     * False when the app was built without the whisper.cpp sources: the library then contains the
+     * stub, which loads but transcribes nothing. Worth telling apart from a missing model file,
+     * because the fix is a clone and a rebuild rather than another download.
+     */
+    public static boolean isEngineBuilt() {
+        return libraryLoaded && !systemInfo().startsWith(STUB_MARKER);
     }
 
     /** Folder the models are read from (created if missing). */

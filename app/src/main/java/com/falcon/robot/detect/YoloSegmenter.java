@@ -35,7 +35,8 @@ import java.util.Map;
  * predictions in one tensor, {@code [1, 4+classes+coefficients, anchors]} or its transpose, and
  * predictions split into a tensor each ({@code [1, anchors, 4]} boxes, {@code [1, anchors,
  * classes]} scores, {@code [1, anchors, 32]} coefficients); the mask prototypes as
- * {@code [1, h, w, 32]} or {@code [1, 32, h, w]}; float32 and quantized uint8/int8 tensors;
+ * {@code [1, h, w, 32]} or {@code [1, 32, h, w]}; NHWC and NCHW inputs; float32 and quantized
+ * uint8/int8 tensors;
  * boxes in input pixels or normalised, as a centre and size or as corners; and the finished
  * detections that NMS-free models such as YOLO26 and YOLOv10 return ({@code [1, 300, 6]}:
  * x1, y1, x2, y2, score, class). A plain detection model such as yolov8n works too — without
@@ -123,6 +124,8 @@ public final class YoloSegmenter implements Closeable {
 
     private final int inputWidth;
     private final int inputHeight;
+    /** Some exports want [1, 3, H, W] instead of [1, H, W, 3]. */
+    private final boolean inputChannelsFirst;
     private final DataType inputType;
     private final float inputScale;
     private final int inputZeroPoint;
@@ -190,12 +193,14 @@ public final class YoloSegmenter implements Closeable {
         interpreter = new Interpreter(loadModel(context, modelName), options);
 
         Tensor input = interpreter.getInputTensor(0);
-        int[] inShape = input.shape(); // [1, H, W, 3]
-        if (inShape.length != 4 || inShape[3] != 3) {
-            throw new IOException("Expected an NHWC RGB input, got " + Arrays.toString(inShape));
+        int[] inShape = input.shape(); // [1, H, W, 3] or [1, 3, H, W]
+        if (inShape.length != 4 || (inShape[3] != 3 && inShape[1] != 3)) {
+            throw new IOException("Expected an RGB input with three channels, got "
+                    + Arrays.toString(inShape));
         }
-        inputHeight = inShape[1];
-        inputWidth = inShape[2];
+        inputChannelsFirst = inShape[1] == 3 && inShape[3] != 3;
+        inputHeight = inputChannelsFirst ? inShape[2] : inShape[1];
+        inputWidth = inputChannelsFirst ? inShape[3] : inShape[2];
         inputType = input.dataType();
         inputScale = input.quantizationParams().getScale();
         inputZeroPoint = input.quantizationParams().getZeroPoint();
@@ -313,7 +318,7 @@ public final class YoloSegmenter implements Closeable {
     }
 
     public String describe() {
-        return inputWidth + "×" + inputHeight
+        return inputWidth + "×" + inputHeight + (inputChannelsFirst ? " NCHW" : "")
                 + (endToEnd ? " · end-to-end" : " · " + numClasses + " classes")
                 + (hasMasks() ? " · masks" : "");
     }
@@ -396,10 +401,18 @@ public final class YoloSegmenter implements Closeable {
     private void writeInput() {
         inputImage.getPixels(pixels, 0, inputWidth, 0, 0, inputWidth, inputHeight);
         inputBuffer.rewind();
-        for (int pixel : pixels) {
-            writeChannel(((pixel >> 16) & 0xFF) / 255f);
-            writeChannel(((pixel >> 8) & 0xFF) / 255f);
-            writeChannel((pixel & 0xFF) / 255f);
+        if (inputChannelsFirst) {
+            // planar [1, 3, H, W]: every red, then every green, then every blue
+            for (int channel = 0; channel < 3; channel++) {
+                int shift = 16 - channel * 8;
+                for (int pixel : pixels) writeChannel(((pixel >> shift) & 0xFF) / 255f);
+            }
+        } else {
+            for (int pixel : pixels) {
+                writeChannel(((pixel >> 16) & 0xFF) / 255f);
+                writeChannel(((pixel >> 8) & 0xFF) / 255f);
+                writeChannel((pixel & 0xFF) / 255f);
+            }
         }
     }
 

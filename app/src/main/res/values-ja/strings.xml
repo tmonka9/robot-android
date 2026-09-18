@@ -391,7 +391,8 @@
     <string name="status_processing">処理中…</string>
     <string name="result_no_match">該当なし</string>
     <string name="mic_permission_needed">音声コマンドにはマイクの権限が必要です</string>
-    <string name="engine_unavailable">音声エンジンが未ビルドです。whisper.cpp を app/src/main/cpp に追加してください</string>
+    <string name="engine_not_built">音声エンジンが未ビルドです: whisper.cpp を app/src/main/cpp にクローンして再ビルドしてください</string>
+    <string name="engine_unavailable">音声エンジンのライブラリを読み込めません</string>
     <string name="model_not_found">%1$s を %2$s に配置してください</string>
     <string name="loading_model">%s を読み込んでいます…</string>
     <string name="model_loaded">%s を読み込みました</string>

@@ -271,6 +271,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
     private String engineProblem() {
         if (!WhisperEngine.isLibraryAvailable()) return getString(R.string.engine_unavailable);
+        if (!WhisperEngine.isEngineBuilt()) return getString(R.string.engine_not_built);
         return getString(R.string.model_not_found, selectedModel(),
                 WhisperEngine.getModelDir(this).getAbsolutePath());
     }

@@ -392,7 +392,8 @@
     <string name="status_processing">Processing…</string>
     <string name="result_no_match">No match</string>
     <string name="mic_permission_needed">Microphone permission is required for voice commands</string>
-    <string name="engine_unavailable">Speech engine not built: add whisper.cpp to app/src/main/cpp</string>
+    <string name="engine_not_built">Speech engine not built: clone whisper.cpp into app/src/main/cpp and rebuild</string>
+    <string name="engine_unavailable">Speech engine library could not be loaded</string>
     <string name="model_not_found">Put %1$s in %2$s</string>
     <string name="loading_model">Loading %s…</string>
     <string name="model_loaded">%s loaded</string>

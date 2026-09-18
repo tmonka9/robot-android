@@ -391,7 +391,8 @@
     <string name="status_processing">处理中…</string>
     <string name="result_no_match">无匹配</string>
     <string name="mic_permission_needed">语音指令需要麦克风权限</string>
-    <string name="engine_unavailable">语音引擎未编译：请将 whisper.cpp 放入 app/src/main/cpp</string>
+    <string name="engine_not_built">语音引擎未编译：请将 whisper.cpp 克隆到 app/src/main/cpp 后重新构建</string>
+    <string name="engine_unavailable">无法加载语音引擎库</string>
     <string name="model_not_found">请将 %1$s 放入 %2$s</string>
     <string name="loading_model">正在加载 %s…</string>
     <string name="model_loaded">%s 已加载</string>
