@@ -139,6 +139,9 @@
     <string name="status_offline_short">离线</string>
     <string name="status_listening">聆听中…</string>
     <string name="status_paused">已暂停</string>
+    <string name="service_channel">识别服务</string>
+    <string name="service_channel_description">后台运行的人脸、语音与目标识别</string>
+    <string name="notification_permission_needed">请允许通知，以便后台识别显示运行状态</string>
     <string name="gamepad_connected">已连接手柄：%s</string>
     <string name="not_connected">请先连接机器人</string>
     <string name="sent_command">已发送：%s</string>
@@ -331,7 +334,6 @@
     <string name="camera_permission_needed">人脸识别需要摄像头权限。\n点击授予权限。</string>
     <string name="camera_unavailable">摄像头不可用</string>
     <string name="model_missing">仅人脸检测：将 mobilefacenet.tflite 放入 app/src/main/assets 即可启用识别</string>
-    <string name="model_failed">无法加载 mobilefacenet.tflite：%s</string>
     <string name="frame_info">%1$d × %2$d  ·  %3$d ms</string>
     <string name="snapshot_saved_to">截图已保存：%s</string>
     <string name="snapshot_failed">截图保存失败</string>

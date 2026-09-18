@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.os.Bundle;
-import android.speech.tts.TextToSpeech;
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -33,7 +32,6 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 
 import com.falcon.robot.voice.CustomPhrases;
-import com.falcon.robot.voice.SpeechRecorder;
 import com.falcon.robot.voice.VoiceCommands;
 import com.falcon.robot.voice.WhisperEngine;
 import com.falcon.robot.widget.CoverImageView;
@@ -45,8 +43,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Voice Recognition page: records at 16 kHz, transcribes with whisper.cpp
@@ -109,18 +105,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private final SimpleDateFormat dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
     private final List<HistoryEntry> history = new ArrayList<>();
     private final int[][] advancedSelection = new int[ADVANCED.length][4];
-    private final ExecutorService transcriber = Executors.newSingleThreadExecutor();
 
     /** Spoken clock, in the device format and the app language (set in onCreate). */
     private java.text.DateFormat clock;
 
-    private WhisperEngine engine;
-    private SpeechRecorder recorder;
-    private CustomPhrases customPhrases;
-    private TextToSpeech tts;
-    private boolean ttsReady;
-    private boolean listening;
-    private boolean transcribing;
+    private CustomPhrases customPhrases; // the service's copy, so both match the same phrases
     private int advancedTab;
     private String wakeWordText = "Hey Robot";
     private String transcript = "";
@@ -146,7 +135,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
     private final ActivityResultLauncher<String> micPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
-                if (granted) setListening(true);
+                if (granted) setVoiceEnabled(true);
                 else toast(R.string.mic_permission_needed);
             });
 
@@ -159,13 +148,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns_bottom);
 
         clock = android.text.format.DateFormat.getTimeFormat(this);
-        engine = new WhisperEngine(this);
-        recorder = new SpeechRecorder(recorderListener);
         customPhrases = new CustomPhrases(this);
-        tts = new TextToSpeech(this, status -> {
-            ttsReady = status == TextToSpeech.SUCCESS;
-            if (ttsReady) setSpeechLanguage();
-        });
 
         setupListening();
         setupResult();
@@ -177,29 +160,13 @@ public class VoiceRecognitionActivity extends BaseActivity {
         renderResult();
         renderHistory();
         renderCommands();
-        loadSelectedModel();
-        setListening(false);
+        bindRobotService(serviceListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshRichHeader();
-    }
-
-    @Override
-    protected void onPause() {
-        setListening(false);
-        super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (recorder != null) recorder.stop();
-        if (tts != null) tts.shutdown();
-        transcriber.execute(() -> engine.release());
-        transcriber.shutdown();
-        super.onDestroy();
     }
 
     @Override
@@ -246,41 +213,45 @@ public class VoiceRecognitionActivity extends BaseActivity {
     }
 
     private void toggleListening() {
-        if (listening) {
-            setListening(false);
-            return;
-        }
-        if (!engine.isReady()) {
-            toast(engineProblem());
-            return;
-        }
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED) {
-            setListening(true);
-        } else {
-            micPermission.launch(Manifest.permission.RECORD_AUDIO);
-        }
+        RobotService service = getRobotService();
+        if (service != null) setVoiceEnabled(!service.isVoiceEnabled());
     }
 
-    private void setListening(boolean on) {
-        listening = on;
-        if (on) {
-            recorder.setNoiseSuppression(noiseSwitch == null || noiseSwitch.isChecked());
-            recorder.start();
-        } else {
-            recorder.stop();
+    /** Switches listening on in the service, asking for the microphone the first time. */
+    private void setVoiceEnabled(boolean on) {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        if (!on) {
+            service.setVoiceEnabled(false);
             liveWave.clearLevels();
+            liveWave.setActive(false);
+            renderServiceState();
+            sendCommand("VOICE LISTEN OFF");
+            return;
         }
-        liveWave.setActive(on);
-        visual.animate().alpha(on ? 1f : 0.6f).setDuration(250).start();
-        updateStatus();
-        sendCommand("VOICE LISTEN " + (on ? "ON" : "OFF"));
+        ensureNotificationPermission();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            micPermission.launch(Manifest.permission.RECORD_AUDIO);
+            return;
+        }
+        if (!service.getEngine().isReady() && !service.isLoadingSpeechModel()) {
+            toast(engineProblem()); // still listens, but nothing will be transcribed
+        }
+        service.setVoiceEnabled(true);
+        liveWave.setActive(true);
+        renderServiceState();
+        sendCommand("VOICE LISTEN ON");
     }
 
-    private void updateStatus() {
+    /** Mirrors what the service is doing into the mic panel. */
+    private void renderServiceState() {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        boolean listening = service.isVoiceEnabled();
         int text;
         int colorRes;
-        if (transcribing) {
+        if (service.isTranscribing() || service.isLoadingSpeechModel()) {
             text = R.string.status_processing;
             colorRes = R.color.amber;
         } else if (listening) {
@@ -294,6 +265,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
         listenState.setTextColor(color(colorRes));
         findViewById(R.id.listen_dot).setBackgroundResource(listening ? R.drawable.dot_teal : R.drawable.dot_gray);
         speakHint.setText(listening ? R.string.speak_now : R.string.tap_mic_to_speak);
+        liveWave.setActive(listening);
+        visual.animate().alpha(listening ? 1f : 0.6f).setDuration(250).start();
     }
 
     private String engineProblem() {
@@ -302,91 +275,75 @@ public class VoiceRecognitionActivity extends BaseActivity {
                 WhisperEngine.getModelDir(this).getAbsolutePath());
     }
 
-    private final SpeechRecorder.Listener recorderListener = new SpeechRecorder.Listener() {
+    @Override
+    protected void onRobotServiceReady(RobotService service) {
+        customPhrases = service.getCustomPhrases();
+        service.setCommandControl(commandSwitch.isChecked());
+        service.setWakeWordRequired(wakeSwitch.isChecked());
+        service.setWakeWord(wakeWordText);
+        service.setNoiseSuppression(noiseSwitch.isChecked());
+        service.setLanguage(languageCode());
+        renderServiceState();
+        renderCommands();
+    }
+
+    private final RobotService.Listener serviceListener = new RobotService.Adapter() {
         @Override
-        public void onLevel(float level, boolean speaking) {
+        public void onVoiceLevel(float level) {
             liveWave.pushLevel(level);
         }
 
         @Override
-        public void onUtterance(float[] samples) {
-            transcribe(samples);
+        public void onTranscript(String text, float confidence, VoiceCommands.Action action, int result) {
+            transcript = text;
+            currentAction = action;
+            addHistory(text, result, confidence);
+            renderResult(confidence);
+            // one-shot mode: stop after each utterance
+            if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
         }
 
         @Override
-        public void onError(String message) {
-            listening = false;
-            updateStatus();
-            toast(getString(R.string.mic_error, message));
+        public void onServiceState() {
+            renderServiceState();
+        }
+
+        @Override
+        public void onMessage(String text) {
+            toast(text);
         }
     };
 
-    /** Runs whisper on one utterance; only one at a time, speech during processing is dropped. */
-    private void transcribe(final float[] samples) {
-        if (transcribing || !engine.isReady()) return;
-        transcribing = true;
-        updateStatus();
-        final String language = languageCode();
-        final int threads = Math.max(2, Runtime.getRuntime().availableProcessors() - 1);
-        transcriber.execute(() -> {
-            final WhisperEngine.Result result = engine.transcribe(samples, language, false, threads);
-            runOnUiThread(() -> {
-                transcribing = false;
-                updateStatus();
-                if (result != null && !result.text.isEmpty()) {
-                    handleTranscript(result.text, result.confidence * 100f, true);
-                }
-            });
-        });
+    /** Runs a command from the list, as though it had been spoken. */
+    private void runPhrase(String phrase) {
+        transcript = phrase;
+        VoiceCommands.Action action = customPhrases.match(phrase);
+        if (action == null) action = VoiceCommands.match(phrase);
+        currentAction = action;
+        int result = executeAction(action);
+        addHistory(phrase, result, -1f);
+        renderResult(-1f);
     }
 
-    /** Applies the wake word, matches a command and runs it. */
-    private void handleTranscript(String text, float confidence, boolean spoken) {
-        if (spoken && wakeSwitch.isChecked()) {
-            if (!VoiceCommands.containsWakeWord(text, wakeWordText)) return; // not addressed to the robot
-            String rest = VoiceCommands.stripWakeWord(text, wakeWordText);
-            if (rest != null && !rest.isEmpty()) text = rest;
+    /** Sends an action to the robot (or has the robot answer) and says how it went. */
+    private int executeAction(VoiceCommands.Action action) {
+        RobotService service = getRobotService();
+        if (action == null) return R.string.result_no_match;
+        if (action.command == null) {
+            if (service != null) {
+                service.speak(getString(R.string.time_answer, clock.format(new Date())));
+            }
+            return R.string.result_answered;
         }
-        transcript = text;
-        VoiceCommands.Action action = customPhrases.match(text);
-        if (action == null) action = VoiceCommands.match(text);
-        currentAction = action;
-
-        int result;
-        if (action == null) {
-            result = R.string.result_no_match;
-        } else if (action.command == null) {
-            speak(getString(R.string.time_answer, clock.format(new Date())));
-            result = R.string.result_answered;
-        } else if (!commandSwitch.isChecked()) {
-            result = R.string.result_not_sent; // voice command control is off
-        } else {
-            result = RobotSession.get().send("VOICE_COMMAND " + action.command)
-                    ? R.string.result_executed : R.string.result_not_sent;
-        }
-
-        addHistory(text, result, confidence);
-        renderResult(confidence);
-        if (spoken && !continuousSwitch.isChecked()) setListening(false);
+        if (!commandSwitch.isChecked()) return R.string.result_not_sent; // voice control is off
+        return RobotSession.get().send("VOICE_COMMAND " + action.command)
+                ? R.string.result_executed : R.string.result_not_sent;
     }
 
     private void addHistory(String command, int result, float confidence) {
         history.add(new HistoryEntry(System.currentTimeMillis(), command, result, confidence));
         while (history.size() > MAX_HISTORY) history.remove(0);
         renderHistory();
-    }
-
-    private void speak(String text) {
-        if (ttsReady) tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "voice-result");
-    }
-
-    /** The robot answers in the app language, falling back to English when no voice is installed. */
-    private void setSpeechLanguage() {
-        Locale locale = new Locale(LocaleHelper.effectiveLanguage(this));
-        int result = tts.setLanguage(locale);
-        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            tts.setLanguage(Locale.US);
-        }
     }
 
     private void showMicrophoneMenu(View anchor) {
@@ -410,18 +367,18 @@ public class VoiceRecognitionActivity extends BaseActivity {
         ((ImageView) findViewById(R.id.btn_execute)).setColorFilter(white, PorterDuff.Mode.SRC_IN);
 
         findViewById(R.id.btn_speak).setOnClickListener(v -> {
-            if (!transcript.isEmpty()) speak(transcript);
+            RobotService service = getRobotService();
+            if (service != null && !transcript.isEmpty()) service.speak(transcript);
         });
         findViewById(R.id.btn_execute).setOnClickListener(v -> {
             if (currentAction == null) return;
-            if (currentAction.command == null) {
-                speak(getString(R.string.time_answer, clock.format(new Date())));
-                return;
-            }
-            if (sendCommand("VOICE_COMMAND " + currentAction.command)) {
+            int result = executeAction(currentAction);
+            if (result == R.string.result_executed) {
                 toast(getString(R.string.sent_command, getString(currentAction.labelRes)));
-                addHistory(transcript, R.string.result_executed, -1f);
+            } else if (result == R.string.result_not_sent) {
+                sendCommand("VOICE_COMMAND " + currentAction.command); // prompts to connect
             }
+            addHistory(transcript, result, -1f);
         });
     }
 
@@ -549,7 +506,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         chip.setText(builtIn ? R.string.built_in : R.string.custom_phrase);
         chip.setTextColor(color(builtIn ? R.color.text_muted : R.color.teal));
         chip.setBackgroundResource(builtIn ? R.drawable.bg_table_box : R.drawable.bg_chip_green);
-        row.setOnClickListener(v -> handleTranscript(phrase, -1f, false));
+        row.setOnClickListener(v -> runPhrase(phrase));
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) row.getLayoutParams();
         if (commandList.getChildCount() > 0) lp.topMargin = gap;
         commandList.addView(row, lp);
@@ -609,11 +566,16 @@ public class VoiceRecognitionActivity extends BaseActivity {
         continuousSwitch = addToggle(toggles, R.drawable.ic_refresh, R.string.vc_continuous, R.string.vc_continuous_sub, true);
         noiseSwitch = addToggle(toggles, R.drawable.ic_tune, R.string.vc_noise, R.string.vc_noise_sub, true);
         noiseSwitch.setOnCheckedChangeListener((b, on) -> {
-            recorder.setNoiseSuppression(on);
-            if (listening) { // restart so the effect applies to a new recording session
-                setListening(false);
-                setListening(true);
-            }
+            RobotService service = getRobotService();
+            if (service != null) service.setNoiseSuppression(on);
+        });
+        commandSwitch.setOnCheckedChangeListener((b, on) -> {
+            RobotService service = getRobotService();
+            if (service != null) service.setCommandControl(on);
+        });
+        wakeSwitch.setOnCheckedChangeListener((b, on) -> {
+            RobotService service = getRobotService();
+            if (service != null) service.setWakeWordRequired(on);
         });
 
         wakeWord = findViewById(R.id.wake_word);
@@ -635,6 +597,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
     private void setWakeWord(String word) {
         wakeWordText = word;
+        RobotService service = getRobotService();
+        if (service != null) service.setWakeWord(word);
         wakeWord.setText(word);
         wakeTitle.setText(getString(R.string.wake_word_title, word));
     }
@@ -744,7 +708,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     if (advancedTab != tab) return;
                     advancedSelection[tab][rowIndex] = position;
-                    if (tab == 1 && rowIndex == 0) renderResult();
+                    if (tab == 1 && rowIndex == 0) {
+                        RobotService service = getRobotService();
+                        if (service != null) service.setLanguage(languageCode());
+                        renderResult();
+                    }
                 }
 
                 @Override
@@ -769,8 +737,10 @@ public class VoiceRecognitionActivity extends BaseActivity {
         return index < codes.length ? codes[index] : "auto";
     }
 
-    /** Loads the selected ggml model in the background (a few seconds for ggml-small). */
+    /** Asks the service to load the speech model (a few seconds for ggml-small). */
     private void loadSelectedModel() {
+        RobotService service = getRobotService();
+        if (service == null) return;
         if (!WhisperEngine.isLibraryAvailable()) {
             toast(R.string.engine_unavailable);
             return;
@@ -782,10 +752,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
             return;
         }
         toast(getString(R.string.loading_model, model));
-        transcriber.execute(() -> {
-            final boolean ok = engine.load(model);
-            runOnUiThread(() -> toast(ok ? getString(R.string.model_loaded, model)
-                    : getString(R.string.model_load_failed, model)));
-        });
+        service.loadSpeechModel(model);
     }
 }

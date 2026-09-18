@@ -139,6 +139,9 @@
     <string name="status_offline_short">オフライン</string>
     <string name="status_listening">音声待機中…</string>
     <string name="status_paused">一時停止</string>
+    <string name="service_channel">認識サービス</string>
+    <string name="service_channel_description">バックグラウンドで動作する顔・音声・物体認識</string>
+    <string name="notification_permission_needed">バックグラウンド認識の状態を表示するため通知を許可してください</string>
     <string name="gamepad_connected">ゲームパッドを接続しました: %s</string>
     <string name="not_connected">先にロボットに接続してください</string>
     <string name="sent_command">送信: %s</string>
@@ -331,7 +334,6 @@
     <string name="camera_permission_needed">顔認識にはカメラの権限が必要です。\nタップして許可してください。</string>
     <string name="camera_unavailable">カメラを利用できません</string>
     <string name="model_missing">顔検出のみ動作します。認識を有効にするには mobilefacenet.tflite を app/src/main/assets に追加してください</string>
-    <string name="model_failed">mobilefacenet.tflite を読み込めませんでした: %s</string>
     <string name="frame_info">%1$d × %2$d  ·  %3$d ms</string>
     <string name="snapshot_saved_to">スナップショットを保存しました: %s</string>
     <string name="snapshot_failed">スナップショットを保存できませんでした</string>

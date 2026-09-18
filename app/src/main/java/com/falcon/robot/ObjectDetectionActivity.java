@@ -8,7 +8,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.util.Size;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,11 +22,6 @@ import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.Preview;
-import androidx.camera.core.resolutionselector.ResolutionSelector;
-import androidx.camera.core.resolutionselector.ResolutionStrategy;
-import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
@@ -36,41 +30,21 @@ import com.falcon.robot.detect.DetectionAnalyzer;
 import com.falcon.robot.detect.ObjectTracker;
 import com.falcon.robot.detect.YoloSegmenter;
 import com.falcon.robot.widget.TrackingOverlayView;
-import com.google.common.util.concurrent.ListenableFuture;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
- * Object Detection page: live camera (CameraX) segmented by YOLOv8-seg
- * ({@link YoloSegmenter}) and followed across frames by {@link ObjectTracker}, so every object
- * keeps an id while it is in view.
+ * Object Detection page: the live view of what {@link RobotService} is tracking with YOLOv8
+ * ({@link YoloSegmenter}) and {@link ObjectTracker}.
  *
- * <p>Without a detector model the camera still runs; the panels simply stay empty and the page
- * says which file is missing.
+ * <p>The detection itself belongs to the service, so it carries on when this page is closed or
+ * the app is in the background; Enable Detection here is the switch for it.
  */
 public class ObjectDetectionActivity extends BaseActivity {
-
-    /** Analysis resolution: the model letterboxes this down to its own input size. */
-    private static final Size ANALYSIS_SIZE = new Size(640, 480);
-
-    private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
-
-    private DetectionAnalyzer analyzer;
-    private ProcessCameraProvider cameraProvider;
-    private int lensFacing = CameraSelector.LENS_FACING_BACK;
-    private boolean permissionAsked;
-    private boolean loadingModel;
-    private String modelName;    // the model in use, null when none loaded
-    private String modelError;   // why the last load failed, null when it did not
-    private String pendingModel; // the model being loaded right now
-    private int lastTotal = -1;
 
     private PreviewView previewView;
     private TrackingOverlayView overlay;
@@ -82,15 +56,20 @@ public class ObjectDetectionActivity extends BaseActivity {
     private TextView feedInfo;
     private Spinner modelSpinner;
     private Switch enableSwitch;
-    private Switch boxSwitch;
-    private Switch labelSwitch;
     private Switch maskSwitch;
     private Switch trackSwitch;
 
+    private boolean permissionAsked;
+    private boolean binding; // true while the switches are being set from the service
+    private int lastTotal = -1;
+
     private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
-                if (granted) startCamera();
-                else showCameraMessage(getString(R.string.camera_permission_needed));
+                if (granted) enableDetection(true);
+                else {
+                    setChecked(enableSwitch, false);
+                    showCameraMessage(getString(R.string.camera_permission_needed));
+                }
             });
 
     @Override
@@ -119,13 +98,25 @@ public class ObjectDetectionActivity extends BaseActivity {
 
         setupSettings();
         render(new ArrayList<>());
-        loadModelThenStartCamera(selectedModel());
+        bindRobotService(serviceListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         refreshRichHeader();
+        RobotService service = getRobotService();
+        if (service == null) return;
+        // the camera is shared: only claim the back lens when face recognition is not using it
+        if (!service.isFaceEnabled()) service.setLensFacing(CameraSelector.LENS_FACING_BACK);
+        service.attachPreview(previewView.getSurfaceProvider());
+    }
+
+    @Override
+    protected void onPause() {
+        RobotService service = getRobotService();
+        if (service != null) service.detachPreview(previewView.getSurfaceProvider());
+        super.onPause();
     }
 
     @Override
@@ -133,123 +124,75 @@ public class ObjectDetectionActivity extends BaseActivity {
         refreshRichHeader();
     }
 
+    // ---- service ---------------------------------------------------------------------------
+
     @Override
-    protected void onDestroy() {
-        if (cameraProvider != null) cameraProvider.unbindAll();
-        final DetectionAnalyzer current = analyzer;
-        if (current != null) cameraExecutor.execute(current::close);
-        cameraExecutor.shutdown();
-        super.onDestroy();
+    protected void onRobotServiceReady(RobotService service) {
+        binding = true;
+        enableSwitch.setChecked(service.isDetectionEnabled());
+        binding = false;
+
+        applySettings(service);
+        selectModel(service.getDetectorModel());
+        service.attachPreview(previewView.getSurfaceProvider());
+        renderServiceState();
+        render(service.getLastObjects());
+        overlay.setObjects(service.getLastObjects(), service.getFrameWidth(), service.getFrameHeight(),
+                service.getLensFacing() == CameraSelector.LENS_FACING_FRONT);
     }
 
-    // ---- model + camera --------------------------------------------------------------------
-
-    /** Loads the detector off the UI thread, then opens the camera. */
-    private void loadModelThenStartCamera(final String model) {
-        pendingModel = model;
-        if (model == null) {
-            analyzer = new DetectionAnalyzer(null, analyzerListener);
-            applySettingsToAnalyzer();
-            requestCameraOrStart();
-            return;
-        }
-        loadingModel = true;
-        feedInfo.setText(getString(R.string.loading_model, model));
-        final DetectionAnalyzer previous = analyzer;
-        cameraExecutor.execute(() -> {
-            if (previous != null) previous.close();
-            YoloSegmenter segmenter = null;
-            String error = null;
-            try {
-                segmenter = new YoloSegmenter(this, model, 4);
-            } catch (IOException | RuntimeException e) {
-                error = e.getMessage() != null ? e.getMessage() : e.toString();
-                android.util.Log.w("ObjectDetection", "Could not load " + model, e);
+    private final RobotService.Listener serviceListener = new RobotService.Adapter() {
+        @Override
+        public void onObjects(List<ObjectTracker.Snapshot> objects, int width, int height, long inferenceMs) {
+            RobotService service = getRobotService();
+            boolean mirrored = service != null
+                    && service.getLensFacing() == CameraSelector.LENS_FACING_FRONT;
+            overlay.setObjects(objects, width, height, mirrored);
+            render(objects);
+            if (service != null && !service.isLoadingDetector()) {
+                feedInfo.setText(service.getDetectorModel() == null ? getString(R.string.no_detector)
+                        : getString(R.string.inference_info, service.getDetectorModel(), (int) inferenceMs));
             }
-            final YoloSegmenter loaded = segmenter;
-            final String message = error;
-            runOnUiThread(() -> {
-                loadingModel = false;
-                if (isDestroyed()) {
-                    if (loaded != null) cameraExecutor.execute(loaded::close);
-                    return;
-                }
-                modelName = loaded != null ? model : null;
-                modelError = message;
-                analyzer = new DetectionAnalyzer(loaded, analyzerListener);
-                applySettingsToAnalyzer();
-                if (cameraProvider != null) bindCamera();
-                else requestCameraOrStart();
-            });
-        });
-    }
+        }
 
-    private void requestCameraOrStart() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera();
-        } else if (!permissionAsked) {
-            permissionAsked = true;
-            cameraPermission.launch(Manifest.permission.CAMERA);
+        @Override
+        public void onServiceState() {
+            renderServiceState();
+        }
+
+        @Override
+        public void onMessage(String text) {
+            toast(text);
+        }
+    };
+
+    /** Shows what the service is doing: loading, running, or why it cannot detect. */
+    private void renderServiceState() {
+        RobotService service = getRobotService();
+        if (service == null) return;
+
+        binding = true;
+        enableSwitch.setChecked(service.isDetectionEnabled());
+        binding = false;
+        findViewById(R.id.feed_live).setAlpha(service.isDetectionEnabled() ? 1f : 0.4f);
+        if (!service.isDetectionEnabled()) overlay.clear();
+
+        DetectionAnalyzer analyzer = service.getDetectionAnalyzer();
+        if (service.isLoadingDetector()) {
+            feedInfo.setText(getString(R.string.loading_model, YoloSegmenter.DEFAULT_MODEL));
+            cameraMessage.setVisibility(View.GONE);
+        } else if (analyzer == null || !analyzer.canDetect()) {
+            // a model that is present but unusable is a different problem from a missing one,
+            // and the reason only shows up here
+            showCameraMessage(service.getDetectorError() != null
+                    ? getString(R.string.detector_failed, String.valueOf(service.getDetectorModel()),
+                    service.getDetectorError())
+                    : getString(R.string.detector_missing, YoloSegmenter.DEFAULT_MODEL));
         } else {
-            // the system stops showing the dialog after repeated denials: open app settings
-            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.fromParts("package", getPackageName(), null)));
+            cameraMessage.setVisibility(View.GONE);
+            maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks to show
         }
-    }
-
-    private void startCamera() {
-        final ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(this);
-        future.addListener(() -> {
-            try {
-                cameraProvider = future.get();
-                bindCamera();
-            } catch (Exception e) {
-                showCameraMessage(getString(R.string.camera_unavailable));
-            }
-        }, ContextCompat.getMainExecutor(this));
-    }
-
-    private void bindCamera() {
-        if (cameraProvider == null || analyzer == null || isDestroyed()) return;
-        cameraProvider.unbindAll();
-        overlay.clear();
-
-        CameraSelector selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
-        try {
-            if (!cameraProvider.hasCamera(selector)) {
-                // fall back to the other lens (e.g. tablets without a back camera)
-                lensFacing = lensFacing == CameraSelector.LENS_FACING_BACK
-                        ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
-                selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
-                if (!cameraProvider.hasCamera(selector)) {
-                    showCameraMessage(getString(R.string.camera_unavailable));
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            showCameraMessage(getString(R.string.camera_unavailable));
-            return;
-        }
-
-        Preview preview = new Preview.Builder().build();
-        preview.setSurfaceProvider(previewView.getSurfaceProvider());
-
-        ImageAnalysis analysis = new ImageAnalysis.Builder()
-                .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setResolutionStrategy(new ResolutionStrategy(ANALYSIS_SIZE,
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
-                        .build())
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build();
-        analysis.setAnalyzer(cameraExecutor, analyzer);
-
-        try {
-            cameraProvider.bindToLifecycle(this, selector, preview, analysis);
-            if (analyzer.canDetect()) cameraMessage.setVisibility(View.GONE);
-        } catch (Exception e) {
-            showCameraMessage(getString(R.string.camera_unavailable));
-        }
+        if (modelSpinner.getSelectedItem() == null) selectModel(service.getDetectorModel());
     }
 
     private void showCameraMessage(String message) {
@@ -258,31 +201,46 @@ public class ObjectDetectionActivity extends BaseActivity {
         overlay.clear();
     }
 
-    private final DetectionAnalyzer.Listener analyzerListener = (objects, width, height, inferenceMs) -> {
-        overlay.setObjects(objects, width, height, lensFacing == CameraSelector.LENS_FACING_FRONT);
-        render(objects);
-        if (!loadingModel) {
-            feedInfo.setText(modelName == null ? getString(R.string.no_detector)
-                    : getString(R.string.inference_info, modelName, (int) inferenceMs));
+    /** Turns detection on, asking for the camera first if the app does not have it yet. */
+    private void enableDetection(boolean on) {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        if (!on) {
+            service.setDetectionEnabled(false);
+            return;
         }
-    };
+        ensureNotificationPermission();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            service.setDetectionEnabled(true);
+            service.attachPreview(previewView.getSurfaceProvider());
+        } else if (!permissionAsked) {
+            permissionAsked = true;
+            cameraPermission.launch(Manifest.permission.CAMERA);
+        } else {
+            // the system stops showing the dialog after repeated denials: open app settings
+            setChecked(enableSwitch, false);
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", getPackageName(), null)));
+        }
+    }
 
     // ---- settings --------------------------------------------------------------------------
 
     private void setupSettings() {
         LinearLayout toggles = findViewById(R.id.toggle_list);
-        enableSwitch = addToggle(toggles, R.drawable.ic_scan, R.string.enable_detection, on -> {
-            if (analyzer != null) analyzer.setDetectionEnabled(on);
-            findViewById(R.id.feed_live).setAlpha(on ? 1f : 0.4f);
-        });
-        boxSwitch = addToggle(toggles, R.drawable.ic_crosshair, R.string.show_boxes, overlay::setShowBoxes);
-        labelSwitch = addToggle(toggles, R.drawable.ic_note, R.string.show_labels, overlay::setShowLabels);
+        enableSwitch = addToggle(toggles, R.drawable.ic_scan, R.string.enable_detection,
+                this::enableDetection);
+        addToggle(toggles, R.drawable.ic_crosshair, R.string.show_boxes, overlay::setShowBoxes);
+        addToggle(toggles, R.drawable.ic_note, R.string.show_labels, overlay::setShowLabels);
         maskSwitch = addToggle(toggles, R.drawable.ic_layers, R.string.show_masks, on -> {
             overlay.setShowMasks(on);
+            DetectionAnalyzer analyzer = analyzer();
             if (analyzer != null) analyzer.setMasksEnabled(on);
         });
         trackSwitch = addToggle(toggles, R.drawable.ic_follow, R.string.track_objects, on -> {
             overlay.setShowTrails(on);
+            DetectionAnalyzer analyzer = analyzer();
             if (analyzer != null) analyzer.setTrackingEnabled(on);
         });
 
@@ -295,12 +253,12 @@ public class ObjectDetectionActivity extends BaseActivity {
         modelSpinner.setOnItemSelectedListener(new SimpleItemListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // fires once on the initial selection too, which the model already being
-                // loaded takes care of
-                String selected = selectedModel();
-                if (selected == null || selected.equals(pendingModel)) return;
+                RobotService service = getRobotService();
+                if (binding || service == null) return;
+                String selected = String.valueOf(parent.getItemAtPosition(position));
+                if (!selected.endsWith(".tflite") || selected.equals(service.getDetectorModel())) return;
                 RobotSession.get().send("DETECTION MODEL " + selected);
-                loadModelThenStartCamera(selected);
+                service.loadDetector(selected);
             }
         });
 
@@ -309,42 +267,47 @@ public class ObjectDetectionActivity extends BaseActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 float value = Float.parseFloat(parent.getItemAtPosition(position).toString());
+                DetectionAnalyzer analyzer = analyzer();
                 if (analyzer != null) analyzer.setConfidence(value);
                 RobotSession.get().send("DETECTION THRESHOLD " + value);
             }
         });
     }
 
-    /** Pushes the switch and spinner state onto a freshly created analyzer. */
-    private void applySettingsToAnalyzer() {
-        analyzer.setDetectionEnabled(enableSwitch.isChecked());
+    /** Pushes the switches onto the analyzer the service is using. */
+    private void applySettings(RobotService service) {
+        DetectionAnalyzer analyzer = service.getDetectionAnalyzer();
+        if (analyzer == null) return;
         analyzer.setMasksEnabled(maskSwitch.isChecked());
         analyzer.setTrackingEnabled(trackSwitch.isChecked());
         Spinner threshold = findViewById(R.id.spinner_threshold);
         if (threshold.getSelectedItem() != null) {
             analyzer.setConfidence(Float.parseFloat(threshold.getSelectedItem().toString()));
         }
-        if (!analyzer.canDetect()) {
-            // a model that is present but unusable is a different problem from a missing one,
-            // and the reason only shows up here
-            showCameraMessage(modelError != null
-                    ? getString(R.string.detector_failed, pendingModel, modelError)
-                    : getString(R.string.detector_missing, YoloSegmenter.DEFAULT_MODEL));
-        } else {
-            cameraMessage.setVisibility(View.GONE);
-            maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks to show
+    }
+
+    private DetectionAnalyzer analyzer() {
+        RobotService service = getRobotService();
+        return service == null ? null : service.getDetectionAnalyzer();
+    }
+
+    /** Shows the model the service actually loaded, without triggering another load. */
+    private void selectModel(String model) {
+        if (model == null) return;
+        for (int i = 0; i < modelSpinner.getCount(); i++) {
+            if (model.equals(String.valueOf(modelSpinner.getItemAtPosition(i)))) {
+                binding = true;
+                modelSpinner.setSelection(i);
+                binding = false;
+                return;
+            }
         }
     }
 
-    /** Selected file name, or null when there is no model to choose. */
-    private String selectedModel() {
-        Object selected = modelSpinner == null ? null : modelSpinner.getSelectedItem();
-        if (selected == null) {
-            List<String> models = YoloSegmenter.listModels(this);
-            return models.isEmpty() ? null : models.get(0);
-        }
-        String name = selected.toString();
-        return name.endsWith(".tflite") ? name : null;
+    private void setChecked(Switch toggle, boolean checked) {
+        binding = true;
+        toggle.setChecked(checked);
+        binding = false;
     }
 
     private interface OnToggle {
@@ -363,6 +326,7 @@ public class ObjectDetectionActivity extends BaseActivity {
         toggle.setChecked(true);
         final String name = getString(title);
         toggle.setOnCheckedChangeListener((b, on) -> {
+            if (binding) return; // the switch is only reflecting the service
             onToggle.onToggle(on);
             RobotSession.get().send("DETECTION " + name.toUpperCase(Locale.US).replace(' ', '_') + (on ? " ON" : " OFF"));
         });
@@ -404,8 +368,7 @@ public class ObjectDetectionActivity extends BaseActivity {
             resultList.addView(empty);
             return;
         }
-        for (int i = 0; i < objects.size(); i++) {
-            ObjectTracker.Snapshot object = objects.get(i);
+        for (ObjectTracker.Snapshot object : objects) {
             String label = object.id > 0
                     ? getString(R.string.track_label, object.id, object.label) : object.label;
             addRow(resultList, CocoLabels.color(object.classId), label,
@@ -414,8 +377,10 @@ public class ObjectDetectionActivity extends BaseActivity {
     }
 
     private int emptyMessage() {
+        DetectionAnalyzer analyzer = analyzer();
         if (analyzer == null || !analyzer.canDetect()) return R.string.no_detector;
-        if (enableSwitch != null && !enableSwitch.isChecked()) return R.string.detection_disabled;
+        RobotService service = getRobotService();
+        if (service != null && !service.isDetectionEnabled()) return R.string.detection_disabled;
         return R.string.no_detections;
     }
 
@@ -446,6 +411,7 @@ public class ObjectDetectionActivity extends BaseActivity {
                     String.valueOf(entry.getValue()));
         }
         if (counts.isEmpty()) {
+            DetectionAnalyzer analyzer = analyzer();
             addRow(countList, color(R.color.text_muted), getString(R.string.total_seen),
                     String.valueOf(analyzer == null ? 0 : analyzer.getTotalSeen()));
         }

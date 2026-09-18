@@ -1,17 +1,12 @@
 package com.falcon.robot.face;
 
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 
 import com.google.android.gms.tasks.Tasks;
 import com.google.mlkit.vision.common.InputImage;
@@ -34,7 +29,7 @@ import java.util.Map;
  * once through {@link Listener#onFaceEvent} — as soon as it is recognized, or as unknown after
  * {@link #UNKNOWN_AFTER_FRAMES} frames without a match. All listener calls run on the main thread.
  */
-public final class FaceAnalyzer implements ImageAnalysis.Analyzer {
+public final class FaceAnalyzer {
 
     private static final String TAG = "FaceAnalyzer";
 
@@ -97,7 +92,7 @@ public final class FaceAnalyzer implements ImageAnalysis.Analyzer {
     }
 
     private final FaceDatabase database;
-    private final FaceEmbedder embedder; // null = detection only (model missing)
+    private volatile FaceEmbedder embedder; // null = detection only (model missing or still loading)
     private final Listener listener;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Map<Integer, Track> tracks = new HashMap<>();
@@ -178,12 +173,20 @@ public final class FaceAnalyzer implements ImageAnalysis.Analyzer {
         if (detector != null) detector.close();
     }
 
-    @Override
-    public void analyze(@NonNull ImageProxy image) {
+    /** Replaces the embedding model, once it has finished loading. */
+    public void setEmbedder(FaceEmbedder embedder) {
+        this.embedder = embedder;
+    }
+
+    /**
+     * Analyses one upright frame. The caller keeps ownership of the bitmap, so the same frame can
+     * be given to more than one model.
+     */
+    public void process(Bitmap frame) {
         try {
             if (!detectionEnabled && registrationSamples == 0) {
-                final int width = image.getWidth();
-                final int height = image.getHeight();
+                final int width = frame.getWidth();
+                final int height = frame.getHeight();
                 post(() -> listener.onFrame(new ArrayList<>(), width, height, 0));
                 return;
             }
@@ -192,27 +195,13 @@ public final class FaceAnalyzer implements ImageAnalysis.Analyzer {
                 tracks.clear();
                 resetRequested = false;
             }
-            Bitmap frame = uprightBitmap(image);
-            process(frame);
+            detect(frame);
         } catch (Exception e) {
             Log.w(TAG, "Frame analysis failed", e);
-        } finally {
-            image.close();
         }
     }
 
-    private static Bitmap uprightBitmap(ImageProxy image) {
-        Bitmap bitmap = image.toBitmap();
-        int rotation = image.getImageInfo().getRotationDegrees();
-        if (rotation == 0) return bitmap;
-        Matrix m = new Matrix();
-        m.postRotate(rotation);
-        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
-        bitmap.recycle();
-        return rotated;
-    }
-
-    private void process(Bitmap frame) throws Exception {
+    private void detect(Bitmap frame) throws Exception {
         long start = SystemClock.elapsedRealtime();
         FaceDetector current;
         synchronized (this) {
@@ -286,7 +275,6 @@ public final class FaceAnalyzer implements ImageAnalysis.Analyzer {
         final long inferenceMs = SystemClock.elapsedRealtime() - start;
         final int width = frame.getWidth();
         final int height = frame.getHeight();
-        frame.recycle();
         post(() -> {
             listener.onFrame(frameFaces, width, height, inferenceMs);
             for (FaceEvent event : events) listener.onFaceEvent(event);

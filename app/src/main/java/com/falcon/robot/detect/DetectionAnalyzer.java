@@ -1,15 +1,10 @@
 package com.falcon.robot.detect;
 
 import android.graphics.Bitmap;
-import android.graphics.Matrix;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.ImageProxy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,7 +16,7 @@ import java.util.List;
  * <p>Frames arrive faster than the model can run; CameraX is configured to keep only the latest,
  * so the pipeline simply runs as fast as the device allows. Listener calls are on the main thread.
  */
-public final class DetectionAnalyzer implements ImageAnalysis.Analyzer {
+public final class DetectionAnalyzer {
 
     private static final String TAG = "DetectionAnalyzer";
 
@@ -95,15 +90,15 @@ public final class DetectionAnalyzer implements ImageAnalysis.Analyzer {
         if (segmenter != null) segmenter.close();
     }
 
-    @Override
-    public void analyze(@NonNull ImageProxy image) {
-        Bitmap frame = null;
+    /**
+     * Analyses one upright frame. The caller keeps ownership of the bitmap, so the same frame can
+     * be given to more than one model.
+     */
+    public void process(Bitmap frame) {
         try {
-            final int width;
-            final int height;
+            final int width = frame.getWidth();
+            final int height = frame.getHeight();
             if (!detectionEnabled || segmenter == null) {
-                width = image.getWidth();
-                height = image.getHeight();
                 post(() -> listener.onFrame(new ArrayList<>(), width, height, 0));
                 return;
             }
@@ -112,20 +107,14 @@ public final class DetectionAnalyzer implements ImageAnalysis.Analyzer {
                 resetRequested = false;
             }
             long start = SystemClock.elapsedRealtime();
-            frame = uprightBitmap(image);
             List<YoloSegmenter.Detection> detections =
                     segmenter.detect(frame, confidence, iou, masksEnabled);
             final List<ObjectTracker.Snapshot> objects =
                     trackingEnabled ? tracker.update(detections) : untracked(detections);
             final long inferenceMs = SystemClock.elapsedRealtime() - start;
-            width = frame.getWidth();
-            height = frame.getHeight();
             post(() -> listener.onFrame(objects, width, height, inferenceMs));
         } catch (Exception e) {
             Log.w(TAG, "Frame analysis failed", e);
-        } finally {
-            if (frame != null) frame.recycle();
-            image.close();
         }
     }
 
@@ -136,17 +125,6 @@ public final class DetectionAnalyzer implements ImageAnalysis.Analyzer {
             objects.add(ObjectTracker.untracked(detection));
         }
         return objects;
-    }
-
-    private static Bitmap uprightBitmap(ImageProxy image) {
-        Bitmap bitmap = image.toBitmap();
-        int rotation = image.getImageInfo().getRotationDegrees();
-        if (rotation == 0) return bitmap;
-        Matrix matrix = new Matrix();
-        matrix.postRotate(rotation);
-        Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-        bitmap.recycle();
-        return rotated;
     }
 
     private void post(Runnable runnable) {

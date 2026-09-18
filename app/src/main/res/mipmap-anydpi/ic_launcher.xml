@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-  Launcher icon for Android 7 and older, which has no adaptive icons: the same two layers, with
-  the corners rounded here instead of by the system mask.
--->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/ic_launcher_background_legacy" />
-    <item android:drawable="@drawable/ic_launcher_foreground" />
-</layer-list>

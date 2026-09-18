@@ -140,6 +140,9 @@
     <string name="status_offline_short">Offline</string>
     <string name="status_listening">Listening…</string>
     <string name="status_paused">Paused</string>
+    <string name="service_channel">Recognition</string>
+    <string name="service_channel_description">Face, voice and object recognition running in the background</string>
+    <string name="notification_permission_needed">Allow notifications so background recognition can show its status</string>
     <string name="gamepad_connected">Gamepad connected: %s</string>
     <string name="not_connected">Connect to the robot first</string>
     <string name="sent_command">Sent: %s</string>
@@ -332,7 +335,6 @@
     <string name="camera_permission_needed">Camera permission is required for face recognition.\nTap to allow.</string>
     <string name="camera_unavailable">Camera is not available</string>
     <string name="model_missing">Face detection only: add mobilefacenet.tflite to app/src/main/assets to enable recognition</string>
-    <string name="model_failed">Could not load mobilefacenet.tflite: %s</string>
     <string name="frame_info">%1$d × %2$d  ·  %3$d ms</string>
     <string name="snapshot_saved_to">Snapshot saved: %s</string>
     <string name="snapshot_failed">Could not save snapshot</string>

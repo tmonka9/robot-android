@@ -4,12 +4,16 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
+import android.Manifest;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
@@ -17,6 +21,7 @@ import android.net.NetworkInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -34,6 +39,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 
 import java.util.Locale;
 
@@ -82,6 +89,7 @@ public abstract class BaseActivity extends ComponentActivity {
 
     @Override
     protected void onDestroy() {
+        unbindRobotService();
         uiHandler.removeCallbacksAndMessages(null);
         if (connectionDialog != null) connectionDialog.dismiss();
         super.onDestroy();
@@ -206,6 +214,71 @@ public abstract class BaseActivity extends ComponentActivity {
 
     /** Called after the robot connects or disconnects. */
     protected void onConnectionChanged() {
+    }
+
+    // ---- recognition service -------------------------------------------------------------
+
+    private final ActivityResultLauncher<String> notificationPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                // recognition runs either way; without this the notification is simply hidden
+                if (!granted) toast(R.string.notification_permission_needed);
+            });
+
+    /**
+     * Android 13 and newer ask before the service may show the notification that comes with
+     * background camera and microphone use.
+     */
+    protected void ensureNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return;
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
+    }
+
+    private RobotService robotService;
+    private RobotService.Listener robotListener;
+    private boolean serviceBound;
+
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder binder) {
+            robotService = ((RobotService.LocalBinder) binder).getService();
+            if (robotListener != null) robotService.addListener(robotListener);
+            onRobotServiceReady(robotService);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            robotService = null;
+        }
+    };
+
+    /**
+     * Connects the page to {@link RobotService}, which keeps face, voice and object recognition
+     * running whether or not this page is open. {@link #onRobotServiceReady} follows.
+     */
+    protected void bindRobotService(RobotService.Listener listener) {
+        robotListener = listener;
+        serviceBound = bindService(RobotService.intent(this), serviceConnection, BIND_AUTO_CREATE);
+    }
+
+    /** The service once it is connected, or null before that. */
+    protected RobotService getRobotService() {
+        return robotService;
+    }
+
+    /** Called on the main thread when the service is ready; the page reads its state here. */
+    protected void onRobotServiceReady(RobotService service) {
+    }
+
+    private void unbindRobotService() {
+        if (!serviceBound) return;
+        if (robotService != null && robotListener != null) robotService.removeListener(robotListener);
+        unbindService(serviceConnection);
+        serviceBound = false;
+        robotService = null;
     }
 
     // ---- gamepad ------------------------------------------------------------------------

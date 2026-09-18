@@ -12,6 +12,12 @@
 
     <!-- Speech recognition (whisper.cpp) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Recognition keeps running in the background (RobotService) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-feature
         android:name="android.hardware.microphone"
         android:required="false" />
@@ -75,6 +81,12 @@
             android:name=".SettingsActivity"
             android:configChanges="keyboard|keyboardHidden|navigation"
             android:exported="false" />
+
+        <!-- Camera, microphone and the models, so they keep working off-screen -->
+        <service
+            android:name=".RobotService"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone" />
     </application>
 
 </manifest>

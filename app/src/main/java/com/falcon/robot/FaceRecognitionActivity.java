@@ -12,7 +12,6 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Size;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,20 +30,13 @@ import android.widget.TextView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ImageAnalysis;
-import androidx.camera.core.Preview;
-import androidx.camera.core.resolutionselector.ResolutionSelector;
-import androidx.camera.core.resolutionselector.ResolutionStrategy;
-import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
 import com.falcon.robot.face.FaceAnalyzer;
 import com.falcon.robot.face.FaceDatabase;
-import com.falcon.robot.face.FaceEmbedder;
 import com.falcon.robot.widget.DonutChartView;
 import com.falcon.robot.widget.FaceOverlayView;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -94,12 +86,9 @@ public class FaceRecognitionActivity extends BaseActivity {
     private final Map<String, Bitmap> photoCache = new HashMap<>();
     private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
 
-    private FaceDatabase database;
-    private FaceEmbedder embedder;
-    private FaceAnalyzer analyzer;
-    private ProcessCameraProvider cameraProvider;
-    private int lensFacing = CameraSelector.LENS_FACING_FRONT;
+    private FaceDatabase database; // the service's, so both see the same people
     private boolean permissionAsked;
+    private boolean binding; // true while the switches are being set from the service
 
     private int totalFaces;
     private int recognizedFaces;
@@ -128,7 +117,7 @@ public class FaceRecognitionActivity extends BaseActivity {
 
     private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
-                if (granted) startCamera();
+                if (granted) enableFaceRecognition(true);
                 else showCameraMessage(getString(R.string.camera_permission_needed));
             });
 
@@ -140,8 +129,6 @@ public class FaceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
 
-        database = new FaceDatabase(this);
-
         setupCamera();
         setupResultPanel();
         setupDatabase();
@@ -150,7 +137,7 @@ public class FaceRecognitionActivity extends BaseActivity {
         renderResult();
         renderStats();
 
-        loadModelThenStartCamera();
+        bindRobotService(serviceListener);
     }
 
     @Override
@@ -165,126 +152,40 @@ public class FaceRecognitionActivity extends BaseActivity {
     }
 
     @Override
+    protected void onPause() {
+        RobotService service = getRobotService();
+        if (service != null) service.detachPreview(previewView.getSurfaceProvider());
+        super.onPause();
+    }
+
+    @Override
     protected void onDestroy() {
-        if (cameraProvider != null) cameraProvider.unbindAll();
-        cameraExecutor.execute(() -> {
-            if (analyzer != null) analyzer.close();
-            if (embedder != null) embedder.close();
-        });
         cameraExecutor.shutdown();
         super.onDestroy();
     }
 
-    // ---- model + camera --------------------------------------------------------------------
+    // ---- recognition service ---------------------------------------------------------------
 
-    /** Loads MobileFaceNet off the UI thread, then creates the analyzer and opens the camera. */
-    private void loadModelThenStartCamera() {
-        cameraExecutor.execute(() -> {
-            FaceEmbedder loaded = null;
-            String error = null;
-            try {
-                loaded = new FaceEmbedder(this, 4);
-            } catch (java.io.FileNotFoundException e) {
-                error = getString(R.string.model_missing);
-            } catch (IOException | RuntimeException e) {
-                error = getString(R.string.model_failed, e.getMessage());
-            }
-            final FaceEmbedder model = loaded;
-            final String message = error;
-            runOnUiThread(() -> {
-                if (isDestroyed()) {
-                    if (model != null) cameraExecutor.execute(model::close);
-                    return;
-                }
-                embedder = model;
-                analyzer = new FaceAnalyzer(database, model, analyzerListener);
-                applySettingsToAnalyzer();
-                if (message != null) toast(message);
-                requestCameraOrStart();
-            });
-        });
+    @Override
+    protected void onRobotServiceReady(RobotService service) {
+        database = service.getFaceDatabase();
+        binding = true;
+        detectionSwitch.setChecked(service.isFaceEnabled());
+        cameraSpinner.setSelection(service.getLensFacing() == CameraSelector.LENS_FACING_FRONT ? 0 : 1);
+        binding = false;
+
+        applySettingsToAnalyzer();
+        service.attachPreview(previewView.getSurfaceProvider());
+        overlay.setFaces(service.getLastFaces(), service.getFrameWidth(), service.getFrameHeight(),
+                isFrontCamera());
+        renderDatabase();
+        renderServiceState();
     }
 
-    private void requestCameraOrStart() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            startCamera();
-        } else if (!permissionAsked) {
-            permissionAsked = true;
-            cameraPermission.launch(Manifest.permission.CAMERA);
-        } else {
-            // the system no longer shows the dialog after repeated denials: open app settings
-            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.fromParts("package", getPackageName(), null)));
-        }
-    }
-
-    private void startCamera() {
-        cameraMessage.setVisibility(View.GONE);
-        final ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(this);
-        future.addListener(() -> {
-            try {
-                cameraProvider = future.get();
-                bindCamera();
-            } catch (Exception e) {
-                showCameraMessage(getString(R.string.camera_unavailable));
-            }
-        }, ContextCompat.getMainExecutor(this));
-    }
-
-    private void bindCamera() {
-        if (cameraProvider == null || analyzer == null || isDestroyed()) return;
-        cameraProvider.unbindAll();
-        overlay.clear();
-
-        CameraSelector selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
-        try {
-            if (!cameraProvider.hasCamera(selector)) {
-                // fall back to the other lens (e.g. tablets without a back camera)
-                lensFacing = lensFacing == CameraSelector.LENS_FACING_FRONT
-                        ? CameraSelector.LENS_FACING_BACK : CameraSelector.LENS_FACING_FRONT;
-                selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
-                if (!cameraProvider.hasCamera(selector)) {
-                    showCameraMessage(getString(R.string.camera_unavailable));
-                    return;
-                }
-            }
-        } catch (Exception e) {
-            showCameraMessage(getString(R.string.camera_unavailable));
-            return;
-        }
-
-        Preview preview = new Preview.Builder().build();
-        preview.setSurfaceProvider(previewView.getSurfaceProvider());
-
-        ImageAnalysis analysis = new ImageAnalysis.Builder()
-                .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setResolutionStrategy(new ResolutionStrategy(ANALYSIS_SIZE,
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
-                        .build())
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build();
-        analysis.setAnalyzer(cameraExecutor, analyzer);
-
-        try {
-            cameraProvider.bindToLifecycle(this, selector, preview, analysis);
-            cameraMessage.setVisibility(View.GONE);
-        } catch (Exception e) {
-            showCameraMessage(getString(R.string.camera_unavailable));
-        }
-        updateCameraSource();
-    }
-
-    private void showCameraMessage(String message) {
-        cameraMessage.setText(message);
-        cameraMessage.setVisibility(View.VISIBLE);
-        overlay.clear();
-    }
-
-    private final FaceAnalyzer.Listener analyzerListener = new FaceAnalyzer.Listener() {
+    private final RobotService.Listener serviceListener = new RobotService.Adapter() {
         @Override
-        public void onFrame(List<FaceAnalyzer.FrameFace> faces, int width, int height, long inferenceMs) {
-            overlay.setFaces(faces, width, height, lensFacing == CameraSelector.LENS_FACING_FRONT);
+        public void onFaceFrame(List<FaceAnalyzer.FrameFace> faces, int width, int height, long inferenceMs) {
+            overlay.setFaces(faces, width, height, isFrontCamera());
             frameInfo.setText(getString(R.string.frame_info, width, height, (int) inferenceMs));
         }
 
@@ -300,7 +201,6 @@ public class FaceRecognitionActivity extends BaseActivity {
             resultSimilarity = event.similarity;
             resultTime = event.time;
             resultCrop = event.crop;
-            if (event.record != null) RobotSession.get().send("FACE RECOGNIZED " + event.record.id);
 
             renderResult();
             renderHistory();
@@ -321,10 +221,85 @@ public class FaceRecognitionActivity extends BaseActivity {
             if (crop != null) photoCache.put(record.id, crop);
             RobotSession.get().send("FACE REGISTER " + record.id);
             toast(getString(R.string.face_registered, record.name));
-            analyzer.resetTracks(); // re-identify faces in view against the new entry
+            resetTracks(); // re-identify faces in view against the new entry
             showProfile(record);
         }
+
+        @Override
+        public void onServiceState() {
+            renderServiceState();
+        }
+
+        @Override
+        public void onMessage(String text) {
+            toast(text);
+        }
     };
+
+    /** Reflects what the service is doing: the switch, the live dot and the camera message. */
+    private void renderServiceState() {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        binding = true;
+        detectionSwitch.setChecked(service.isFaceEnabled());
+        binding = false;
+        findViewById(R.id.feed_dot).setBackgroundResource(
+                service.isFaceEnabled() ? R.drawable.dot_teal : R.drawable.dot_gray);
+        if (service.isFaceEnabled()) {
+            cameraMessage.setVisibility(View.GONE);
+        } else {
+            showCameraMessage(getString(R.string.detection_disabled));
+        }
+        updateCameraSource();
+    }
+
+    private boolean isFrontCamera() {
+        RobotService service = getRobotService();
+        return service == null || service.getLensFacing() == CameraSelector.LENS_FACING_FRONT;
+    }
+
+    private FaceAnalyzer faceAnalyzer() {
+        RobotService service = getRobotService();
+        return service == null ? null : service.getFaceAnalyzer();
+    }
+
+    private void resetTracks() {
+        FaceAnalyzer analyzer = faceAnalyzer();
+        if (analyzer != null) analyzer.resetTracks();
+    }
+
+    /** Switches face recognition on in the service, asking for the camera the first time. */
+    private void enableFaceRecognition(boolean on) {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        if (!on) {
+            service.setFaceEnabled(false);
+            overlay.clear();
+            return;
+        }
+        ensureNotificationPermission();
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED) {
+            service.setFaceEnabled(true);
+            service.attachPreview(previewView.getSurfaceProvider());
+        } else if (!permissionAsked) {
+            permissionAsked = true;
+            cameraPermission.launch(Manifest.permission.CAMERA);
+        } else {
+            // the system stops showing the dialog after repeated denials: open app settings
+            binding = true;
+            detectionSwitch.setChecked(false);
+            binding = false;
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", getPackageName(), null)));
+        }
+    }
+
+    private void showCameraMessage(String message) {
+        cameraMessage.setText(message);
+        cameraMessage.setVisibility(View.VISIBLE);
+        overlay.clear();
+    }
 
     // ---- camera panel ----------------------------------------------------------------------
 
@@ -334,7 +309,7 @@ public class FaceRecognitionActivity extends BaseActivity {
         overlay = findViewById(R.id.face_overlay);
         overlay.setLabels(getString(R.string.unknown_person), getString(R.string.face_label_face));
         cameraMessage = findViewById(R.id.camera_message);
-        cameraMessage.setOnClickListener(v -> requestCameraOrStart());
+        cameraMessage.setOnClickListener(v -> enableFaceRecognition(true));
         findViewById(R.id.feed_frame).setClipToOutline(true);
         feedSource = findViewById(R.id.feed_source);
         frameInfo = findViewById(R.id.feed_resolution);
@@ -345,7 +320,7 @@ public class FaceRecognitionActivity extends BaseActivity {
         }
         findViewById(R.id.tool_capture).setOnClickListener(v -> saveSnapshot());
         findViewById(R.id.tool_rescan).setOnClickListener(v -> {
-            if (analyzer != null) analyzer.resetTracks();
+            resetTracks();
         });
         findViewById(R.id.tool_source).setOnClickListener(this::showCameraMenu);
         feedSource.setOnClickListener(this::showCameraMenu);
@@ -442,7 +417,7 @@ public class FaceRecognitionActivity extends BaseActivity {
                 resultMode = ResultMode.EMPTY;
                 renderResult();
             }
-            if (analyzer != null) analyzer.resetTracks();
+            resetTracks();
             renderDatabase();
             return true;
         });
@@ -561,6 +536,7 @@ public class FaceRecognitionActivity extends BaseActivity {
     }
 
     private void renderDatabase() {
+        if (database == null) return; // filled in once the service is bound
         if (dbList == null) return;
         dbList.removeAllViews();
         String query = dbSearch.getText().toString().trim().toLowerCase(Locale.US);
@@ -602,6 +578,7 @@ public class FaceRecognitionActivity extends BaseActivity {
     }
 
     private void showAddFaceDialog() {
+        FaceAnalyzer analyzer = faceAnalyzer();
         if (analyzer == null || !analyzer.canRecognize()) {
             toast(R.string.recognition_unavailable);
             return;
@@ -623,7 +600,8 @@ public class FaceRecognitionActivity extends BaseActivity {
                 return;
             }
             pendingRegistration = new String[] {n, department.getText().toString().trim(), position.getText().toString().trim()};
-            analyzer.startRegistration(REGISTRATION_SAMPLES, REGISTRATION_TIMEOUT_MS);
+            RobotService service = getRobotService();
+            if (service != null) service.startRegistration(REGISTRATION_SAMPLES, REGISTRATION_TIMEOUT_MS);
             toast(R.string.look_at_camera);
             dialog.dismiss();
         }));
@@ -711,9 +689,9 @@ public class FaceRecognitionActivity extends BaseActivity {
         detectionSwitch = findViewById(R.id.sw_face_detection);
         recognitionSwitch = findViewById(R.id.sw_face_recognition);
         detectionSwitch.setOnCheckedChangeListener((b, on) -> {
+            if (binding) return; // only reflecting the service
             findViewById(R.id.feed_dot).setBackgroundResource(on ? R.drawable.dot_teal : R.drawable.dot_gray);
-            if (!on) overlay.clear();
-            applySettingsToAnalyzer();
+            enableFaceRecognition(on);
         });
         recognitionSwitch.setOnCheckedChangeListener((b, on) -> applySettingsToAnalyzer());
 
@@ -731,10 +709,10 @@ public class FaceRecognitionActivity extends BaseActivity {
         bindSettingSpinner(R.id.spinner_mode, R.array.recognition_modes, position -> applySettingsToAnalyzer());
         databaseSpinner = bindSettingSpinner(R.id.spinner_database, R.array.face_databases, position -> renderDatabase());
         cameraSpinner = bindSettingSpinner(R.id.spinner_camera, R.array.camera_sources, position -> {
-            int facing = position == 0 ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK;
-            if (facing != lensFacing) {
-                lensFacing = facing;
-                bindCamera();
+            RobotService service = getRobotService();
+            if (!binding && service != null) {
+                service.setLensFacing(position == 0 ? CameraSelector.LENS_FACING_FRONT
+                        : CameraSelector.LENS_FACING_BACK);
             }
             updateCameraSource();
         });
@@ -747,8 +725,8 @@ public class FaceRecognitionActivity extends BaseActivity {
     }
 
     private void applySettingsToAnalyzer() {
+        FaceAnalyzer analyzer = faceAnalyzer();
         if (analyzer == null || detectionSwitch == null) return;
-        analyzer.setDetectionEnabled(detectionSwitch.isChecked());
         analyzer.setRecognitionEnabled(recognitionSwitch.isChecked());
         analyzer.setThresholdPercent(thresholdPercent());
         int mode = ((Spinner) findViewById(R.id.spinner_mode)).getSelectedItemPosition();
@@ -780,7 +758,7 @@ public class FaceRecognitionActivity extends BaseActivity {
 
     private void updateCameraSource() {
         if (cameraSpinner == null) return;
-        int index = lensFacing == CameraSelector.LENS_FACING_FRONT ? 0 : 1;
+        int index = isFrontCamera() ? 0 : 1;
         feedSource.setText(getString(R.string.live_camera, getResources().getStringArray(R.array.camera_sources)[index]));
         if (cameraSpinner.getSelectedItemPosition() != index) cameraSpinner.setSelection(index);
     }
