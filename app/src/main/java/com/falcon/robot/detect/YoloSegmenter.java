@@ -587,16 +587,8 @@ public final class YoloSegmenter implements Closeable {
     /** Detector models available: {@code *.tflite} in assets and in the models folder. */
     public static List<String> listModels(Context context) {
         List<String> names = new ArrayList<>();
-        try {
-            String[] assets = context.getAssets().list("");
-            if (assets != null) {
-                for (String asset : assets) {
-                    if (asset.endsWith(".tflite") && !asset.equals(FACE_MODEL)) names.add(asset);
-                }
-            }
-        } catch (IOException ignored) {
-            // no assets folder
-        }
+        addAssetModels(context, "", names);       // models sitting in assets/
+        addAssetModels(context, "models", names); // or tidied into assets/models/
         File[] files = getModelDir(context).listFiles();
         if (files != null) {
             for (File file : files) {
@@ -607,6 +599,24 @@ public final class YoloSegmenter implements Closeable {
         }
         Collections.sort(names);
         return names;
+    }
+
+    /**
+     * Adds the detector models in one assets folder. {@code list} also returns the folders the
+     * build tools put there ("images", "webkit"), which simply do not match, and it throws on
+     * some devices when the folder is not there at all.
+     */
+    private static void addAssetModels(Context context, String folder, List<String> names) {
+        try {
+            String[] assets = context.getAssets().list(folder);
+            if (assets == null) return;
+            for (String asset : assets) {
+                if (asset == null || !asset.endsWith(".tflite") || asset.equals(FACE_MODEL)) continue;
+                names.add(folder.isEmpty() ? asset : folder + "/" + asset);
+            }
+        } catch (IOException | RuntimeException e) {
+            Log.w(TAG, "Could not list the assets in '" + folder + "'", e);
+        }
     }
 
     /** Same folder the speech models use, so everything can be pushed to one place. */
