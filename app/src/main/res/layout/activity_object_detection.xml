@@ -182,35 +182,6 @@
 
                         <TextView
                             style="@style/FaceSettingLabel"
-                            android:text="@string/model" />
-
-                        <FrameLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1.4">
-
-                            <Spinner
-                                android:id="@+id/spinner_model"
-                                style="@style/Dropdown"
-                                android:layout_height="38dp" />
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:layout_gravity="end|center_vertical"
-                                android:layout_marginEnd="8dp"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_dropdown" />
-                        </FrameLayout>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        style="@style/FaceSettingRow"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="0">
-
-                        <TextView
-                            style="@style/FaceSettingLabel"
                             android:text="@string/confidence_threshold" />
 
                         <FrameLayout

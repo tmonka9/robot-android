@@ -10,14 +10,11 @@ import android.util.Log;
  */
 public final class RobotSession {
 
-    public enum Transport { WIFI, BLUETOOTH }
-
     private static final String TAG = "RobotSession";
     private static final RobotSession INSTANCE = new RobotSession();
 
     private boolean connected;
-    private Transport transport = Transport.WIFI;
-    private String host = "192.168.1.100";
+    private String host = "192.168.11.1";
     private int port = 8080;
     private boolean lightsOn;
 
@@ -34,14 +31,6 @@ public final class RobotSession {
 
     public void setConnected(boolean connected) {
         this.connected = connected;
-    }
-
-    public Transport getTransport() {
-        return transport;
-    }
-
-    public void setTransport(Transport transport) {
-        this.transport = transport;
     }
 
     public String getHost() {
@@ -68,7 +57,7 @@ public final class RobotSession {
     /** Sends a command to the robot. Returns false when not connected. */
     public boolean send(String command) {
         if (!connected) return false;
-        Log.d(TAG, "send [" + transport + "]: " + command);
+        Log.d(TAG, "send: " + command);
         return true;
     }
 }

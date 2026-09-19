@@ -26,10 +26,6 @@ public class SettingsActivity extends BaseActivity {
                 languageSummary(), v -> showLanguageDialog());
         addRow(list, R.drawable.ic_camera, R.string.settings_camera,
                 getString(R.string.settings_camera_sub), v -> toast(R.string.coming_soon));
-        addRow(list, R.drawable.ic_chip, R.string.settings_ai,
-                getString(R.string.settings_ai_sub), v -> toast(R.string.coming_soon));
-        addRow(list, R.drawable.ic_database, R.string.settings_db,
-                getString(R.string.settings_db_sub), v -> toast(R.string.coming_soon));
         addRow(list, R.drawable.ic_settings, R.string.settings_system,
                 getString(R.string.settings_system_sub), v -> showAbout());
     }
@@ -45,9 +41,7 @@ public class SettingsActivity extends BaseActivity {
     @Override
     protected void onConnectionChanged() {
         RobotSession session = RobotSession.get();
-        String address = session.getTransport() == RobotSession.Transport.WIFI
-                ? session.getHost() + ":" + session.getPort()
-                : getString(R.string.bluetooth);
+        String address = session.getHost() + ":" + session.getPort();
         String state = session.isConnected() ? connectionLabel() : getString(R.string.status_disconnected);
         ((TextView) connectionRow.findViewById(R.id.row_subtitle))
                 .setText(getString(R.string.connection_summary, address, state));

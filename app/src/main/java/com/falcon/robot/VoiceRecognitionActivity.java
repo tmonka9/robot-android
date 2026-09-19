@@ -64,11 +64,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
     /** Advanced settings: per tab, rows of {label, options array}. */
     private static final int[][][] ADVANCED = {
             {
-                    {R.string.adv_engine, R.array.adv_engine_options},
-                    {R.string.adv_sample_rate, R.array.adv_sample_rate_options},
-                    {R.string.adv_audio_input, R.array.adv_audio_input_options},
-            },
-            {
                     {R.string.adv_recognition_language, R.array.adv_language_options},
                     {R.string.adv_response_language, R.array.adv_language_options},
                     {R.string.adv_auto_detect, R.array.adv_on_off_options},
@@ -226,7 +221,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
             liveWave.clearLevels();
             liveWave.setActive(false);
             renderServiceState();
-            sendCommand("VOICE LISTEN OFF");
+            RobotSession.get().send("VOICE LISTEN OFF"); // listening needs no robot
             return;
         }
         ensureNotificationPermission();
@@ -241,7 +236,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         service.setVoiceEnabled(true);
         liveWave.setActive(true);
         renderServiceState();
-        sendCommand("VOICE LISTEN ON");
+        RobotSession.get().send("VOICE LISTEN ON");
     }
 
     /** Mirrors what the service is doing into the mic panel. */
@@ -300,6 +295,12 @@ public class VoiceRecognitionActivity extends BaseActivity {
             currentAction = action;
             addHistory(text, result, confidence);
             renderResult(confidence);
+            // a command that was understood but could not be sent is the moment to ask for
+            // the robot, rather than when the microphone is switched on
+            if (result == R.string.result_not_sent && action != null && action.command != null
+                    && commandSwitch.isChecked()) {
+                sendCommand("VOICE_COMMAND " + action.command);
+            }
             // one-shot mode: stop after each utterance
             if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
         }
@@ -397,7 +398,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         ((ProgressBar) findViewById(R.id.result_confidence_bar)) // max is 1000
                 .setProgress(Math.round(Math.max(0f, confidence) * 10f));
         String[] languages = getResources().getStringArray(R.array.adv_language_options);
-        ((TextView) findViewById(R.id.result_language)).setText(languages[advancedSelection[1][0]]);
+        ((TextView) findViewById(R.id.result_language)).setText(languages[advancedSelection[0][0]]);
         ((TextView) findViewById(R.id.result_time)).setText(
                 transcript.isEmpty() ? dash : dateTime.format(new Date()));
 
@@ -676,8 +677,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setIcon(findViewById(R.id.advanced_title), R.drawable.ic_tune, 22, color(R.color.text_primary), Gravity.START);
         advancedRows = findViewById(R.id.adv_rows);
         advancedTabs = new TextView[] {
-                findViewById(R.id.adv_tab_model), findViewById(R.id.adv_tab_language),
-                findViewById(R.id.adv_tab_hotword), findViewById(R.id.adv_tab_audio),
+                findViewById(R.id.adv_tab_language), findViewById(R.id.adv_tab_hotword),
+                findViewById(R.id.adv_tab_audio),
         };
         for (int i = 0; i < advancedTabs.length; i++) {
             final int tab = i;
@@ -709,7 +710,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
                 public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                     if (advancedTab != tab) return;
                     advancedSelection[tab][rowIndex] = position;
-                    if (tab == 1 && rowIndex == 0) {
+                    if (tab == 0 && rowIndex == 0) {
                         RobotService service = getRobotService();
                         if (service != null) service.setLanguage(languageCode());
                         renderResult();
@@ -734,7 +735,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
     /** whisper language code from the Language tab. */
     private String languageCode() {
         String[] codes = getResources().getStringArray(R.array.adv_language_codes);
-        int index = advancedSelection[1][0];
+        int index = advancedSelection[0][0];
         return index < codes.length ? codes[index] : "auto";
     }
 

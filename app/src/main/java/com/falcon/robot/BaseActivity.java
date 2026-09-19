@@ -371,9 +371,6 @@ public abstract class BaseActivity extends ComponentActivity {
         if (connectionDialog != null && connectionDialog.isShowing()) return;
         final RobotSession session = RobotSession.get();
         View view = LayoutInflater.from(this).inflate(R.layout.dialog_connection, null);
-        final TextView linkWifi = view.findViewById(R.id.link_wifi);
-        final TextView linkBluetooth = view.findViewById(R.id.link_bluetooth);
-        final View wifiFields = view.findViewById(R.id.wifi_fields);
         final EditText inputIp = view.findViewById(R.id.input_ip);
         final EditText inputPort = view.findViewById(R.id.input_port);
         TextView status = view.findViewById(R.id.connection_status);
@@ -384,19 +381,6 @@ public abstract class BaseActivity extends ComponentActivity {
         setStatus(status, connected ? connectionLabel() : getString(R.string.status_disconnected),
                 connected ? R.drawable.dot_teal : R.drawable.dot_gray);
 
-        final RobotSession.Transport[] transport = {session.getTransport()};
-        View.OnClickListener select = v -> {
-            if (connected) return; // disconnect before switching transport
-            transport[0] = v == linkWifi ? RobotSession.Transport.WIFI : RobotSession.Transport.BLUETOOTH;
-            linkWifi.setSelected(transport[0] == RobotSession.Transport.WIFI);
-            linkBluetooth.setSelected(transport[0] == RobotSession.Transport.BLUETOOTH);
-            wifiFields.setVisibility(transport[0] == RobotSession.Transport.WIFI ? View.VISIBLE : View.GONE);
-        };
-        linkWifi.setOnClickListener(select);
-        linkBluetooth.setOnClickListener(select);
-        linkWifi.setSelected(transport[0] == RobotSession.Transport.WIFI);
-        linkBluetooth.setSelected(transport[0] == RobotSession.Transport.BLUETOOTH);
-        wifiFields.setVisibility(transport[0] == RobotSession.Transport.WIFI ? View.VISIBLE : View.GONE);
         inputIp.setEnabled(!connected);
         inputPort.setEnabled(!connected);
 
@@ -413,20 +397,17 @@ public abstract class BaseActivity extends ComponentActivity {
                 onConnectionChanged();
                 return;
             }
-            if (transport[0] == RobotSession.Transport.WIFI) {
-                int port;
-                try {
-                    port = Integer.parseInt(inputPort.getText().toString().trim());
-                } catch (NumberFormatException e) {
-                    port = -1;
-                }
-                if (port <= 0 || port > 65535) {
-                    inputPort.setError(getString(R.string.invalid_port));
-                    return;
-                }
-                session.setAddress(inputIp.getText().toString().trim(), port);
+            int port;
+            try {
+                port = Integer.parseInt(inputPort.getText().toString().trim());
+            } catch (NumberFormatException e) {
+                port = -1;
             }
-            session.setTransport(transport[0]);
+            if (port <= 0 || port > 65535) {
+                inputPort.setError(getString(R.string.invalid_port));
+                return;
+            }
+            session.setAddress(inputIp.getText().toString().trim(), port);
             dialog.dismiss();
             toast(R.string.status_connecting);
             uiHandler.postDelayed(() -> {
@@ -441,9 +422,8 @@ public abstract class BaseActivity extends ComponentActivity {
 
     /** e.g. "Connected · Wi-Fi". */
     protected String connectionLabel() {
-        return getString(R.string.connected_via, getString(
-                RobotSession.get().getTransport() == RobotSession.Transport.WIFI
-                        ? R.string.wifi : R.string.bluetooth));
+        RobotSession session = RobotSession.get();
+        return getString(R.string.connected_via, session.getHost() + ":" + session.getPort());
     }
 
     /** Binds a status line to the connection state; tapping it opens the connection dialog. */
@@ -617,9 +597,7 @@ public abstract class BaseActivity extends ComponentActivity {
         setStatus(connection, connected ? R.string.status_connected_short : R.string.status_offline_short,
                 connected ? R.drawable.dot_teal : R.drawable.dot_gray);
         connection.setTextColor(color(connected ? R.color.teal : R.color.text_secondary));
-        ((TextView) findViewById(R.id.header_ip)).setText(
-                session.getTransport() == RobotSession.Transport.WIFI
-                        ? session.getHost() : getString(R.string.bluetooth));
+        ((TextView) findViewById(R.id.header_ip)).setText(session.getHost());
         ((TextView) findViewById(R.id.header_battery)).setText(
                 connected ? getString(R.string.demo_battery) : getString(R.string.placeholder_value));
         ((ImageView) findViewById(R.id.header_battery_icon)).setColorFilter(

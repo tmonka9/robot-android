@@ -54,7 +54,6 @@ public class ObjectDetectionActivity extends BaseActivity {
     private TextView totalCount;
     private TextView totalTrend;
     private TextView feedInfo;
-    private Spinner modelSpinner;
     private Switch enableSwitch;
     private Switch maskSwitch;
     private Switch trackSwitch;
@@ -133,7 +132,6 @@ public class ObjectDetectionActivity extends BaseActivity {
         binding = false;
 
         applySettings(service);
-        selectModel(service.getDetectorModel());
         service.attachPreview(previewView.getSurfaceProvider());
         renderServiceState();
         render(service.getLastObjects());
@@ -179,7 +177,7 @@ public class ObjectDetectionActivity extends BaseActivity {
 
         DetectionAnalyzer analyzer = service.getDetectionAnalyzer();
         if (service.isLoadingDetector()) {
-            feedInfo.setText(getString(R.string.loading_model, YoloSegmenter.DEFAULT_MODEL));
+            feedInfo.setText(R.string.loading_model_any);
             cameraMessage.setVisibility(View.GONE);
         } else if (analyzer == null || !analyzer.canDetect()) {
             // a model that is present but unusable is a different problem from a missing one,
@@ -192,7 +190,6 @@ public class ObjectDetectionActivity extends BaseActivity {
             cameraMessage.setVisibility(View.GONE);
             maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks to show
         }
-        if (modelSpinner.getSelectedItem() == null) selectModel(service.getDetectorModel());
     }
 
     private void showCameraMessage(String message) {
@@ -244,24 +241,6 @@ public class ObjectDetectionActivity extends BaseActivity {
             if (analyzer != null) analyzer.setTrackingEnabled(on);
         });
 
-        List<CharSequence> models = new ArrayList<>(YoloSegmenter.listModels(this));
-        if (models.isEmpty()) models.add(getString(R.string.none));
-        modelSpinner = findViewById(R.id.spinner_model);
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, models);
-        adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
-        modelSpinner.setAdapter(adapter);
-        modelSpinner.setOnItemSelectedListener(new SimpleItemListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                RobotService service = getRobotService();
-                if (binding || service == null) return;
-                String selected = String.valueOf(parent.getItemAtPosition(position));
-                if (!selected.endsWith(".tflite") || selected.equals(service.getDetectorModel())) return;
-                RobotSession.get().send("DETECTION MODEL " + selected);
-                service.loadDetector(selected);
-            }
-        });
-
         final Spinner threshold = bindSpinner(R.id.spinner_threshold, R.array.confidence_thresholds, 2);
         threshold.setOnItemSelectedListener(new SimpleItemListener() {
             @Override
@@ -289,19 +268,6 @@ public class ObjectDetectionActivity extends BaseActivity {
     private DetectionAnalyzer analyzer() {
         RobotService service = getRobotService();
         return service == null ? null : service.getDetectionAnalyzer();
-    }
-
-    /** Shows the model the service actually loaded, without triggering another load. */
-    private void selectModel(String model) {
-        if (model == null) return;
-        for (int i = 0; i < modelSpinner.getCount(); i++) {
-            if (model.equals(String.valueOf(modelSpinner.getItemAtPosition(i)))) {
-                binding = true;
-                modelSpinner.setSelection(i);
-                binding = false;
-                return;
-            }
-        }
     }
 
     private void setChecked(Switch toggle, boolean checked) {

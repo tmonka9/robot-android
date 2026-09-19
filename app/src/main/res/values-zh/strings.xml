@@ -287,7 +287,6 @@
     <string name="similarity_value">%.1f%%</string>
     <string name="open_door">开门</string>
     <string name="add_to_log">记入日志</string>
-    <string name="more">更多</string>
     <string name="door_opened">已为 %s 开门</string>
     <string name="added_to_log">已将 %s 记入日志</string>
     <string name="toggle_active">启用 / 停用</string>
@@ -382,7 +381,6 @@
     <string name="result_answered">已应答</string>
     <string name="result_not_sent">未发送</string>
     <string name="advanced_settings">高级设置</string>
-    <string name="tab_speech_model">语音模型</string>
     <string name="tab_language">语言</string>
     <string name="tab_hotword">唤醒词</string>
     <string name="tab_audio">音频</string>
@@ -394,6 +392,7 @@
     <string name="engine_not_built">语音引擎未编译：请将 whisper.cpp 克隆到 app/src/main/cpp 后重新构建</string>
     <string name="engine_unavailable">无法加载语音引擎库</string>
     <string name="model_not_found">请将 %1$s 放入 %2$s</string>
+    <string name="loading_model_any">正在加载模型…</string>
     <string name="loading_model">正在加载 %s…</string>
     <string name="model_loaded">%s 已加载</string>
     <string name="model_too_large">模型约需 %1$d MB 内存，但可用内存仅 %2$d MB — 请改用更小的模型，例如 ggml-base.bin</string>
@@ -408,24 +407,6 @@
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->
-    <string name="adv_engine">识别引擎</string>
-    <string-array name="adv_engine_options">
-        <item>ONNX Runtime</item>
-        <item>TensorFlow Lite</item>
-        <item>NNAPI</item>
-    </string-array>
-    <string name="adv_sample_rate">采样率</string>
-    <string-array name="adv_sample_rate_options">
-        <item>16 kHz</item>
-        <item>22.05 kHz</item>
-        <item>44.1 kHz</item>
-    </string-array>
-    <string name="adv_audio_input">音频输入</string>
-    <string-array name="adv_audio_input_options">
-        <item>麦克风阵列</item>
-        <item>内置麦克风</item>
-        <item>USB 麦克风</item>
-    </string-array>
     <string name="adv_recognition_language">识别语言</string>
     <string name="adv_response_language">应答语言</string>
     <string-array name="adv_language_options">
@@ -509,11 +490,9 @@
     <string name="track_objects">目标跟踪</string>
     <string name="track_label">#%1$d %2$s</string>
     <string name="total_seen">累计目标</string>
-    <string name="none">无模型</string>
     <string name="no_detector">未加载检测模型</string>
     <string name="detector_missing">请将 YOLOv8-seg 模型（%1$s）放入 app/src/main/assets 或 models 文件夹</string>
     <string name="detector_failed">无法加载 %1$s：%2$s</string>
-    <string name="model">模型</string>
     <string name="confidence_threshold">置信度阈值</string>
     <string name="total">总计</string>
     <string name="no_detections">无高于阈值的目标</string>
@@ -534,10 +513,6 @@
     <string name="settings_connection">机器人连接</string>
     <string name="settings_camera">摄像头设置</string>
     <string name="settings_camera_sub">USB 摄像头 / RTSP 摄像头</string>
-    <string name="settings_ai">AI 模型设置</string>
-    <string name="settings_ai_sub">模型 / 性能</string>
-    <string name="settings_db">数据库管理</string>
-    <string name="settings_db_sub">人脸库 / 目标库</string>
     <string name="settings_language">语言</string>
     <string name="settings_language_sub">应用显示语言</string>
     <string name="language_system">跟随系统</string>
@@ -549,7 +524,6 @@
 
     <!-- Connection dialog -->
     <string name="wifi">Wi-Fi</string>
-    <string name="bluetooth">蓝牙</string>
     <string name="ip_address">IP 地址</string>
     <string name="port">端口</string>
     <string name="connect">连接</string>

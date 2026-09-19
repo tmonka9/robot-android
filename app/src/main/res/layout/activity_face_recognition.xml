@@ -396,22 +396,6 @@
                             android:text="@string/add_to_log"
                             android:textColor="@color/text_primary"
                             android:textSize="12sp" />
-
-                        <TextView
-                            android:id="@+id/btn_more"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="0.8"
-                            android:background="@drawable/bg_control_button"
-                            android:clickable="true"
-                            android:drawablePadding="6dp"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:singleLine="true"
-                            android:text="@string/more"
-                            android:textColor="@color/text_primary"
-                            android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
 

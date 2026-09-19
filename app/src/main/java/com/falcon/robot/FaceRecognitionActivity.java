@@ -394,14 +394,10 @@ public class FaceRecognitionActivity extends BaseActivity {
                     selected != null ? selected.name : getString(R.string.unknown_person)));
         });
 
-        TextView more = findViewById(R.id.btn_more);
-        setIcon(more, R.drawable.ic_more, 18, white, Gravity.START);
-        more.setOnClickListener(this::showMoreMenu);
     }
 
-    private void showMoreMenu(View anchor) {
-        if (selected == null) return;
-        final FaceDatabase.Record record = selected;
+    /** Activate or delete one person; opened by a long press on their row. */
+    private void showRecordMenu(final FaceDatabase.Record record, View anchor) {
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenu().add(0, 1, 0, R.string.toggle_active);
         menu.getMenu().add(0, 2, 1, R.string.remove_from_database);
@@ -559,6 +555,11 @@ public class FaceRecognitionActivity extends BaseActivity {
             active.setBackgroundResource(record.active ? R.drawable.bg_chip_green : R.drawable.bg_table_box);
             row.setSelected(record == selected);
             row.setOnClickListener(v -> showProfile(record));
+            // long press for the actions the More button used to hold
+            row.setOnLongClickListener(v -> {
+                showRecordMenu(record, v);
+                return true;
+            });
             LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) row.getLayoutParams();
             if (dbList.getChildCount() > 0) lp.topMargin = gap;
             dbList.addView(row, lp);

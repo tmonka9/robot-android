@@ -265,8 +265,7 @@ public class RemoteControlActivity extends BaseActivity {
         valueBattery.setText(connected ? R.string.demo_battery : R.string.placeholder_value);
         barBattery.setProgress(connected ? 78 : 0);
         valueTemperature.setText(connected ? R.string.demo_temperature : R.string.placeholder_value);
-        valueConnection.setText(!connected ? getString(R.string.placeholder_value)
-                : getString(session.getTransport() == RobotSession.Transport.WIFI ? R.string.wifi : R.string.bluetooth));
+        valueConnection.setText(connected ? session.getHost() : getString(R.string.placeholder_value));
     }
 
     private void refreshPosition() {
