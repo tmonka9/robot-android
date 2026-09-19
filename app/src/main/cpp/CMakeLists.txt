@@ -11,6 +11,10 @@ set(WHISPER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/whisper.cpp)
 #
 # Without them the app still builds and runs: the stub below reports "speech engine
 # unavailable" and the Voice page falls back to tapping commands by hand.
+# Notice the sources appearing after an earlier build configured without them: without this,
+# CMake keeps its cached answer and quietly goes on building the stub.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${WHISPER_DIR}/CMakeLists.txt)
+
 if (EXISTS ${WHISPER_DIR}/CMakeLists.txt)
     message(STATUS "Building with whisper.cpp from ${WHISPER_DIR}")
 

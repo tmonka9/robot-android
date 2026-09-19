@@ -94,6 +94,23 @@
                         android:textSize="12sp" />
 
                     <TextView
+                        android:id="@+id/feed_source"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|end"
+                        android:layout_margin="12dp"
+                        android:background="@drawable/bg_feed_label"
+                        android:drawableEnd="@drawable/ic_dropdown"
+                        android:drawablePadding="6dp"
+                        android:gravity="center_vertical"
+                        android:paddingLeft="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingRight="10dp"
+                        android:paddingBottom="4dp"
+                        android:textColor="@color/white"
+                        android:textSize="12sp" />
+
+                    <TextView
                         android:id="@+id/feed_info"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

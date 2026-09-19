@@ -15,6 +15,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.PopupMenu;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -54,12 +55,14 @@ public class ObjectDetectionActivity extends BaseActivity {
     private TextView totalCount;
     private TextView totalTrend;
     private TextView feedInfo;
+    private TextView feedSource;
     private Switch enableSwitch;
     private Switch maskSwitch;
     private Switch trackSwitch;
 
     private boolean permissionAsked;
     private boolean fullscreen;
+    private boolean lensChosen; // the operator picked a camera, so stop claiming the back one
     private boolean binding; // true while the switches are being set from the service
     private int lastTotal = -1;
 
@@ -96,6 +99,9 @@ public class ObjectDetectionActivity extends BaseActivity {
         overlay = findViewById(R.id.tracking_overlay);
         cameraMessage = findViewById(R.id.camera_message);
 
+        feedSource = findViewById(R.id.feed_source);
+        feedSource.setOnClickListener(this::showCameraMenu);
+
         ImageView fullscreenButton = findViewById(R.id.feed_fullscreen);
         fullscreenButton.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
         fullscreenButton.setOnClickListener(v -> toggleFullscreen());
@@ -111,8 +117,8 @@ public class ObjectDetectionActivity extends BaseActivity {
         refreshRichHeader();
         RobotService service = getRobotService();
         if (service == null) return;
-        // the camera is shared: only claim the back lens when face recognition is not using it
-        if (!service.isFaceEnabled()) service.setLensFacing(CameraSelector.LENS_FACING_BACK);
+        // the camera is shared: claim the back lens only when nobody has chosen otherwise
+        if (!lensChosen && !service.isFaceEnabled()) service.setLensFacing(CameraSelector.LENS_FACING_BACK);
         service.attachPreview(previewView.getSurfaceProvider());
     }
 
@@ -178,6 +184,7 @@ public class ObjectDetectionActivity extends BaseActivity {
         enableSwitch.setChecked(service.isDetectionEnabled());
         binding = false;
         findViewById(R.id.feed_live).setAlpha(service.isDetectionEnabled() ? 1f : 0.4f);
+        updateCameraSource();
         if (!service.isDetectionEnabled()) overlay.clear();
 
         DetectionAnalyzer analyzer = service.getDetectionAnalyzer();
@@ -200,6 +207,31 @@ public class ObjectDetectionActivity extends BaseActivity {
                 maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks
             }
         }
+    }
+
+    /** Front or back camera, shared with face recognition. */
+    private void showCameraMenu(View anchor) {
+        final RobotService service = getRobotService();
+        if (service == null) return;
+        final String[] sources = getResources().getStringArray(R.array.camera_sources);
+        PopupMenu menu = new PopupMenu(this, anchor);
+        for (int i = 0; i < sources.length; i++) menu.getMenu().add(0, i, i, sources[i]);
+        menu.setOnMenuItemClickListener(item -> {
+            lensChosen = true;
+            service.setLensFacing(item.getItemId() == 0 ? CameraSelector.LENS_FACING_FRONT
+                    : CameraSelector.LENS_FACING_BACK);
+            updateCameraSource();
+            return true;
+        });
+        menu.show();
+    }
+
+    /** Names the camera in use, as the Face page does. */
+    private void updateCameraSource() {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        int index = service.getLensFacing() == CameraSelector.LENS_FACING_FRONT ? 0 : 1;
+        feedSource.setText(getResources().getStringArray(R.array.camera_sources)[index]);
     }
 
     /** Gives the camera the whole page, as the Face page does, and back again. */
