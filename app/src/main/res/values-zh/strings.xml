@@ -511,15 +511,17 @@
 
     <!-- Settings -->
     <string name="settings_connection">机器人连接</string>
+    <string name="camera_resolution">分析分辨率</string>
+    <string name="camera_settings_note">画面越大越容易发现小目标，越小运行越快。人脸识别与目标检测共用此摄像头。</string>
+    <string name="camera_settings_unavailable">请先打开人脸识别或目标检测页面，以启动摄像头服务</string>
     <string name="settings_camera">摄像头设置</string>
-    <string name="settings_camera_sub">USB 摄像头 / RTSP 摄像头</string>
+    <string name="settings_camera_sub">摄像头与分析分辨率</string>
     <string name="settings_language">语言</string>
     <string name="settings_language_sub">应用显示语言</string>
     <string name="language_system">跟随系统</string>
 
     <string name="settings_system">系统设置</string>
     <string name="settings_system_sub">语言 / 设备 / 关于</string>
-    <string name="coming_soon">暂未开放</string>
     <string name="about_message">AI Robot Control\n版本 %s</string>
 
     <!-- Connection dialog -->

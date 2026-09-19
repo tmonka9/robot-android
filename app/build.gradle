@@ -26,6 +26,13 @@ android {
         }
     }
 
+    // the built file is falcon.ai.robot.apk rather than app-debug.apk
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            output.outputFileName = "falcon.ai.robot.apk"
+        }
+    }
+
     externalNativeBuild {
         cmake {
             path 'src/main/cpp/CMakeLists.txt'

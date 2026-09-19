@@ -13,10 +13,10 @@
     <path
         android:fillColor="#FF071426"
         android:pathData="M0,0h108v108h-108z" />
-    <!-- glow behind the robot, in two steps so it reads as a soft light -->
+    <!-- glow behind the mark, in three steps so it reads as a soft light -->
     <path
         android:fillColor="#FF0E2A4E"
-        android:pathData="M54,18m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+        android:pathData="M54,54m-44,0a44,44 0,1 1,88 0a44,44 0,1 1,-88 0" />
     <path
         android:fillColor="#FF123C6E"
         android:pathData="M54,54m-34,0a34,34 0,1 1,68 0a34,34 0,1 1,-68 0" />

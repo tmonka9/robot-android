@@ -511,15 +511,17 @@
 
     <!-- Settings -->
     <string name="settings_connection">ロボット接続</string>
+    <string name="camera_resolution">解析解像度</string>
+    <string name="camera_settings_note">解像度が高いほど小さな物体を検出でき、低いほど高速に動作します。顔認識と物体検出はこのカメラを共有します。</string>
+    <string name="camera_settings_unavailable">カメラサービスを起動するため、顔認識または物体検出のページを一度開いてください</string>
     <string name="settings_camera">カメラ設定</string>
-    <string name="settings_camera_sub">Webカメラ / RTSPカメラ</string>
+    <string name="settings_camera_sub">カメラと解析解像度</string>
     <string name="settings_language">言語</string>
     <string name="settings_language_sub">アプリの表示言語</string>
     <string name="language_system">システムの既定</string>
 
     <string name="settings_system">システム設定</string>
     <string name="settings_system_sub">言語 / デバイス / このアプリについて</string>
-    <string name="coming_soon">現在ご利用いただけません</string>
     <string name="about_message">AI Robot Control\nバージョン %s</string>
 
     <!-- Connection dialog -->

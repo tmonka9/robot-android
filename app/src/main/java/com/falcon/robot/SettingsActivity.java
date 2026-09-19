@@ -3,16 +3,22 @@ package com.falcon.robot;
 import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
+
+import androidx.camera.core.CameraSelector;
 
 public class SettingsActivity extends BaseActivity {
 
     private View connectionRow;
     private View languageRow;
+    private View cameraRow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,10 +30,12 @@ public class SettingsActivity extends BaseActivity {
                 v -> showConnectionDialog());
         languageRow = addRow(list, R.drawable.ic_language, R.string.settings_language,
                 languageSummary(), v -> showLanguageDialog());
-        addRow(list, R.drawable.ic_camera, R.string.settings_camera,
-                getString(R.string.settings_camera_sub), v -> toast(R.string.coming_soon));
+        cameraRow = addRow(list, R.drawable.ic_camera, R.string.settings_camera,
+                cameraSummary(), v -> showCameraDialog());
         addRow(list, R.drawable.ic_settings, R.string.settings_system,
                 getString(R.string.settings_system_sub), v -> showAbout());
+
+        bindRobotService(serviceListener); // the camera settings live in the service
     }
 
     @Override
@@ -45,6 +53,90 @@ public class SettingsActivity extends BaseActivity {
         String state = session.isConnected() ? connectionLabel() : getString(R.string.status_disconnected);
         ((TextView) connectionRow.findViewById(R.id.row_subtitle))
                 .setText(getString(R.string.connection_summary, address, state));
+    }
+
+    // ---- camera ----------------------------------------------------------------------------
+
+    /** Frame sizes offered for the models, matching R.array.camera_resolutions. */
+    private static final Size[] ANALYSIS_SIZES = {
+            new Size(1920, 1080), new Size(1280, 720), new Size(640, 480),
+    };
+
+    @Override
+    protected void onRobotServiceReady(RobotService service) {
+        refreshCameraRow();
+    }
+
+    private final RobotService.Listener serviceListener = new RobotService.Adapter() {
+        @Override
+        public void onServiceState() {
+            refreshCameraRow();
+        }
+    };
+
+    /** "Back Camera  ·  720P", or an invitation to open the page that starts the service. */
+    private String cameraSummary() {
+        RobotService service = getRobotService();
+        if (service == null) return getString(R.string.settings_camera_sub);
+        String camera = getResources().getStringArray(R.array.camera_sources)[
+                service.getLensFacing() == CameraSelector.LENS_FACING_FRONT ? 0 : 1];
+        return camera + "  ·  " + resolutionLabel(service.getAnalysisSize());
+    }
+
+    private void refreshCameraRow() {
+        if (cameraRow == null) return;
+        ((TextView) cameraRow.findViewById(R.id.row_subtitle)).setText(cameraSummary());
+    }
+
+    /** The name the resolution list gives a frame size, or the size itself if it is not in it. */
+    private String resolutionLabel(Size size) {
+        String[] names = getResources().getStringArray(R.array.camera_resolutions);
+        for (int i = 0; i < ANALYSIS_SIZES.length && i < names.length; i++) {
+            if (ANALYSIS_SIZES[i].equals(size)) return names[i];
+        }
+        return size.getWidth() + " × " + size.getHeight();
+    }
+
+    private void showCameraDialog() {
+        final RobotService service = getRobotService();
+        if (service == null) {
+            toast(R.string.camera_settings_unavailable);
+            return;
+        }
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_camera_settings, null);
+        final Spinner camera = view.findViewById(R.id.spinner_camera);
+        final Spinner resolution = view.findViewById(R.id.spinner_resolution);
+        bindSpinner(camera, R.array.camera_sources,
+                service.getLensFacing() == CameraSelector.LENS_FACING_FRONT ? 0 : 1);
+
+        int current = 0;
+        for (int i = 0; i < ANALYSIS_SIZES.length; i++) {
+            if (ANALYSIS_SIZES[i].equals(service.getAnalysisSize())) current = i;
+        }
+        bindSpinner(resolution, R.array.camera_resolutions, current);
+
+        new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
+                .setTitle(R.string.settings_camera)
+                .setView(view)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, (d, w) -> {
+                    service.setLensFacing(camera.getSelectedItemPosition() == 0
+                            ? CameraSelector.LENS_FACING_FRONT : CameraSelector.LENS_FACING_BACK);
+                    int index = resolution.getSelectedItemPosition();
+                    if (index >= 0 && index < ANALYSIS_SIZES.length) {
+                        service.setAnalysisSize(ANALYSIS_SIZES[index]);
+                    }
+                    refreshCameraRow();
+                })
+                .show();
+    }
+
+    private void bindSpinner(Spinner spinner, int entries, int selection) {
+        ArrayAdapter<CharSequence> adapter =
+                ArrayAdapter.createFromResource(this, entries, R.layout.item_spinner);
+        adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
+        spinner.setAdapter(adapter);
+        spinner.setSelection(selection);
     }
 
     // ---- language --------------------------------------------------------------------------

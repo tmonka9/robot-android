@@ -512,8 +512,11 @@
 
     <!-- Settings -->
     <string name="settings_connection">Robot Connection</string>
+    <string name="camera_resolution">Analysis resolution</string>
+    <string name="camera_settings_note">A larger frame finds smaller objects; a smaller one runs faster. Face recognition and object detection share this camera.</string>
+    <string name="camera_settings_unavailable">Open Face Recognition or Object Detection once, so the camera service is running</string>
     <string name="settings_camera">Camera Settings</string>
-    <string name="settings_camera_sub">Webcam / RTSP Camera</string>
+    <string name="settings_camera_sub">Camera and analysis resolution</string>
     <string name="settings_language">Language</string>
     <string name="settings_language_sub">App display language</string>
     <string name="language_system">System default</string>
@@ -523,7 +526,6 @@
 
     <string name="settings_system">System Settings</string>
     <string name="settings_system_sub">Language / Device / About</string>
-    <string name="coming_soon">Not available yet</string>
     <string name="about_message">AI Robot Control\nVersion %s</string>
 
     <!-- Connection dialog -->

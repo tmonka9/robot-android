@@ -73,6 +73,7 @@ public class RobotService extends Service implements LifecycleOwner {
     /** Sent by the notification's Stop action. */
     public static final String ACTION_STOP = "com.falcon.robot.action.STOP";
 
+    /** Default frame size for the models; the Settings page can change it. */
     private static final Size ANALYSIS_SIZE = new Size(640, 480);
 
     private static final String PREFS = "settings";
@@ -80,6 +81,8 @@ public class RobotService extends Service implements LifecycleOwner {
     private static final String KEY_DETECTION = "detection_enabled";
     private static final String KEY_VOICE = "voice_enabled";
     private static final String KEY_LENS = "lens_facing";
+    private static final String KEY_ANALYSIS_WIDTH = "analysis_width";
+    private static final String KEY_ANALYSIS_HEIGHT = "analysis_height";
 
     /** What the pages listen to. Every call is on the main thread. */
     public interface Listener {
@@ -163,6 +166,7 @@ public class RobotService extends Service implements LifecycleOwner {
     private boolean foreground;
     private boolean started; // true once onStartCommand has run, so the service outlives its pages
     private int lensFacing = CameraSelector.LENS_FACING_FRONT;
+    private Size analysisSize = ANALYSIS_SIZE;
 
     // vision
     private ProcessCameraProvider cameraProvider;
@@ -207,6 +211,8 @@ public class RobotService extends Service implements LifecycleOwner {
         detectionEnabled = prefs.getBoolean(KEY_DETECTION, false);
         voiceEnabled = prefs.getBoolean(KEY_VOICE, false);
         lensFacing = prefs.getInt(KEY_LENS, CameraSelector.LENS_FACING_FRONT);
+        analysisSize = new Size(prefs.getInt(KEY_ANALYSIS_WIDTH, ANALYSIS_SIZE.getWidth()),
+                prefs.getInt(KEY_ANALYSIS_HEIGHT, ANALYSIS_SIZE.getHeight()));
 
         faceDatabase = new FaceDatabase(this);
         customPhrases = new CustomPhrases(this);
@@ -444,6 +450,20 @@ public class RobotService extends Service implements LifecycleOwner {
         if (cameraProvider != null) bindCamera();
     }
 
+    /** Frame size the models see. Bigger finds smaller objects; smaller is faster. */
+    public Size getAnalysisSize() {
+        return analysisSize;
+    }
+
+    public void setAnalysisSize(Size size) {
+        if (size == null || size.equals(analysisSize)) return;
+        analysisSize = size;
+        prefs.edit().putInt(KEY_ANALYSIS_WIDTH, size.getWidth())
+                .putInt(KEY_ANALYSIS_HEIGHT, size.getHeight()).apply();
+        if (cameraProvider != null) bindCamera();
+        notifyState();
+    }
+
     public int getLensFacing() {
         return lensFacing;
     }
@@ -504,7 +524,7 @@ public class RobotService extends Service implements LifecycleOwner {
 
         ImageAnalysis analysis = new ImageAnalysis.Builder()
                 .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setResolutionStrategy(new ResolutionStrategy(ANALYSIS_SIZE,
+                        .setResolutionStrategy(new ResolutionStrategy(analysisSize,
                                 ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
                         .build())
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
