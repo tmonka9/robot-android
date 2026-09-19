@@ -59,6 +59,7 @@ public class ObjectDetectionActivity extends BaseActivity {
     private Switch trackSwitch;
 
     private boolean permissionAsked;
+    private boolean fullscreen;
     private boolean binding; // true while the switches are being set from the service
     private int lastTotal = -1;
 
@@ -94,6 +95,10 @@ public class ObjectDetectionActivity extends BaseActivity {
         previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);
         overlay = findViewById(R.id.tracking_overlay);
         cameraMessage = findViewById(R.id.camera_message);
+
+        ImageView fullscreenButton = findViewById(R.id.feed_fullscreen);
+        fullscreenButton.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+        fullscreenButton.setOnClickListener(v -> toggleFullscreen());
 
         setupSettings();
         render(new ArrayList<>());
@@ -179,17 +184,32 @@ public class ObjectDetectionActivity extends BaseActivity {
         if (service.isLoadingDetector()) {
             feedInfo.setText(R.string.loading_model_any);
             cameraMessage.setVisibility(View.GONE);
-        } else if (analyzer == null || !analyzer.canDetect()) {
-            // a model that is present but unusable is a different problem from a missing one,
+        } else if (service.getDetectorError() != null) {
+            // a model that is there but unusable is a different problem from a missing one,
             // and the reason only shows up here
-            showCameraMessage(service.getDetectorError() != null
-                    ? getString(R.string.detector_failed, String.valueOf(service.getDetectorModel()),
-                    service.getDetectorError())
-                    : getString(R.string.detector_missing, YoloSegmenter.DEFAULT_MODEL));
+            showCameraMessage(getString(R.string.detector_failed,
+                    String.valueOf(service.getDetectorModel()), service.getDetectorError()));
+        } else if (YoloSegmenter.listModels(this).isEmpty()) {
+            showCameraMessage(getString(R.string.detector_missing));
+        } else if (!service.isDetectionEnabled()) {
+            // the model is only loaded once detection is switched on
+            showCameraMessage(getString(R.string.detection_disabled));
         } else {
             cameraMessage.setVisibility(View.GONE);
-            maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks to show
+            if (analyzer != null) {
+                maskSwitch.setEnabled(analyzer.hasMasks()); // a plain detector has no masks
+            }
         }
+    }
+
+    /** Gives the camera the whole page, as the Face page does, and back again. */
+    private void toggleFullscreen() {
+        fullscreen = !fullscreen;
+        int visibility = fullscreen ? View.GONE : View.VISIBLE;
+        findViewById(R.id.panel_result).setVisibility(visibility);
+        findViewById(R.id.columns_bottom).setVisibility(visibility);
+        ((ImageView) findViewById(R.id.feed_fullscreen)).setImageResource(
+                fullscreen ? R.drawable.ic_fullscreen_exit : R.drawable.ic_fullscreen);
     }
 
     private void showCameraMessage(String message) {

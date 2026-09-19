@@ -64,11 +64,23 @@
                         android:textSize="14sp"
                         android:visibility="gone" />
 
+                    <ImageView
+                        android:id="@+id/feed_fullscreen"
+                        android:layout_width="34dp"
+                        android:layout_height="34dp"
+                        android:layout_gravity="top|end"
+                        android:layout_margin="10dp"
+                        android:background="@drawable/bg_feed_label"
+                        android:contentDescription="@null"
+                        android:padding="8dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_fullscreen" />
+
                     <TextView
                         android:id="@+id/feed_live"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="top|end"
+                        android:layout_gravity="top|start"
                         android:layout_margin="12dp"
                         android:background="@drawable/bg_feed_label"
                         android:drawablePadding="6dp"
@@ -98,6 +110,7 @@
 
                 <!-- Detection result -->
                 <LinearLayout
+                    android:id="@+id/panel_result"
                     style="@style/RobotPanel"
                     android:tag="1">
 

@@ -491,7 +491,7 @@
     <string name="track_label">#%1$d %2$s</string>
     <string name="total_seen">累计目标</string>
     <string name="no_detector">未加载检测模型</string>
-    <string name="detector_missing">请将 YOLOv8-seg 模型（%1$s）放入 app/src/main/assets 或 models 文件夹</string>
+    <string name="detector_missing">请将 YOLO 模型 (.tflite) 放入 app/src/main/assets 或 models 文件夹</string>
     <string name="detector_failed">无法加载 %1$s：%2$s</string>
     <string name="confidence_threshold">置信度阈值</string>
     <string name="total">总计</string>

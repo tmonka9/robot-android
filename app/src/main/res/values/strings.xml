@@ -492,7 +492,7 @@
     <string name="track_label">#%1$d %2$s</string>
     <string name="total_seen">Objects seen</string>
     <string name="no_detector">No detector model</string>
-    <string name="detector_missing">Add a YOLOv8-seg model (%1$s) to app/src/main/assets or the models folder</string>
+    <string name="detector_missing">Add a YOLO model (.tflite) to app/src/main/assets or the models folder</string>
     <string name="detector_failed">Could not load %1$s: %2$s</string>
     <string name="confidence_threshold">Confidence Threshold</string>
     <string name="total">Total</string>

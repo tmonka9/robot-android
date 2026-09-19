@@ -491,7 +491,7 @@
     <string name="track_label">#%1$d %2$s</string>
     <string name="total_seen">検出累計</string>
     <string name="no_detector">検出モデルなし</string>
-    <string name="detector_missing">YOLOv8-seg モデル (%1$s) を app/src/main/assets または models フォルダーに追加してください</string>
+    <string name="detector_missing">YOLO モデル (.tflite) を app/src/main/assets か models フォルダーに入れてください</string>
     <string name="detector_failed">%1$s を読み込めませんでした: %2$s</string>
     <string name="confidence_threshold">信頼度しきい値</string>
     <string name="total">合計</string>
