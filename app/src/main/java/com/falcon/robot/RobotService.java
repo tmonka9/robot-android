@@ -901,8 +901,17 @@ public class RobotService extends Service implements LifecycleOwner {
                 }
                 if (engine.isReady()) {
                     transcribe(samples);
-                } else {
-                    for (Listener listener : listeners) {
+                    return;
+                }
+                // Nothing else is listening, so say what the command model nearly heard rather
+                // than "nothing recognised": being told it almost had "Turn Left" is the
+                // difference between saying it again and assuming the microphone is dead.
+                VoiceCommands.Action guess = VoiceCommands.actionByName(result.label);
+                for (Listener listener : listeners) {
+                    if (guess != null) {
+                        listener.onTranscript(getString(guess.labelRes), result.confidence * 100f,
+                                null, R.string.command_unsure);
+                    } else {
                         listener.onTranscript("", -1f, null, R.string.no_speech);
                     }
                 }

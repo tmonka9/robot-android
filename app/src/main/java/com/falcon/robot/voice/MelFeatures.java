@@ -92,7 +92,26 @@ public final class MelFeatures {
      * deviation so that how loudly it was said does not matter.
      */
     public float[] extract(float[] audio) {
-        float[] clipped = oneClip(audio);
+        return features(oneClip(audio));
+    }
+
+    /** How long a stretch of audio one set of features covers. */
+    public int clip() {
+        return clip;
+    }
+
+    /**
+     * One second starting at {@code offset}, so that a phrase can be examined a window at a time
+     * rather than only where it happens to be loudest: "move forward" is loudest on "move".
+     */
+    public float[] extractAt(float[] audio, int offset) {
+        float[] window = new float[clip];
+        int length = Math.max(0, Math.min(clip, audio.length - offset));
+        System.arraycopy(audio, offset, window, 0, length);
+        return features(window);
+    }
+
+    private float[] features(float[] clipped) {
         float[] out = new float[frames * mels];
         for (int t = 0; t < frames; t++) {
             java.util.Arrays.fill(re, 0f);

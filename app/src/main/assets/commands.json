@@ -10,7 +10,7 @@
     "Turn Left",
     "Turn Right"
   ],
-  "threshold": 0.88,
+  "threshold": 0.95,
   "sample_rate": 16000,
   "clip_samples": 16000,
   "frame": 400,
@@ -20,5 +20,5 @@
   "fmin": 20.0,
   "fmax": 7600.0,
   "frames": 98,
-  "validation_accuracy": 0.8192
+  "validation_accuracy": 0.8913
 }

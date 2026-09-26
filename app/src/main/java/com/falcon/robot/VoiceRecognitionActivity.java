@@ -301,6 +301,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
                 if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
                 return;
             }
+            if (result == R.string.command_unsure) { // nearly a command, not surely enough
+                toast(getString(R.string.command_unsure, text, Math.round(confidence)));
+                if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
+                return;
+            }
             transcript = text;
             currentAction = action;
             addHistory(text, result, confidence);

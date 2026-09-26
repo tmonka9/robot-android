@@ -26,6 +26,7 @@ public final class SpeechRecorder {
 
     private static final int CHUNK_SAMPLES = SAMPLE_RATE / 50;     // 20 ms
     private static final float SILENCE_TAIL_SEC = 0.8f;
+    private static final float PRE_ROLL_SEC = 0.3f;    // kept back, so a word keeps its start
     private static final float MIN_SPEECH_SEC = 0.4f;
     private static final float MAX_SPEECH_SEC = 15f;
     private static final float NOISE_CALIBRATION_SEC = 0.6f;
@@ -106,6 +107,9 @@ public final class SpeechRecorder {
 
             short[] chunk = new short[CHUNK_SAMPLES];
             float[] speech = new float[(int) (MAX_SPEECH_SEC * SAMPLE_RATE)];
+            float[] preRoll = new float[(int) (PRE_ROLL_SEC * SAMPLE_RATE)];
+            int preRollAt = 0;
+            int preRollFilled = 0;
             int speechLength = 0;
             float noiseFloor = 0f;
             int calibrationChunks = 0;
@@ -137,11 +141,32 @@ public final class SpeechRecorder {
                 }
                 post(level, speaking || loud);
 
+                boolean wasSpeaking = speaking;
                 if (loud) {
                     speaking = true;
                     silenceSec = 0f;
                 } else if (speaking) {
                     silenceSec += CHUNK_SAMPLES / (float) SAMPLE_RATE;
+                }
+
+                if (speaking && !wasSpeaking) {
+                    // A word is already under way by the time it is loud enough to notice, and
+                    // what is missing is its first consonant — which is most of the difference
+                    // between "stop" and "top", or "forward" and "onward". Put it back from what
+                    // was heard just before.
+                    int have = Math.min(preRollFilled, preRoll.length);
+                    for (int i = 0; i < have; i++) {
+                        speech[speechLength++] = preRoll[(preRollAt - have + i + preRoll.length)
+                                % preRoll.length];
+                    }
+                }
+
+                if (!speaking) {
+                    for (int i = 0; i < read; i++) {
+                        preRoll[preRollAt] = chunk[i] / 32768f;
+                        preRollAt = (preRollAt + 1) % preRoll.length;
+                    }
+                    preRollFilled = Math.min(preRoll.length, preRollFilled + read);
                 }
 
                 if (speaking) {
@@ -159,6 +184,7 @@ public final class SpeechRecorder {
                         speechLength = 0;
                         speaking = false;
                         silenceSec = 0f;
+                        preRollFilled = 0; // what was heard before this utterance is stale now
                     }
                 }
             }

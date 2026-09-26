@@ -446,19 +446,37 @@ def pick_threshold(model, features, targets, labels, ceiling=0.02):
     """
     The lowest confidence that still keeps false alarms rare: the robot moving because someone
     said something else is worse than it not hearing you and you saying it again.
+
+    Both sides of that trade are printed, because the number alone says nothing useful: a
+    threshold that never lets a stray word through and also never lets a command through is not a
+    good threshold, and a model too weak to have a good one should be visible as such.
     """
     probabilities = model.predict(features, verbose=0)
     best = probabilities.max(axis=1)
     predicted = probabilities.argmax(axis=1)
-    rejects = [i for i, t in enumerate(targets) if labels[t] in (SILENCE, UNKNOWN)]
-    if not rejects:
+    said = np.asarray(targets)
+    ignore = np.array([labels[i] in (SILENCE, UNKNOWN) for i in range(len(labels))])
+    commands = ~ignore[said]
+    rejects = ~commands
+    if not rejects.any():
         return 0.6
-    for threshold in np.arange(0.30, 0.96, 0.01):
-        accepted = sum(1 for i in rejects
-                       if best[i] >= threshold and labels[predicted[i]] not in (SILENCE, UNKNOWN))
-        if accepted / len(rejects) <= ceiling:
-            return round(float(threshold), 2)
-    return 0.95
+
+    print("\nconfidence  commands acted on  other sounds acted on")
+    chosen = None
+    for threshold in np.arange(0.30, 0.99, 0.01):
+        acted = (best >= threshold) & ~ignore[predicted]
+        obeyed = float(np.mean(acted[commands] & (predicted[commands] == said[commands])))
+        stray = float(np.mean(acted[rejects]))
+        if chosen is None and stray <= ceiling:
+            chosen = round(float(threshold), 2)
+        if abs(threshold * 100 - round(threshold * 100 / 5) * 5) < 0.5:  # every 0.05, to read
+            print("  %.2f        %5.1f%%             %5.1f%%%s"
+                  % (threshold, 100 * obeyed, 100 * stray,
+                     "   <-- chosen" if chosen == round(float(threshold), 2) else ""))
+    if chosen is None:
+        print("\nNo threshold keeps stray sounds under %.0f%%. The model needs more recordings --"
+              " especially _unknown ones." % (100 * ceiling))
+    return chosen if chosen is not None else 0.95
 
 
 def report(model, features, targets, labels):
@@ -511,29 +529,36 @@ def train(args):
             print("\nnothing recorded for %s: left out of the model rather than left untrained."
                   % ", ".join(left_out))
 
-    print("\nextracting features for %d recordings x %d copies" % (len(clips), args.augment + 1))
-    copies = args.augment + 1
-    features = np.empty((len(clips) * copies, FRAMES, MELS), dtype=np.float32)
-    encoded = np.empty(len(features), dtype=np.int32)
-    block = 256  # a few hundred at a time: any more and the batched FFT wants gigabytes
-    at = 0
-    for start in range(0, len(clips), block):
-        batch = clips[start:start + block]
-        for copy in range(copies):
-            audio = batch if copy == 0 else [augment(c, noises, rng) for c in batch]
-            values = log_mel_batch(audio)
-            features[at:at + len(values)] = values
-            encoded[at:at + len(values)] = targets[start:start + block]
-            at += len(values)
-        if start % (block * 20) == 0:
-            print("  %d/%d" % (start, len(clips)))
-    features = features[..., np.newaxis]
+    # The recordings are split before they are augmented, not after: an altered copy of a
+    # recording the model trained on tests nothing, and validating against such copies makes the
+    # model look better than it is -- and then picks a confidence threshold that does not hold up
+    # in the room. Validation is untouched recordings only.
+    order = rng.permutation(len(clips))
+    cut = int(len(clips) * (1 - args.validation))
+    train_index, valid_index = order[:cut], order[cut:]
 
-    order = rng.permutation(len(features))
-    features, encoded = features[order], encoded[order]
-    split = int(len(features) * (1 - args.validation))
-    train_x, train_y = features[:split], encoded[:split]
-    valid_x, valid_y = features[split:], encoded[split:]
+    def extract(indexes, copies):
+        out = np.empty((len(indexes) * copies, FRAMES, MELS), dtype=np.float32)
+        said = np.empty(len(out), dtype=np.int32)
+        block = 256  # a few hundred at a time: any more and the batched FFT wants gigabytes
+        at = 0
+        for start in range(0, len(indexes), block):
+            chunk = indexes[start:start + block]
+            batch = [clips[i] for i in chunk]
+            for copy in range(copies):
+                audio = batch if copy == 0 else [augment(c, noises, rng) for c in batch]
+                values = log_mel_batch(audio)
+                out[at:at + len(values)] = values
+                said[at:at + len(values)] = [targets[i] for i in chunk]
+                at += len(values)
+            if start % (block * 20) == 0:
+                print("  %d/%d" % (start, len(indexes)))
+        return out[..., np.newaxis], said
+
+    print("\nextracting features: %d recordings x %d copies, %d held back"
+          % (len(train_index), args.augment + 1, len(valid_index)))
+    train_x, train_y = extract(train_index, args.augment + 1)
+    valid_x, valid_y = extract(valid_index, 1)
     print("training on %d, validating on %d, %d classes" % (len(train_x), len(valid_x), len(labels)))
 
     present, occurrences = np.unique(train_y, return_counts=True)
@@ -549,7 +574,8 @@ def train(args):
               ])
 
     accuracy = report(model, valid_x, valid_y, labels)
-    threshold = args.threshold if args.threshold else pick_threshold(model, valid_x, valid_y, labels)
+    threshold = args.threshold if args.threshold else pick_threshold(
+        model, valid_x, valid_y, labels, args.false_accepts)
     print("confidence threshold %.2f" % threshold)
 
     export(model, labels, threshold, accuracy, args.out,
@@ -695,6 +721,8 @@ def main():
     t.add_argument("--limit", type=int, default=0, help="recordings per label, 0 for all of them")
     t.add_argument("--validation", type=float, default=0.2)
     t.add_argument("--threshold", type=float, default=0.0, help="0 picks one from the results")
+    t.add_argument("--false-accepts", type=float, default=0.02,
+                   help="how often the robot may act on something that was not a command")
     t.add_argument("--assets", action="store_true",
                    help="write into app/src/main/assets, to ship the model inside the APK")
     t.add_argument("--keep-empty", action="store_true",
