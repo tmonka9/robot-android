@@ -422,7 +422,7 @@
     <string-array name="adv_language_options">
         <item>自动检测</item>
         <item>英语</item>
-        <!-- <item>韩语</item> -->
+        <item>韩语</item>
         <item>中文（普通话）</item>
         <item>日语</item>
         <item>西班牙语</item>
@@ -432,7 +432,7 @@
     <string-array name="adv_language_codes">
         <item>auto</item>
         <item>en</item>
-        <!-- <item>ko</item> -->
+        <item>ko</item>
         <item>zh</item>
         <item>ja</item>
         <item>es</item>

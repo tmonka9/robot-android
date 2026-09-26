@@ -423,7 +423,7 @@
     <string-array name="adv_language_options">
         <item>Auto detect</item>
         <item>English</item>
-        <!-- <item>Korean</item> -->
+        <item>Korean</item>
         <item>Chinese (Mandarin)</item>
         <item>Japanese</item>
         <item>Spanish</item>
@@ -433,7 +433,7 @@
     <string-array name="adv_language_codes">
         <item>auto</item>
         <item>en</item>
-        <!-- <item>ko</item> -->
+        <item>ko</item>
         <item>zh</item>
         <item>ja</item>
         <item>es</item>
@@ -533,6 +533,7 @@
     <string name="language_english" translatable="false">English</string>
     <string name="language_chinese" translatable="false">中文</string>
     <string name="language_japanese" translatable="false">日本語</string>
+    <string name="language_korean" translatable="false">한국어</string>
 
     <string name="settings_system">System Settings</string>
     <string name="settings_system_sub">Language / Device / About</string>

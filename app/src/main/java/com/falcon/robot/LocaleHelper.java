@@ -21,7 +21,7 @@ public final class LocaleHelper {
     public static final String SYSTEM = "";
 
     /** Supported languages, in the order the settings dialog lists them. */
-    public static final String[] LANGUAGES = {SYSTEM, "en", "zh", "ja"};
+    public static final String[] LANGUAGES = {SYSTEM, "en", "zh", "ja", "ko"};
 
     private static final String PREFS = "settings";
     private static final String KEY_LANGUAGE = "language";
@@ -46,6 +46,8 @@ public final class LocaleHelper {
                 return R.string.language_chinese;
             case "ja":
                 return R.string.language_japanese;
+            case "ko":
+                return R.string.language_korean;
             default:
                 return R.string.language_system;
         }
