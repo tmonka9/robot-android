@@ -400,6 +400,8 @@
     <string name="loading_model_any">正在加载模型…</string>
     <string name="loading_model">正在加载 %s…</string>
     <string name="model_loaded">%s 已加载</string>
+    <string name="command_model_ready">命令模型就绪：%d 条命令</string>
+    <string name="command_model_partial">命令模型就绪：%1$d / %2$d 条命令 — 其余由语音模型识别</string>
     <string name="model_too_large">模型约需 %1$d MB 内存，但可用内存仅 %2$d MB — 请改用更小的模型，例如 ggml-base.bin</string>
     <string name="model_load_failed">无法加载 %s</string>
     <string name="mic_error">麦克风错误：%s</string>

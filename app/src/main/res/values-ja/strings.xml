@@ -400,6 +400,8 @@
     <string name="loading_model_any">モデルを読み込み中…</string>
     <string name="loading_model">%s を読み込んでいます…</string>
     <string name="model_loaded">%s を読み込みました</string>
+    <string name="command_model_ready">コマンドモデル準備完了：%d 件</string>
+    <string name="command_model_partial">コマンドモデル準備完了：%1$d / %2$d 件 — 残りは音声モデルが認識</string>
     <string name="model_too_large">モデルには約 %1$d MB のメモリが必要ですが、空きは %2$d MB です — ggml-base.bin などの小さいモデルをご利用ください</string>
     <string name="model_load_failed">%s を読み込めませんでした</string>
     <string name="mic_error">マイクエラー: %s</string>

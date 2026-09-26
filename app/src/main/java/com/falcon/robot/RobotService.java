@@ -40,6 +40,7 @@ import com.falcon.robot.detect.YoloSegmenter;
 import com.falcon.robot.face.FaceAnalyzer;
 import com.falcon.robot.face.FaceDatabase;
 import com.falcon.robot.face.FaceEmbedder;
+import com.falcon.robot.voice.CommandRecognizer;
 import com.falcon.robot.voice.CustomPhrases;
 import com.falcon.robot.voice.SpeechRecorder;
 import com.falcon.robot.voice.VoiceCommands;
@@ -182,6 +183,8 @@ public class RobotService extends Service implements LifecycleOwner {
 
     // voice
     private WhisperEngine engine;
+    /** The small command model when one is installed; whisper is only the fallback. */
+    private volatile CommandRecognizer commandRecognizer;
     private SpeechRecorder recorder;
     private CustomPhrases customPhrases;
     private String speechModel;
@@ -270,7 +273,12 @@ public class RobotService extends Service implements LifecycleOwner {
             if (detectionAnalyzer != null) detectionAnalyzer.close();
         });
         if (tts != null) tts.shutdown();
-        speechExecutor.execute(() -> engine.release());
+        final CommandRecognizer recognizer = commandRecognizer;
+        commandRecognizer = null;
+        speechExecutor.execute(() -> {
+            engine.release();
+            if (recognizer != null) recognizer.close();
+        });
         cameraExecutor.shutdown();
         speechExecutor.shutdown();
         super.onDestroy();
@@ -786,12 +794,43 @@ public class RobotService extends Service implements LifecycleOwner {
     }
 
     private void startVoice() {
-        loadSpeechModel(null);
+        loadCommandModel();
         recorder.start();
     }
 
     private void stopVoice() {
         recorder.stop();
+    }
+
+    /**
+     * Looks for the small command model first. It is all the robot needs to answer to its own
+     * commands, so whisper — several hundred megabytes of it — is only loaded when there is no
+     * command model, or when the one there is does not know every command: the bundled model
+     * covers the seven orders that exist as words in the corpus it was built from, and the other
+     * seven stay with whisper until someone records them.
+     */
+    private void loadCommandModel() {
+        if (commandRecognizer != null) return;
+        final int threads = Math.max(2, Runtime.getRuntime().availableProcessors() - 1);
+        speechExecutor.execute(() -> {
+            final CommandRecognizer recognizer = CommandRecognizer.load(this, threads);
+            main.post(() -> {
+                commandRecognizer = recognizer;
+                if (recognizer == null) {
+                    loadSpeechModel(null);
+                } else {
+                    int known = recognizer.commands().size();
+                    int all = VoiceCommands.actions().size();
+                    if (known < all) {
+                        message(getString(R.string.command_model_partial, known, all));
+                        loadSpeechModel(null);
+                    } else {
+                        message(getString(R.string.command_model_ready, known));
+                    }
+                }
+                notifyState();
+            });
+        });
     }
 
     /** Loads a ggml model; {@code modelName} null picks the bundled one. */
@@ -825,7 +864,7 @@ public class RobotService extends Service implements LifecycleOwner {
 
         @Override
         public void onUtterance(float[] samples) {
-            transcribe(samples);
+            recognise(samples);
         }
 
         @Override
@@ -835,6 +874,41 @@ public class RobotService extends Service implements LifecycleOwner {
             setVoiceEnabled(false);
         }
     };
+
+    /**
+     * One utterance. The command model gets it first, since the robot's own orders are all it has
+     * to tell apart; whisper is only asked about what the command model does not know, and only
+     * when a whisper model happens to be loaded.
+     *
+     * <p>The wake word is a transcript rule, so it applies to the whisper path. A command model
+     * answers to the words it was trained on; train the wake word in as a label to require it.
+     */
+    private void recognise(final float[] samples) {
+        final CommandRecognizer recognizer = commandRecognizer;
+        if (recognizer == null) {
+            transcribe(samples);
+            return;
+        }
+        speechExecutor.execute(() -> {
+            final CommandRecognizer.Result result = recognizer.classify(samples);
+            main.post(() -> {
+                if (result.isCommand(recognizer.threshold())) {
+                    VoiceCommands.Action action = VoiceCommands.actionByName(result.label);
+                    if (action != null) {
+                        runAction(action, getString(action.labelRes), result.confidence * 100f);
+                        return;
+                    }
+                }
+                if (engine.isReady()) {
+                    transcribe(samples);
+                } else {
+                    for (Listener listener : listeners) {
+                        listener.onTranscript("", -1f, null, R.string.no_speech);
+                    }
+                }
+            });
+        });
+    }
 
     private void transcribe(final float[] samples) {
         if (!engine.isReady()) {
@@ -880,7 +954,11 @@ public class RobotService extends Service implements LifecycleOwner {
         }
         VoiceCommands.Action action = customPhrases.match(text);
         if (action == null) action = VoiceCommands.match(text);
+        runAction(action, text, confidence);
+    }
 
+    /** Carries out a recognised action, whichever model recognised it, and tells the pages. */
+    private void runAction(VoiceCommands.Action action, String text, float confidence) {
         int result;
         if (action == null) {
             result = R.string.result_no_match;
