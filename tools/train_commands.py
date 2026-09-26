@@ -579,34 +579,104 @@ def train(args):
     print("confidence threshold %.2f" % threshold)
 
     export(model, labels, threshold, accuracy, args.out,
-           os.path.join(args.repo, "app", "src", "main", "assets") if args.assets else None)
+           os.path.join(args.repo, "app", "src", "main", "assets") if args.assets else None,
+           args.repo)
 
 
-def convert(model):
-    """To TFLite, whichever way this tensorflow will do it."""
+def app_runtime(repo_root, fallback="2.14.0"):
+    """The TFLite version the app links, read from app/build.gradle so it cannot drift."""
+    gradle = os.path.join(repo_root, "app", "build.gradle")
+    if os.path.exists(gradle):
+        with open(gradle, encoding="utf-8") as f:
+            found = re.search(r"tensorflow-lite:([0-9.]+)", f.read())
+        if found:
+            return found.group(1)
+    return fallback
+
+
+def as_version(text):
+    parts = [int(p) for p in text.split(".") if p.isdigit()]
+    return tuple(parts + [0] * (3 - len(parts)))[:3]
+
+
+def describe(flat):
+    """(the runtime version this model needs, its operators) out of the flatbuffer itself."""
+    from tensorflow.lite.python import schema_py_generated as schema
+
+    model = schema.Model.GetRootAsModel(bytearray(flat), 0)
+    names = {v: k for k, v in schema.BuiltinOperator.__dict__.items() if isinstance(v, int)}
+    ops = []
+    for i in range(model.OperatorCodesLength()):
+        code = model.OperatorCodes(i)
+        builtin = code.BuiltinCode() or code.DeprecatedBuiltinCode()
+        ops.append("%s v%d" % (names.get(builtin, builtin), code.Version()))
+    needs = ""
+    for i in range(model.MetadataLength()):
+        entry = model.Metadata(i)
+        if entry.Name().decode() != "min_runtime_version":
+            continue
+        buffer = model.Buffers(entry.Buffer())
+        if buffer.DataLength():
+            raw = bytes(buffer.DataAsNumpy()).decode("ascii", "ignore")
+            needs = "".join(c for c in raw if c.isdigit() or c == ".").strip(".")
+    return needs, sorted(ops)
+
+
+def convert(model, runtime="2.14.0"):
+    """
+    To TFLite, and to something the app can actually open.
+
+    A new converter and an old runtime is its own kind of trouble: quantising a dense layer per
+    channel needs FULLY_CONNECTED version 12, and a tablet running TFLite 2.14 answers "didn't
+    find op for builtin opcode" and loads nothing. Quantising is worth three quarters of the size,
+    but only if the result opens, so the model is checked against the runtime the app links and
+    exported as plain floats when it does not fit.
+    """
     import tempfile
 
     import tensorflow as tf
 
-    def quantise(converter):
-        # dynamic range: a quarter of the size, and the inputs and outputs stay floats, which is
-        # what CommandRecognizer feeds it
-        converter.optimizations = [tf.lite.Optimize.DEFAULT]
-        return converter.convert()
+    def build(quantised):
+        def run(converter):
+            if quantised:
+                converter.optimizations = [tf.lite.Optimize.DEFAULT]
+            return converter.convert()
 
-    try:
-        return quantise(tf.lite.TFLiteConverter.from_keras_model(model))
-    except Exception as direct:  # Keras 3 converts through a saved model instead
-        print("converting through a saved model (%s)" % type(direct).__name__)
-        with tempfile.TemporaryDirectory() as folder:
-            saved = os.path.join(folder, "saved")
-            model.export(saved)
-            return quantise(tf.lite.TFLiteConverter.from_saved_model(saved))
+        try:
+            return run(tf.lite.TFLiteConverter.from_keras_model(model))
+        except Exception as direct:  # Keras 3 converts through a saved model instead
+            print("converting through a saved model (%s)" % type(direct).__name__)
+            with tempfile.TemporaryDirectory() as folder:
+                saved = os.path.join(folder, "saved")
+                model.export(saved)
+                return run(tf.lite.TFLiteConverter.from_saved_model(saved))
+
+    flat = build(True)
+    needs, ops = describe(flat)
+    if as_version(needs) > as_version(runtime):
+        print("quantised: %s, needs TFLite %s but the app has %s -- exporting floats instead"
+              % (", ".join(ops), needs, runtime))
+        flat = build(False)
+        needs, ops = describe(flat)
+        if as_version(needs) > as_version(runtime):
+            sys.exit("even as floats this model needs TFLite %s (%s). Raise tensorflow-lite in "
+                     "app/build.gradle to %s or later, or convert with an older tensorflow."
+                     % (needs, ", ".join(ops), needs))
+    print("operators: %s" % ", ".join(ops))
+    print("needs TFLite %s or newer; the app has %s" % (needs or "?", runtime))
+    return flat
 
 
-def export(model, labels, threshold, accuracy, out_dir, assets_dir=None):
+def export(model, labels, threshold, accuracy, out_dir, assets_dir=None, repo_root="."):
     os.makedirs(out_dir, exist_ok=True)
-    flat = convert(model)
+    flat = convert(model, app_runtime(repo_root))
+
+    # Keep the trained model itself: exporting it differently later (other quantisation, another
+    # runtime) should not mean training it again.
+    try:
+        model.save(os.path.join(out_dir, "commands.keras"))
+    except Exception as save:  # not worth failing an otherwise good run over
+        print("could not save the keras model (%s)" % type(save).__name__)
 
     model_path = os.path.join(out_dir, "commands.tflite")
     with open(model_path, "wb") as f:
