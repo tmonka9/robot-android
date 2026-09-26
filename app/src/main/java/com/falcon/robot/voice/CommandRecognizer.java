@@ -117,6 +117,19 @@ public final class CommandRecognizer {
         }
     }
 
+    /**
+     * True when there is a command model to load, without loading it — so the Voice page can tell
+     * that the robot will understand its own orders before whisper has anything to say about it.
+     */
+    public static boolean exists(Context context) {
+        if (new File(WhisperEngine.getModelDir(context), MODEL).exists()) return true;
+        try (InputStream in = context.getAssets().open(MODEL)) {
+            return in != null;
+        } catch (IOException notBundled) {
+            return false;
+        }
+    }
+
     /** Fails loudly here rather than quietly recognising nothing later. */
     private void checkShape() {
         int[] shape = interpreter.getInputTensor(0).shape();

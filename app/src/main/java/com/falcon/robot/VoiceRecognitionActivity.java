@@ -31,6 +31,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 
+import com.falcon.robot.voice.CommandRecognizer;
 import com.falcon.robot.voice.CustomPhrases;
 import com.falcon.robot.voice.VoiceCommands;
 import com.falcon.robot.voice.WhisperEngine;
@@ -231,8 +232,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
             micPermission.launch(Manifest.permission.RECORD_AUDIO);
             return;
         }
-        if (!service.getEngine().isReady() && !service.isLoadingSpeechModel()) {
-            toast(engineProblem()); // still listens, but nothing will be transcribed
+        if (!service.getEngine().isReady() && !service.isLoadingSpeechModel()
+                && !CommandRecognizer.exists(this)) {
+            // with a command model there is nothing wrong: the robot's own orders are understood
+            // without whisper, and only anything else said to it goes unrecognised
+            toast(engineProblem());
         }
         service.setVoiceEnabled(true);
         liveWave.setActive(true);

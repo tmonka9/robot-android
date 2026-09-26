@@ -3,3 +3,15 @@
 pip install -U ultralytics
 yolo export model=yolo26n.pt format=tflite imgsz=640
 cp yolo26n_saved_model/yolo26n_float32.tflite app/src/main/assets/
+
+# voice commands (app/src/main/assets/commands.tflite + commands.json)
+pip install tensorflow
+python tools/train_commands.py import-speech-commands --data data/commands
+python tools/train_commands.py train --data data/commands --limit 3000 --augment 1 --epochs 25 --assets
+
+# the corpus only has 7 of the 14 orders; record the rest in the room the robot will work in
+python tools/train_commands.py record --label "Wave" --count 30 --data data/commands
+
+# not in git (see .gitignore), so copy these into the tree by hand for an offline build:
+#   app/src/main/assets/ggml-small.bin   whisper model, 487 MB
+#   app/src/main/cpp/whisper.cpp/        git clone --depth 1 --branch v1.7.4 https://github.com/ggerganov/whisper.cpp

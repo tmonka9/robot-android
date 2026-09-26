@@ -132,6 +132,26 @@ def log_mel(audio):
     return ((out - out.mean()) / (out.std() + 1e-5)).astype(np.float32)
 
 
+# Frame offsets, so that a whole recording becomes one array rather than 98 slices.
+FRAME_INDEX = np.arange(FRAMES)[:, None] * HOP + np.arange(FRAME)[None, :]
+
+
+def log_mel_batch(clips):
+    """
+    `log_mel` for a few hundred recordings at once: one batched FFT and one matrix multiply
+    instead of 98 of each per recording, which is the difference between minutes and hours over a
+    corpus. `self-test` checks it against `log_mel` -- that is what keeps it honest, since it is
+    `log_mel` that mirrors MelFeatures.java.
+    """
+    batch = np.stack([one_clip(c) for c in clips])                  # (n, CLIP)
+    frames = batch[:, FRAME_INDEX] * WINDOW                         # (n, FRAMES, FRAME)
+    power = np.abs(np.fft.rfft(frames, NFFT, axis=-1)) ** 2         # (n, FRAMES, bins)
+    mel = np.log(power @ FILTERS.T + 1e-6)                          # (n, FRAMES, MELS)
+    mean = mel.mean(axis=(1, 2), keepdims=True)
+    deviation = mel.std(axis=(1, 2), keepdims=True)
+    return ((mel - mean) / (deviation + 1e-5)).astype(np.float32)
+
+
 # --------------------------------------------------------------------------------------------
 # Recordings
 # --------------------------------------------------------------------------------------------
@@ -408,7 +428,12 @@ def build_model(classes):
         x = layers.BatchNormalization()(x)
         x = layers.ReLU()(x)
         x = layers.MaxPooling2D(2)(x)
-    x = layers.GlobalAveragePooling2D()(x)
+    # Where in the second a word was said, and in which bands, is most of what tells these words
+    # apart, so the time-frequency layout goes into the classifier instead of being averaged away.
+    # Averaging it away (a global pool here) underfits: 82% on the corpus recordings.
+    x = layers.Flatten()(x)
+    x = layers.Dropout(0.3)(x)
+    x = layers.Dense(128, activation="relu")(x)
     x = layers.Dropout(0.3)(x)
     outputs = layers.Dense(classes, activation="softmax", name="command")(x)
     model = keras.Model(inputs, outputs, name="robot_commands")
@@ -487,15 +512,22 @@ def train(args):
                   % ", ".join(left_out))
 
     print("\nextracting features for %d recordings x %d copies" % (len(clips), args.augment + 1))
-    features, encoded = [], []
-    for clip, target in zip(clips, targets):
-        features.append(log_mel(clip))
-        encoded.append(target)
-        for _ in range(args.augment):
-            features.append(log_mel(augment(clip, noises, rng)))
-            encoded.append(target)
-    features = np.asarray(features, dtype=np.float32)[..., np.newaxis]
-    encoded = np.asarray(encoded, dtype=np.int32)
+    copies = args.augment + 1
+    features = np.empty((len(clips) * copies, FRAMES, MELS), dtype=np.float32)
+    encoded = np.empty(len(features), dtype=np.int32)
+    block = 256  # a few hundred at a time: any more and the batched FFT wants gigabytes
+    at = 0
+    for start in range(0, len(clips), block):
+        batch = clips[start:start + block]
+        for copy in range(copies):
+            audio = batch if copy == 0 else [augment(c, noises, rng) for c in batch]
+            values = log_mel_batch(audio)
+            features[at:at + len(values)] = values
+            encoded[at:at + len(values)] = targets[start:start + block]
+            at += len(values)
+        if start % (block * 20) == 0:
+            print("  %d/%d" % (start, len(clips)))
+    features = features[..., np.newaxis]
 
     order = rng.permutation(len(features))
     features, encoded = features[order], encoded[order]
@@ -636,6 +668,14 @@ def self_test(_args):
         assert np.array_equal(features, again)
         print("%-6s -> %s  mean %+.3f  sd %.3f" % (name, features.shape, features.mean(),
                                                    features.std()))
+
+    # The batched path is what training actually uses, so it has to give what log_mel gives.
+    clips = [rng.standard_normal(CLIP) * 0.3 for _ in range(8)]
+    clips[3] = rng.standard_normal(9000) * 0.2   # a short one, to check the padding agrees too
+    batched = log_mel_batch(clips)
+    worst = max(float(np.max(np.abs(batched[i] - log_mel(c)))) for i, c in enumerate(clips))
+    print("batched front end matches one at a time to %.2e" % worst)
+    assert worst < 1e-4, worst
     print("front end agrees with MelFeatures.java: %d frames x %d mels" % (FRAMES, MELS))
 
 
