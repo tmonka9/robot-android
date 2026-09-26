@@ -155,6 +155,10 @@
     <string name="mode">モード</string>
     <string name="robot_subtitle">ロボットの移動と動作を制御します。</string>
     <string name="robot_status">ロボット状態</string>
+    <string name="full_screen">全画面表示</string>
+    <string name="exit_full_screen">全画面表示を終了</string>
+    <string name="collapse">パネルを折りたたむ</string>
+    <string name="expand">パネルを展開</string>
     <string name="temperature">温度</string>
     <string name="mode_remote">遠隔操作</string>
     <string name="speed_slow">低速</string>

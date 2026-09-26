@@ -3,13 +3,16 @@ package com.falcon.robot;
 import android.app.AlertDialog;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -63,6 +66,11 @@ public class RobotControlActivity extends BaseActivity {
     private TextView[] poses;
     private TextView patrol;
     private TextView follow;
+
+    /** Robot Status panel state: filling the page, folded to its title bar, and its normal height. */
+    private boolean fullscreen;
+    private boolean statusCollapsed;
+    private int panelMinHeight;
 
     // simulated odometry
     private float posX;
@@ -168,8 +176,77 @@ public class RobotControlActivity extends BaseActivity {
         // keep the robot figure (right half of the artwork) in view beside the status table
         robot3D = findViewById(R.id.robot_3d);
         robot3D.setModelAsset(ROBOT_MODEL_ASSET); // used when the file is there, ignored otherwise
-        findViewById(R.id.robot_status_panel).setClipToOutline(true);
+
+        View panel = findViewById(R.id.robot_status_panel);
+        panel.setClipToOutline(true);
+        panelMinHeight = panel.getMinimumHeight(); // the height to put back when it is expanded
+
+        int white = color(R.color.text_primary);
+        ImageView full = findViewById(R.id.robot_fullscreen);
+        full.setColorFilter(white, PorterDuff.Mode.SRC_IN);
+        full.setOnClickListener(v -> toggleFullscreen());
+        ImageView collapse = findViewById(R.id.robot_collapse);
+        collapse.setColorFilter(white, PorterDuff.Mode.SRC_IN);
+        collapse.setOnClickListener(v -> toggleStatusPanel());
+
         refreshPosition();
+    }
+
+    /**
+     * Gives the whole page to the robot by hiding the panels beside and below it, the way the
+     * camera pages do, and puts them back on the second press.
+     */
+    private void toggleFullscreen() {
+        fullscreen = !fullscreen;
+        int visibility = fullscreen ? View.GONE : View.VISIBLE;
+        LinearLayout columns = findViewById(R.id.columns);
+        for (int i = 1; i < columns.getChildCount(); i++) {
+            columns.getChildAt(i).setVisibility(visibility);
+        }
+        findViewById(R.id.columns_bottom).setVisibility(visibility);
+
+        ImageView button = findViewById(R.id.robot_fullscreen);
+        button.setImageResource(fullscreen ? R.drawable.ic_fullscreen_exit : R.drawable.ic_fullscreen);
+        button.setContentDescription(getString(fullscreen ? R.string.exit_full_screen : R.string.full_screen));
+    }
+
+    /** Folds the panel down to its title bar, and back to the size it was. */
+    private void toggleStatusPanel() {
+        statusCollapsed = !statusCollapsed;
+        if (statusCollapsed && fullscreen) toggleFullscreen(); // nothing to be full screen with
+
+        int visibility = statusCollapsed ? View.GONE : View.VISIBLE;
+        robot3D.setVisibility(visibility);
+        findViewById(R.id.robot_status_table).setVisibility(visibility);
+        findViewById(R.id.robot_position).setVisibility(visibility);
+        findViewById(R.id.robot_fullscreen).setVisibility(visibility);
+
+        View panel = findViewById(R.id.robot_status_panel);
+        panel.setMinimumHeight(statusCollapsed ? 0 : panelMinHeight);
+        if (statusCollapsed) {
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) panel.getLayoutParams();
+            lp.height = ViewGroup.LayoutParams.WRAP_CONTENT; // shrink to the title chip
+            // stacked, the weight is its share of the height, so drop it and let the panel below
+            // have the room; side by side it is the share of the width, which has to stay
+            if (!getResources().getBoolean(R.bool.two_columns)) lp.weight = 0f;
+            panel.setLayoutParams(lp);
+        } else {
+            setupColumns(R.id.columns); // puts the row's own sizes back, wide or stacked
+        }
+
+        ImageView button = findViewById(R.id.robot_collapse);
+        button.setImageResource(statusCollapsed ? R.drawable.ic_chevron_down : R.drawable.ic_chevron_up);
+        button.setContentDescription(getString(statusCollapsed ? R.string.expand : R.string.collapse));
+    }
+
+    /** Back leaves full screen before it leaves the page. */
+    @Override
+    public void onBackPressed() {
+        if (fullscreen) {
+            toggleFullscreen();
+            return;
+        }
+        super.onBackPressed();
     }
 
     private void refreshStatus() {

@@ -70,6 +70,7 @@
                             android:textSize="16sp" />
 
                         <LinearLayout
+                            android:id="@+id/robot_status_table"
                             android:layout_width="230dp"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="10dp"
@@ -176,6 +177,7 @@
                     </LinearLayout>
 
                     <LinearLayout
+                        android:id="@+id/robot_position"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="end|top"
@@ -211,6 +213,37 @@
                             android:layout_height="wrap_content"
                             android:textColor="@color/text_primary"
                             android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- panel controls: fill the page with the robot, or fold the panel away -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end|top"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="10dp"
+                        android:orientation="horizontal">
+
+                        <ImageButton
+                            android:id="@+id/robot_fullscreen"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/full_screen"
+                            android:padding="8dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_fullscreen" />
+
+                        <ImageButton
+                            android:id="@+id/robot_collapse"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="2dp"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/collapse"
+                            android:padding="7dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_chevron_up" />
                     </LinearLayout>
                 </FrameLayout>
 
