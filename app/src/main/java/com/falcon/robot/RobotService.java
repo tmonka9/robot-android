@@ -185,6 +185,8 @@ public class RobotService extends Service implements LifecycleOwner {
     private WhisperEngine engine;
     /** The small command model when one is installed; whisper is only the fallback. */
     private volatile CommandRecognizer commandRecognizer;
+    private volatile boolean loadingCommandModel;
+    private float[] pendingCommandSamples;   // said before the model was ready, main thread
     private SpeechRecorder recorder;
     private CustomPhrases customPhrases;
     private String speechModel;
@@ -810,25 +812,36 @@ public class RobotService extends Service implements LifecycleOwner {
      * seven stay with whisper until someone records them.
      */
     private void loadCommandModel() {
-        if (commandRecognizer != null) return;
+        if (commandRecognizer != null || loadingCommandModel) return;
+        loadingCommandModel = CommandRecognizer.exists(this);
         final int threads = Math.max(2, Runtime.getRuntime().availableProcessors() - 1);
         speechExecutor.execute(() -> {
             final CommandRecognizer recognizer = CommandRecognizer.load(this, threads);
             main.post(() -> {
                 commandRecognizer = recognizer;
+                loadingCommandModel = false;
                 if (recognizer == null) {
                     loadSpeechModel(null);
                 } else {
                     int known = recognizer.commands().size();
                     int all = VoiceCommands.actions().size();
-                    if (known < all) {
+                    if (known >= all) {
+                        message(getString(R.string.command_model_ready, known));
+                    } else if (WhisperEngine.isEngineBuilt()) {
                         message(getString(R.string.command_model_partial, known, all));
                         loadSpeechModel(null);
                     } else {
-                        message(getString(R.string.command_model_ready, known));
+                        // Without whisper the robot answers to what the model was trained on and
+                        // nothing else — which is worth saying plainly, rather than asking for a
+                        // clone of whisper.cpp that these commands do not need.
+                        message(getString(R.string.command_model_only, known, all, all - known));
                     }
                 }
                 notifyState();
+                // whatever was said while the model was still loading
+                float[] waiting = pendingCommandSamples;
+                pendingCommandSamples = null;
+                if (waiting != null) recognise(waiting);
             });
         });
     }
@@ -886,6 +899,12 @@ public class RobotService extends Service implements LifecycleOwner {
     private void recognise(final float[] samples) {
         final CommandRecognizer recognizer = commandRecognizer;
         if (recognizer == null) {
+            if (loadingCommandModel) {
+                // spoken to before the model finished loading: keep it rather than answering with
+                // whisper's complaint about not being built, which is not what went wrong
+                pendingCommandSamples = samples;
+                return;
+            }
             transcribe(samples);
             return;
         }
