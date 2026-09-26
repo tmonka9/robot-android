@@ -130,6 +130,22 @@ public class RobotControlActivity extends BaseActivity {
         refreshStatus();
     }
 
+    /**
+     * Every command goes past here, so the 3D robot acts out whatever was asked for: it walks on
+     * a move, waves on a greeting, raises the arm that was selected. It shows the command rather
+     * than the robot's own state, the way the odometry readout does, so it still demonstrates the
+     * action while nothing is connected; the status panel is what says whether it is.
+     */
+    @Override
+    protected boolean sendCommand(String command) {
+        showOnModel(command);
+        return super.sendCommand(command);
+    }
+
+    private void showOnModel(String command) {
+        if (robot3D != null) robot3D.perform(command);
+    }
+
     // ---- Robot Status ----------------------------------------------------------------------
 
     private void setupStatusPanel() {
@@ -308,6 +324,7 @@ public class RobotControlActivity extends BaseActivity {
         setIcon(stop, R.drawable.ic_square, 20, white, Gravity.TOP);
         stop.setOnClickListener(v -> {
             // stop is always attempted and never blocked by the connect prompt
+            showOnModel("STOP");
             session.send("STOP");
             setTip(getString(R.string.sent_command, stop.getText()));
         });
@@ -373,6 +390,7 @@ public class RobotControlActivity extends BaseActivity {
         if (qx == 0 && qy == 0) {
             joyX = 0;
             joyY = 0;
+            showOnModel("MOVE STOP");
             session.send("MOVE STOP");
             return;
         }

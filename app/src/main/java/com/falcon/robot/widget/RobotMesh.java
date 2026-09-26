@@ -47,6 +47,45 @@ final class RobotMesh {
     private static final float[] GRID = {0.10f, 0.36f, 0.55f};     // floor squares
     private static final float[] RING = {0.16f, 0.62f, 0.95f};     // floor circles
 
+    // ---- the skeleton --------------------------------------------------------------------------
+
+    /**
+     * The joints the figure is built in. Every part of the mesh belongs to one and turns about its
+     * pivot, which is what lets {@link RobotPose} walk it, wave it or sit it down. {@code _N} is
+     * the limb on the -x side and {@code _P} the one on +x; the robot faces +z, so its own left arm
+     * is the {@code _P} one. Parents come before their children, which the matrix chain relies on.
+     */
+    static final int J_ROOT = 0, J_SPINE = 1, J_HEAD = 2,
+            J_SHOULDER_N = 3, J_SHOULDER_P = 4, J_ELBOW_N = 5, J_ELBOW_P = 6,
+            J_HIP_N = 7, J_HIP_P = 8, J_KNEE_N = 9, J_KNEE_P = 10,
+            J_ANKLE_N = 11, J_ANKLE_P = 12;
+    static final int JOINTS = 13;
+
+    /** The joint each one hangs off, or -1 for the root. */
+    static final int[] JOINT_PARENT = {
+            -1, J_ROOT, J_SPINE,
+            J_SPINE, J_SPINE, J_SHOULDER_N, J_SHOULDER_P,
+            J_ROOT, J_ROOT, J_HIP_N, J_HIP_P,
+            J_KNEE_N, J_KNEE_P,
+    };
+
+    /** Where each joint turns, in the rest pose. */
+    static final float[][] JOINT_PIVOT = {
+            {0f, -0.020f, 0f},                                      // root, at the hips
+            {0f, 0.060f, 0f},                                       // spine, at the waist
+            {0f, 0.660f, 0f},                                       // neck
+            {-0.300f, 0.440f, 0f}, {0.300f, 0.440f, 0f},            // shoulders
+            {-0.314f, 0.100f, 0f}, {0.314f, 0.100f, 0f},            // elbows
+            {-0.188f, -0.115f, 0f}, {0.188f, -0.115f, 0f},          // hips
+            {-0.155f, -0.545f, 0.006f}, {0.155f, -0.545f, 0.006f},  // knees
+            {-0.155f, -0.928f, 0.006f}, {0.155f, -0.928f, 0.006f},  // ankles
+    };
+
+    /** 0 for the -x limb and 1 for the +x one, so a joint is {@code J_HIP_N + sideIndex(side)}. */
+    static int sideIndex(int side) {
+        return side < 0 ? 0 : 1;
+    }
+
     /** How far the floor reaches before it has faded into the panel. */
     private static final float FLOOR_RADIUS = 3.15f;
 
@@ -61,6 +100,11 @@ final class RobotMesh {
     private int vertexCount;
     private int drawMode = GLES20.GL_TRIANGLES;
 
+    /** One {joint, first vertex, vertex count} per run of the mesh that moves together. */
+    private final List<int[]> parts = new ArrayList<>();
+    private int partJoint = J_ROOT;
+    private int partStart;
+
     /** The vertex buffer object holding this mesh, or 0 before it has been uploaded. */
     int vbo;
 
@@ -70,6 +114,36 @@ final class RobotMesh {
 
     int drawMode() {
         return drawMode;
+    }
+
+    /** Everything built from here on belongs to this joint. */
+    private void part(int joint) {
+        closePart();
+        partJoint = joint;
+    }
+
+    private void closePart() {
+        if (vertexCount > partStart) {
+            parts.add(new int[] {partJoint, partStart, vertexCount - partStart});
+        }
+        partStart = vertexCount;
+    }
+
+    /** Zero for a mesh with no skeleton, such as a model loaded from the assets. */
+    int partCount() {
+        return parts.size();
+    }
+
+    int partJoint(int index) {
+        return parts.get(index)[0];
+    }
+
+    int partFirst(int index) {
+        return parts.get(index)[1];
+    }
+
+    int partVertices(int index) {
+        return parts.get(index)[2];
     }
 
     // ---- the figure ---------------------------------------------------------------------------
@@ -83,10 +157,12 @@ final class RobotMesh {
             mesh.arm(side);
             mesh.leg(side);
         }
+        mesh.closePart();
         return mesh;
     }
 
     private void head() {
+        part(J_HEAD);
         float y = 0.848f;
         ellipsoid(0f, y, 0f, 0.178f, 0.188f, 0.188f, SHELL, GLOSS);
         // the visor wraps the front of the helmet, just proud of the shell
@@ -102,6 +178,7 @@ final class RobotMesh {
             patch(0.165f * side, y + 0.013f, 0.005f, 0.0515f, 0.0721f, 0.0721f,
                     -42f, 42f, 48f - 90f * side, 132f - 90f * side, GLOW, EMISSIVE);
         }
+        part(J_SPINE); // the neck belongs to the body, so the head turns on top of it
         loft(0f, 0f, 0.9f, UNDER, GLOSS, new float[][] {
                 {0.56f, 0.080f, 0.075f, 0f, 0f},
                 {0.66f, 0.085f, 0.080f, 0f, 0f},
@@ -110,6 +187,7 @@ final class RobotMesh {
     }
 
     private void torso() {
+        part(J_SPINE);
         // chest: widest at the shoulders, tapering into the waist
         loft(0f, 0f, 0.58f, SHELL, GLOSS, new float[][] {
                 {0.24f, 0.215f, 0.145f, 0f, 0f},
@@ -124,6 +202,7 @@ final class RobotMesh {
                 {0.16f, 0.176f, 0.126f, 0f, 0f},
                 {0.26f, 0.196f, 0.137f, 0f, 0f},
         });
+        part(J_ROOT);
         // pelvis
         loft(0f, 0f, 0.60f, SHELL, GLOSS, new float[][] {
                 {-0.15f, 0.144f, 0.118f, 0f, 0f},
@@ -132,6 +211,7 @@ final class RobotMesh {
                 {0.08f, 0.190f, 0.132f, 0f, 0f},
         });
 
+        part(J_SPINE);
         box(0f, 0.47f, 0.170f, 0.080f, 0.052f, 0.014f, GLOW, EMISSIVE);   // sternum light
         box(0f, 0.395f, 0.166f, 0.150f, 0.012f, 0.010f, TRIM, GLOSS);     // plate seams
         box(0f, 0.300f, 0.155f, 0.120f, 0.012f, 0.010f, TRIM, GLOSS);
@@ -145,15 +225,18 @@ final class RobotMesh {
 
     private void arm(int side) {
         float x = 0.300f * side;
+        part(J_SHOULDER_N + sideIndex(side));
         ellipsoid(0.305f * side, 0.475f, 0f, 0.140f, 0.132f, 0.142f, SHELL, GLOSS); // pauldron
         patch(0.305f * side, 0.475f, 0f, 0.143f, 0.135f, 0.145f, -90f, -38f, 0f, 360f, UNDER, GLOSS);
         ellipsoid(0.292f * side, 0.395f, 0f, 0.088f, 0.086f, 0.088f, UNDER, GLOSS); // shoulder joint
-
         loft(x, 0f, 0.75f, SHELL, GLOSS, new float[][] {
                 {0.14f, 0.070f, 0.072f, 0.012f * side, 0f},
                 {0.26f, 0.082f, 0.082f, 0.006f * side, 0f},
                 {0.38f, 0.088f, 0.088f, 0f, 0f},
         });
+        box(x + 0.012f * side, 0.270f, -0.078f, 0.090f, 0.150f, 0.016f, UNDER, GLOSS);  // upper arm panel
+
+        part(J_ELBOW_N + sideIndex(side));
         ellipsoid(x + 0.014f * side, 0.100f, 0f, 0.074f, 0.074f, 0.074f, UNDER, GLOSS); // elbow
         loft(x, 0f, 0.75f, SHELL, GLOSS, new float[][] {
                 {-0.19f, 0.052f, 0.058f, 0.022f * side, 0f},
@@ -161,7 +244,6 @@ final class RobotMesh {
                 {0.07f, 0.074f, 0.076f, 0.014f * side, 0f},
         });
         box(x + 0.018f * side, -0.030f, 0.072f, 0.024f, 0.100f, 0.012f, GLOW, EMISSIVE); // forearm strip
-        box(x + 0.012f * side, 0.270f, -0.078f, 0.090f, 0.150f, 0.016f, UNDER, GLOSS);  // upper arm panel
         ellipsoid(x + 0.023f * side, -0.215f, 0f, 0.050f, 0.046f, 0.052f, UNDER, GLOSS); // wrist
 
         float hand = x + 0.024f * side;
@@ -177,17 +259,20 @@ final class RobotMesh {
 
     private void leg(int side) {
         float x = 0.155f * side;
+        part(J_ROOT);
         ellipsoid(0.188f * side, -0.115f, 0f, 0.108f, 0.100f, 0.108f, UNDER, GLOSS); // hip joint
         patch(0.188f * side, -0.115f, 0f, 0.111f, 0.103f, 0.111f,
                 -32f, 32f, 58f - 90f * side, 122f - 90f * side, GLOW, EMISSIVE);     // hip light
-        box(0.070f * side, -0.310f, 0f, 0.070f, 0.380f, 0.180f, UNDER, GLOSS);       // inner thigh
 
+        part(J_HIP_N + sideIndex(side));
+        box(0.070f * side, -0.310f, 0f, 0.070f, 0.380f, 0.180f, UNDER, GLOSS);       // inner thigh
         loft(x, 0f, 0.65f, SHELL, GLOSS, new float[][] {
                 {-0.500f, 0.094f, 0.100f, 0f, 0.002f},
                 {-0.360f, 0.110f, 0.118f, 0.006f * side, 0.006f},
                 {-0.220f, 0.124f, 0.130f, 0.018f * side, 0.006f},
                 {-0.070f, 0.130f, 0.134f, 0.030f * side, 0.002f},
         });
+        part(J_KNEE_N + sideIndex(side));
         ellipsoid(x, -0.545f, 0.006f, 0.098f, 0.092f, 0.100f, UNDER, GLOSS); // knee
         patch(x, -0.545f, 0.006f, 0.101f, 0.095f, 0.103f, -26f, 26f, 64f, 116f, GLOW, EMISSIVE);
 
@@ -197,6 +282,8 @@ final class RobotMesh {
                 {-0.610f, 0.096f, 0.106f, 0f, 0.004f},
         });
         box(x, -0.750f, -0.082f, 0.100f, 0.230f, 0.022f, UNDER, GLOSS); // calf plate
+
+        part(J_ANKLE_N + sideIndex(side));
         ellipsoid(x, -0.928f, 0.006f, 0.064f, 0.056f, 0.068f, UNDER, GLOSS); // ankle
 
         loft(x, 0f, 0.45f, SHELL, GLOSS, new float[][] {

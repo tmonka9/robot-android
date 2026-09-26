@@ -82,6 +82,20 @@ public class Robot3DView extends GLSurfaceView {
         });
     }
 
+    /**
+     * Acts out a robot command: the figure walks for a move, waves for a greeting, raises the arm
+     * that was selected. Commands that are not movement (camera, speed) leave it as it is.
+     */
+    public void perform(String command) {
+        play(RobotPose.actionFor(command));
+    }
+
+    /** Plays one of {@link RobotPose}'s actions, such as {@code RobotPose.WAVE}. */
+    public void play(final int action) {
+        if (action == RobotPose.NONE) return;
+        queueEvent(() -> renderer.pose.play(action));
+    }
+
     /** Draws an OBJ from the assets instead of the built-in figure, if it is there. */
     public void setModelAsset(final String assetName) {
         final Context context = getContext().getApplicationContext();
@@ -203,8 +217,13 @@ public class Robot3DView extends GLSurfaceView {
         private final float[] projection = new float[16];
         private final float[] view = new float[16];
         private final float[] model = new float[16];
-        private final float[] temp = new float[16];
+        private final float[] viewProjection = new float[16];
+        private final float[] partModel = new float[16];
         private final float[] mvp = new float[16];
+
+        /** What the robot is doing, and the matrix it puts each joint at. */
+        private final RobotPose pose = new RobotPose();
+        private final float[] joints = new float[RobotMesh.JOINTS * 16];
 
         // both built on the GL thread the first time the surface comes up, not during inflation
         private volatile RobotMesh mesh;
@@ -293,6 +312,8 @@ public class Robot3DView extends GLSurfaceView {
             float seconds = Math.min(0.05f, (now - lastFrame) / 1000f);
             lastFrame = now;
             advance(seconds);
+            pose.advance(seconds);
+            pose.matrices(joints);
 
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
             GLES20.glUseProgram(program);
@@ -302,16 +323,20 @@ public class Robot3DView extends GLSurfaceView {
             Matrix.setIdentityM(model, 0);
             Matrix.rotateM(model, 0, pitch, 1f, 0f, 0f);
             Matrix.rotateM(model, 0, yaw, 0f, 1f, 0f);
-            Matrix.multiplyMM(temp, 0, view, 0, model, 0);
-            Matrix.multiplyMM(mvp, 0, projection, 0, temp, 0);
+            Matrix.multiplyMM(viewProjection, 0, projection, 0, view, 0);
 
-            GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0);
-            GLES20.glUniformMatrix4fv(modelHandle, 1, false, model, 0);
             GLES20.glUniform3f(lightHandle, 0.4f, 0.8f, 0.7f);
             GLES20.glUniform3f(eyeHandle, 0f, eyeY, distance);
 
             draw(floor);
             draw(mesh);
+        }
+
+        /** Puts what is drawn next where the given matrix says. */
+        private void place(float[] matrix) {
+            Matrix.multiplyMM(mvp, 0, viewProjection, 0, matrix, 0);
+            GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvp, 0);
+            GLES20.glUniformMatrix4fv(modelHandle, 1, false, matrix, 0);
         }
 
         /** Uploads the mesh the first time it is seen, then draws it out of the card's memory. */
@@ -339,7 +364,19 @@ public class Robot3DView extends GLSurfaceView {
             GLES20.glVertexAttribPointer(materialHandle, 1, GLES20.GL_FLOAT, false, stride, 36);
             GLES20.glEnableVertexAttribArray(materialHandle);
 
-            GLES20.glDrawArrays(drawable.drawMode(), 0, drawable.vertexCount());
+            if (drawable.partCount() == 0) {
+                // the floor, and any model loaded from the assets: one piece, no skeleton
+                place(model);
+                GLES20.glDrawArrays(drawable.drawMode(), 0, drawable.vertexCount());
+            } else {
+                for (int i = 0; i < drawable.partCount(); i++) {
+                    // each part turns about its own joint, which hangs off the one before it
+                    Matrix.multiplyMM(partModel, 0, model, 0, joints, drawable.partJoint(i) * 16);
+                    place(partModel);
+                    GLES20.glDrawArrays(drawable.drawMode(), drawable.partFirst(i),
+                            drawable.partVertices(i));
+                }
+            }
 
             GLES20.glDisableVertexAttribArray(positionHandle);
             GLES20.glDisableVertexAttribArray(normalHandle);
