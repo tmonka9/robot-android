@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -150,12 +151,29 @@ public class MainActivity extends BaseActivity {
             ((TextView) view.findViewById(R.id.card_title)).setText(card[1]);
             ((TextView) view.findViewById(R.id.card_subtitle)).setText(card[2]);
             placeCardText(view);
+            animateCardIn(view, i);
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
                     LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
             if (i % columns > 0) lp.setMarginStart(gap);
             row.addView(view, lp);
         }
+    }
+
+    /**
+     * Cards rise into place one after another when Home opens, so the grid assembles itself
+     * instead of appearing all at once.
+     */
+    private void animateCardIn(View card, int index) {
+        card.setAlpha(0f);
+        card.setTranslationY(card.getResources().getDisplayMetrics().density * 18f);
+        card.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(60L * index)
+                .setDuration(260L)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
     }
 
     /**

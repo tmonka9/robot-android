@@ -387,6 +387,7 @@
     <string name="apply_settings">应用设置</string>
     <string name="time_answer">现在是 %s</string>
     <string name="status_processing">处理中…</string>
+    <string name="no_speech">未识别到语音 — 请靠近麦克风并说得久一点</string>
     <string name="result_no_match">无匹配</string>
     <string name="mic_permission_needed">语音指令需要麦克风权限</string>
     <string name="engine_not_built">语音引擎未编译：请将 whisper.cpp 克隆到 app/src/main/cpp 后重新构建</string>

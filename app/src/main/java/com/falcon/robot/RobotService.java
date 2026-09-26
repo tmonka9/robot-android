@@ -186,7 +186,8 @@ public class RobotService extends Service implements LifecycleOwner {
     private String speechModel;
     private boolean loadingSpeechModel;
     private boolean transcribing;
-    private String language = "auto";
+    private float[] pendingSamples; // the utterance heard while the last one was transcribing
+    private String language; // set from the app language in onCreate
     private String wakeWord = "Hey Robot";
     private boolean wakeWordRequired;
     private boolean commandControl = true;
@@ -217,6 +218,8 @@ public class RobotService extends Service implements LifecycleOwner {
         faceDatabase = new FaceDatabase(this);
         customPhrases = new CustomPhrases(this);
         engine = new WhisperEngine(this);
+        // auto-detect is unreliable on one-second commands, so start from the app language
+        language = LocaleHelper.effectiveLanguage(this);
         recorder = new SpeechRecorder(recorderListener);
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
@@ -822,7 +825,17 @@ public class RobotService extends Service implements LifecycleOwner {
     };
 
     private void transcribe(final float[] samples) {
-        if (transcribing || !engine.isReady()) return;
+        if (!engine.isReady()) {
+            message(engine.getLoadError() != null ? engine.getLoadError()
+                    : getString(R.string.engine_not_built));
+            return;
+        }
+        if (transcribing) {
+            // a small model takes a second or two; keep the newest utterance rather than
+            // dropping what was said while the last one was still running
+            pendingSamples = samples;
+            return;
+        }
         transcribing = true;
         notifyState();
         final int threads = Math.max(2, Runtime.getRuntime().availableProcessors() - 1);
@@ -833,7 +846,15 @@ public class RobotService extends Service implements LifecycleOwner {
                 notifyState();
                 if (result != null && !result.text.isEmpty()) {
                     handleTranscript(result.text, result.confidence * 100f);
+                } else {
+                    // silence, noise, or a language the model did not expect
+                    for (Listener listener : listeners) {
+                        listener.onTranscript("", -1f, null, R.string.no_speech);
+                    }
                 }
+                float[] queued = pendingSamples;
+                pendingSamples = null;
+                if (queued != null) transcribe(queued);
             });
         });
     }

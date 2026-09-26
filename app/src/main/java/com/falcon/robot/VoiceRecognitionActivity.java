@@ -143,6 +143,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns_bottom);
 
         clock = android.text.format.DateFormat.getTimeFormat(this);
+        selectAppLanguage();
         customPhrases = new CustomPhrases(this);
 
         setupListening();
@@ -291,6 +292,11 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
         @Override
         public void onTranscript(String text, float confidence, VoiceCommands.Action action, int result) {
+            if (result == R.string.no_speech) { // heard something, understood nothing
+                toast(R.string.no_speech);
+                if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
+                return;
+            }
             transcript = text;
             currentAction = action;
             addHistory(text, result, confidence);
@@ -730,6 +736,22 @@ public class VoiceRecognitionActivity extends BaseActivity {
         List<String> models = WhisperEngine.listAvailableModels(this);
         if (models.contains(WhisperEngine.DEFAULT_MODEL)) return WhisperEngine.DEFAULT_MODEL;
         return models.isEmpty() ? WhisperEngine.DEFAULT_MODEL : models.get(0);
+    }
+
+    /**
+     * Starts the Language tab on the app language rather than "Auto detect": whisper guesses the
+     * language badly from a one-second command, which reads as the recognition being broken.
+     */
+    private void selectAppLanguage() {
+        String[] codes = getResources().getStringArray(R.array.adv_language_codes);
+        String language = LocaleHelper.effectiveLanguage(this);
+        for (int i = 0; i < codes.length; i++) {
+            if (codes[i].equals(language)) {
+                advancedSelection[0][0] = i; // recognition language
+                advancedSelection[0][1] = i; // response language
+                return;
+            }
+        }
     }
 
     /** whisper language code from the Language tab. */

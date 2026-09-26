@@ -8,6 +8,7 @@
 #include <android/asset_manager_jni.h>
 #include <android/log.h>
 
+#include <algorithm>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -88,8 +89,12 @@ Java_com_falcon_robot_voice_WhisperEngine_nativeTranscribe(JNIEnv *env, jclass, 
     if (ctx == nullptr) return nullptr;
 
     const jsize count = env->GetArrayLength(audio);
-    std::vector<float> samples(static_cast<size_t>(count));
+    // whisper cannot work with less than a second of audio, and a short command like "stop"
+    // is often half of that, so pad the tail with silence rather than losing the utterance
+    const size_t minimum = WHISPER_SAMPLE_RATE * 11 / 10;
+    std::vector<float> samples(std::max(static_cast<size_t>(count), minimum), 0.0f);
     env->GetFloatArrayRegion(audio, 0, count, samples.data());
+    LOGI("transcribing %.2f s of audio", count / static_cast<float>(WHISPER_SAMPLE_RATE));
 
     const char *lang = language == nullptr ? nullptr : env->GetStringUTFChars(language, nullptr);
 

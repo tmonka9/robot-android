@@ -387,6 +387,7 @@
     <string name="apply_settings">設定を適用</string>
     <string name="time_answer">現在 %s です</string>
     <string name="status_processing">処理中…</string>
+    <string name="no_speech">音声を認識できません — マイクに近づき、少し長めに話してください</string>
     <string name="result_no_match">該当なし</string>
     <string name="mic_permission_needed">音声コマンドにはマイクの権限が必要です</string>
     <string name="engine_not_built">音声エンジンが未ビルドです: whisper.cpp を app/src/main/cpp にクローンして再ビルドしてください</string>

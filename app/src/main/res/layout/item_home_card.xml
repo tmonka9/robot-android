@@ -10,7 +10,8 @@
     android:background="@drawable/bg_card_outline"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?android:attr/selectableItemBackground">
+    android:foreground="?android:attr/selectableItemBackground"
+    android:stateListAnimator="@animator/card_press">
 
     <com.falcon.robot.widget.AspectImageView
         android:id="@+id/card_image"

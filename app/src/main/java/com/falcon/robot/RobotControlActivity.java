@@ -16,6 +16,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.falcon.robot.widget.CoverImageView;
+import com.falcon.robot.widget.Robot3DView;
 import com.falcon.robot.widget.JoystickView;
 
 import java.util.Locale;
@@ -26,6 +27,9 @@ import java.util.Locale;
  * Robot telemetry and the camera stream are simulated until the real robot protocol exists.
  */
 public class RobotControlActivity extends BaseActivity {
+
+    /** An OBJ export of the real robot, if one is added to the assets. */
+    private static final String ROBOT_MODEL_ASSET = "xiaoao.obj";
 
     private static final long ODOMETRY_TICK_MS = 100;
     /** Metres per second at 100% speed (simulated odometry). */
@@ -46,6 +50,7 @@ public class RobotControlActivity extends BaseActivity {
     private TextView tip;
     private SeekBar speedSeek;
     private CoverImageView cameraFeed;
+    private Robot3DView robot3D;
     private TextView cameraName;
     private TextView cameraInfo;
     private SeekBar brightness;
@@ -100,6 +105,7 @@ public class RobotControlActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (robot3D != null) robot3D.onResume();
         onConnectionChanged();
         handler.removeCallbacks(odometry);
         handler.post(odometry);
@@ -107,6 +113,7 @@ public class RobotControlActivity extends BaseActivity {
 
     @Override
     protected void onPause() {
+        if (robot3D != null) robot3D.onPause();
         handler.removeCallbacks(odometry);
         super.onPause();
     }
@@ -143,7 +150,8 @@ public class RobotControlActivity extends BaseActivity {
         positionZ = findViewById(R.id.position_z);
 
         // keep the robot figure (right half of the artwork) in view beside the status table
-        ((CoverImageView) findViewById(R.id.robot_status_art)).setFocus(0.5f, 0f, 0.9f, 1f);
+        robot3D = findViewById(R.id.robot_3d);
+        robot3D.setModelAsset(ROBOT_MODEL_ASSET); // used when the file is there, ignored otherwise
         findViewById(R.id.robot_status_panel).setClipToOutline(true);
         refreshPosition();
     }

@@ -40,12 +40,11 @@
                     android:minHeight="280dp"
                     android:tag="1">
 
-                    <com.falcon.robot.widget.CoverImageView
-                        android:id="@+id/robot_status_art"
+                    <!-- the robot as a model you can turn with a finger -->
+                    <com.falcon.robot.widget.Robot3DView
+                        android:id="@+id/robot_3d"
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@null"
-                        android:src="@drawable/robot_status_art" />
+                        android:layout_height="match_parent" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
