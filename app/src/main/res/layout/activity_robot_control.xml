@@ -249,6 +249,7 @@
 
                 <!-- Camera View -->
                 <LinearLayout
+                    android:id="@+id/camera_panel"
                     style="@style/RobotPanel"
                     android:tag="1.45">
 
@@ -297,6 +298,17 @@
                                     android:text="@string/cam_right" />
                             </LinearLayout>
                         </HorizontalScrollView>
+
+                        <ImageButton
+                            android:id="@+id/camera_fullscreen"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:layout_marginStart="6dp"
+                            android:background="?android:attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/full_screen"
+                            android:padding="8dp"
+                            android:scaleType="fitCenter"
+                            android:src="@drawable/ic_fullscreen" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -911,4 +923,28 @@
             </LinearLayout>
         </LinearLayout>
     </com.falcon.robot.widget.FitScrollView>
+
+    <!--
+      Shown only while a panel is full screen, since the panels holding these buttons are hidden
+      then. Each one works the button it mirrors, so there is one implementation of each action.
+      Filled by RobotControlActivity#buildFullscreenBar.
+    -->
+    <HorizontalScrollView
+        android:id="@+id/fullscreen_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface"
+        android:paddingLeft="@dimen/screen_padding"
+        android:paddingTop="8dp"
+        android:paddingRight="@dimen/screen_padding"
+        android:paddingBottom="8dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/fullscreen_action_row"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
 </LinearLayout>
