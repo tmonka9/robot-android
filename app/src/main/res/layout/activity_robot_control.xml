@@ -265,39 +265,10 @@
                             android:layout_width="wrap_content"
                             android:text="@string/camera_view" />
 
-                        <HorizontalScrollView
+                        <View
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_weight="1"
-                            android:scrollbars="none">
-
-                            <LinearLayout
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/cam_front"
-                                    style="@style/CameraTab"
-                                    android:text="@string/cam_front" />
-
-                                <TextView
-                                    android:id="@+id/cam_rear"
-                                    style="@style/CameraTab"
-                                    android:text="@string/cam_rear" />
-
-                                <TextView
-                                    android:id="@+id/cam_left"
-                                    style="@style/CameraTab"
-                                    android:text="@string/cam_left" />
-
-                                <TextView
-                                    android:id="@+id/cam_right"
-                                    style="@style/CameraTab"
-                                    android:text="@string/cam_right" />
-                            </LinearLayout>
-                        </HorizontalScrollView>
+                            android:layout_height="1dp"
+                            android:layout_weight="1" />
 
                         <ImageButton
                             android:id="@+id/camera_fullscreen"
@@ -319,7 +290,12 @@
                         android:minHeight="230dp"
                         android:orientation="horizontal">
 
-                        <!-- Live feed placeholder (design artwork); replace with the camera stream. -->
+                        <!--
+                          The live camera, with the design artwork behind it until frames arrive.
+                          The preview runs in COMPATIBLE mode so it is a view in the hierarchy
+                          rather than its own surface: the artwork shows through it while it is
+                          empty, and the robot overlay sits on top of it.
+                        -->
                         <FrameLayout
                             android:id="@+id/camera_feed_frame"
                             android:layout_width="0dp"
@@ -334,19 +310,10 @@
                                 android:contentDescription="@string/camera_view"
                                 android:src="@drawable/robot_camera_front" />
 
-                            <TextView
-                                android:id="@+id/camera_name"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_gravity="top|end"
-                                android:layout_margin="10dp"
-                                android:background="@drawable/bg_feed_label"
-                                android:paddingLeft="10dp"
-                                android:paddingTop="4dp"
-                                android:paddingRight="10dp"
-                                android:paddingBottom="4dp"
-                                android:textColor="@color/white"
-                                android:textSize="12sp" />
+                            <androidx.camera.view.PreviewView
+                                android:id="@+id/camera_preview"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
 
                             <TextView
                                 android:id="@+id/camera_info"
@@ -363,8 +330,9 @@
                                 android:textSize="12sp" />
                         </FrameLayout>
 
-                        <!-- Camera settings -->
+                        <!-- Camera settings: hidden while the feed is full screen -->
                         <LinearLayout
+                            android:id="@+id/camera_settings_column"
                             android:layout_width="200dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="10dp"

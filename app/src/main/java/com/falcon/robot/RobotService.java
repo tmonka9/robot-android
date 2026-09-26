@@ -26,6 +26,7 @@ import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
+import androidx.camera.core.UseCase;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
@@ -330,7 +331,8 @@ public class RobotService extends Service implements LifecycleOwner {
 
     /** True while nothing is switched on, so the service can be left to stop. */
     private boolean idle() {
-        return !faceEnabled && !detectionEnabled && !voiceEnabled;
+        // a page showing the picture counts: the camera is running for it
+        return !faceEnabled && !detectionEnabled && !voiceEnabled && surfaceProvider == null;
     }
 
     // ---- foreground notification -----------------------------------------------------------
@@ -354,7 +356,9 @@ public class RobotService extends Service implements LifecycleOwner {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int type = 0;
-                if (faceEnabled || detectionEnabled) type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+                if (faceEnabled || detectionEnabled || surfaceProvider != null) {
+                    type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
+                }
                 if (voiceEnabled) type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
                 startForeground(NOTIFICATION_ID, notification, type);
             } else {
@@ -444,13 +448,16 @@ public class RobotService extends Service implements LifecycleOwner {
     /** The preview of whichever page is visible; null when none is. */
     public void attachPreview(Preview.SurfaceProvider provider) {
         surfaceProvider = provider;
-        if (cameraProvider != null) bindCamera();
+        // wanting the picture is reason enough to open the camera, with or without the models
+        updateForeground();
+        startVision();
     }
 
     public void detachPreview(Preview.SurfaceProvider provider) {
         if (surfaceProvider != provider) return;
         surfaceProvider = null;
-        if (cameraProvider != null) bindCamera();
+        if (cameraProvider != null) bindCamera(); // lets the camera go if nothing else wants it
+        updateForeground();
     }
 
     /** Frame size the models see. Bigger finds smaller objects; smaller is faster. */
@@ -509,7 +516,9 @@ public class RobotService extends Service implements LifecycleOwner {
     private void bindCamera() {
         if (cameraProvider == null) return;
         cameraProvider.unbindAll();
-        if (!faceEnabled && !detectionEnabled) return;
+        // a page showing the picture is reason enough to run the camera, even with both models off
+        boolean analysing = faceEnabled || detectionEnabled;
+        if (!analysing && surfaceProvider == null) return;
 
         CameraSelector selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
         try {
@@ -525,24 +534,27 @@ public class RobotService extends Service implements LifecycleOwner {
             return;
         }
 
-        ImageAnalysis analysis = new ImageAnalysis.Builder()
-                .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setResolutionStrategy(new ResolutionStrategy(analysisSize,
-                                ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
-                        .build())
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .build();
-        analysis.setAnalyzer(cameraExecutor, this::analyze);
+        List<UseCase> uses = new ArrayList<>();
+        if (surfaceProvider != null) {
+            Preview preview = new Preview.Builder().build();
+            preview.setSurfaceProvider(surfaceProvider);
+            uses.add(preview);
+        }
+        if (analysing) {
+            ImageAnalysis analysis = new ImageAnalysis.Builder()
+                    .setResolutionSelector(new ResolutionSelector.Builder()
+                            .setResolutionStrategy(new ResolutionStrategy(analysisSize,
+                                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+                            .build())
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                    .build();
+            analysis.setAnalyzer(cameraExecutor, this::analyze);
+            uses.add(analysis);
+        }
 
         try {
-            if (surfaceProvider != null) {
-                Preview preview = new Preview.Builder().build();
-                preview.setSurfaceProvider(surfaceProvider);
-                cameraProvider.bindToLifecycle(this, selector, preview, analysis);
-            } else {
-                cameraProvider.bindToLifecycle(this, selector, analysis);
-            }
+            cameraProvider.bindToLifecycle(this, selector, uses.toArray(new UseCase[0]));
         } catch (Exception e) {
             Log.w(TAG, "Could not bind the camera", e);
         }

@@ -47,22 +47,21 @@ public class Robot3DView extends GLSurfaceView {
     private static final double WHEEL_STEP = 0.88;
 
     /**
-     * Framing for the head-only overlay. The camera looks level, a little above the head, from
-     * behind and off to one side: dead astern the helmet is a blank white shell, while from here
-     * the crown, the visor's edge and the blue ear lens all read, and so does which way it is
-     * facing. The head sits low in the view and is cropped by the bottom, the way an over the
-     * shoulder camera frames it.
+     * Framing for the camera overlay: the robot's upper body seen from directly behind, so it
+     * faces the same way the camera does and the feed reads as what is in front of it. The camera
+     * looks level, and the body is cropped by the bottom of the view, the way an over the shoulder
+     * camera frames it.
      */
-    private static final float HEAD_EYE_Y = 1.03f;
-    private static final float HEAD_DISTANCE = 0.82f;
-    private static final float HEAD_YAW = 232f;
-    private static final float HEAD_PITCH = 8f;
+    private static final float OVERLAY_EYE_Y = 0.675f;
+    private static final float OVERLAY_DISTANCE = 1.2f;
+    private static final float OVERLAY_YAW = 180f;
+    private static final float OVERLAY_PITCH = 6f;
 
     private final Renderer renderer = new Renderer();
     private final ScaleGestureDetector scaleDetector;
     private final GestureDetector tapDetector;
-    /** Draws the head alone, on nothing, for the camera overlay. */
-    private final boolean headOnly;
+    /** Draws the upper body alone, on nothing, to lay over the camera feed. */
+    private final boolean overlay;
 
     private float lastX;
     private float lastY;
@@ -77,27 +76,27 @@ public class Robot3DView extends GLSurfaceView {
     }
 
     /**
-     * The robot's head on its own, to lay over the camera feed: transparent, not interactive, and
-     * seen from behind, so the feed reads as what the robot is looking at. It acts out the same
-     * commands as the full figure, so the head turns and nods along with the body.
+     * The robot's head and torso on their own, to lay over the camera feed: transparent, not
+     * interactive, and seen from behind so it faces the way the camera looks. It acts out the same
+     * commands as the full figure, so it turns and nods along with it.
      */
-    public static Robot3DView headOverlay(Context context) {
+    public static Robot3DView cameraOverlay(Context context) {
         return new Robot3DView(context, null, true);
     }
 
-    private Robot3DView(Context context, AttributeSet attrs, boolean headOnly) {
+    private Robot3DView(Context context, AttributeSet attrs, boolean overlay) {
         super(context, attrs);
-        this.headOnly = headOnly;
+        this.overlay = overlay;
         setEGLContextClientVersion(2);
-        if (headOnly) {
+        if (overlay) {
             // an alpha channel, and above the feed it sits on: a surface is behind the window
             // otherwise, and the camera image would hide it
             setEGLConfigChooser(8, 8, 8, 8, 16, 0);
             getHolder().setFormat(PixelFormat.TRANSLUCENT);
             setZOrderOnTop(true);
-            renderer.yaw = HEAD_YAW;
-            renderer.pitch = HEAD_PITCH;
-            renderer.distance = HEAD_DISTANCE;
+            renderer.yaw = OVERLAY_YAW;
+            renderer.pitch = OVERLAY_PITCH;
+            renderer.distance = OVERLAY_DISTANCE;
         }
         setRenderer(renderer);
         setRenderMode(RENDERMODE_CONTINUOUSLY);
@@ -146,7 +145,7 @@ public class Robot3DView extends GLSurfaceView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (headOnly) return false; // an overlay: the panel underneath keeps its touches
+        if (overlay) return false; // an overlay: the panel underneath keeps its touches
         scaleDetector.onTouchEvent(event);
         tapDetector.onTouchEvent(event);
         lastTouchTime = SystemClock.elapsedRealtime();
@@ -181,7 +180,7 @@ public class Robot3DView extends GLSurfaceView {
     /** A mouse wheel or a trackpad two-finger scroll zooms, the same as a pinch. */
     @Override
     public boolean onGenericMotionEvent(MotionEvent event) {
-        if (!headOnly && event.getActionMasked() == MotionEvent.ACTION_SCROLL) {
+        if (!overlay && event.getActionMasked() == MotionEvent.ACTION_SCROLL) {
             float notches = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
             if (notches != 0f) {
                 zoom((float) Math.pow(WHEEL_STEP, notches));
@@ -296,8 +295,8 @@ public class Robot3DView extends GLSurfaceView {
 
         @Override
         public void onSurfaceCreated(GL10 unused, EGLConfig config) {
-            // the overlay clears to nothing, so the camera feed shows through around the head
-            if (headOnly) {
+            // the overlay clears to nothing, so the camera feed shows through around the robot
+            if (overlay) {
                 GLES20.glClearColor(0f, 0f, 0f, 0f);
             } else {
                 GLES20.glClearColor(0.043f, 0.082f, 0.149f, 1f); // the panel's navy
@@ -325,7 +324,7 @@ public class Robot3DView extends GLSurfaceView {
 
             // the built-in figure is skipped when an asset model has already taken its place
             if (mesh == null) mesh = RobotMesh.humanoid();
-            if (floor == null && !headOnly) floor = RobotMesh.floor();
+            if (floor == null && !overlay) floor = RobotMesh.floor();
             // the context is new, so whatever the meshes were uploaded into has gone with it
             mesh.vbo = 0;
             if (floor != null) floor.vbo = 0;
@@ -365,8 +364,8 @@ public class Robot3DView extends GLSurfaceView {
 
             // the overlay looks level, so its framing does not shift; the figure is seen from
             // slightly above, looking at the middle of it
-            float eyeY = headOnly ? HEAD_EYE_Y : 0.1f;
-            float targetY = headOnly ? HEAD_EYE_Y : 0f;
+            float eyeY = overlay ? OVERLAY_EYE_Y : 0.1f;
+            float targetY = overlay ? OVERLAY_EYE_Y : 0f;
             Matrix.setLookAtM(view, 0, 0f, eyeY, distance, 0f, targetY, 0f, 0f, 1f, 0f);
             Matrix.setIdentityM(model, 0);
             Matrix.rotateM(model, 0, pitch, 1f, 0f, 0f);
@@ -376,7 +375,7 @@ public class Robot3DView extends GLSurfaceView {
             GLES20.glUniform3f(lightHandle, 0.4f, 0.8f, 0.7f);
             GLES20.glUniform3f(eyeHandle, 0f, eyeY, distance);
 
-            if (!headOnly) draw(floor);
+            if (!overlay) draw(floor);
             draw(mesh);
         }
 
@@ -418,7 +417,7 @@ public class Robot3DView extends GLSurfaceView {
                 GLES20.glDrawArrays(drawable.drawMode(), 0, drawable.vertexCount());
             } else {
                 for (int i = 0; i < drawable.partCount(); i++) {
-                    if (headOnly && drawable.partJoint(i) != RobotMesh.J_HEAD) continue;
+                    if (overlay && !inOverlay(drawable.partJoint(i))) continue;
                     // each part turns about its own joint, which hangs off the one before it
                     Matrix.multiplyMM(partModel, 0, model, 0, joints, drawable.partJoint(i) * 16);
                     place(partModel);
@@ -433,9 +432,16 @@ public class Robot3DView extends GLSurfaceView {
             GLES20.glDisableVertexAttribArray(materialHandle);
         }
 
+        /** Head, torso and arms: what an over the shoulder view of the robot shows. */
+        private boolean inOverlay(int joint) {
+            return joint == RobotMesh.J_HEAD || joint == RobotMesh.J_SPINE
+                    || joint == RobotMesh.J_SHOULDER_N || joint == RobotMesh.J_SHOULDER_P
+                    || joint == RobotMesh.J_ELBOW_N || joint == RobotMesh.J_ELBOW_P;
+        }
+
         /** Momentum after a drag, then the slow idle turn once the finger has been gone a while. */
         private void advance(float seconds) {
-            if (headOnly) return; // the overlay is framed on the head and stays there
+            if (overlay) return; // the overlay is framed on the robot and stays there
             if (Math.abs(spin) > 0.5f) {
                 yaw += spin * seconds;
                 spin *= Math.max(0f, 1f - 2.2f * seconds); // friction
