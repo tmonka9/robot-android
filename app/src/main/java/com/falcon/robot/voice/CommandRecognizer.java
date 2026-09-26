@@ -80,8 +80,20 @@ public final class CommandRecognizer {
         this.output = new float[1][labels.size()];
     }
 
+    /** Why the last load failed, or null when there was nothing wrong with it. */
+    private static volatile String loadError;
+
+    /**
+     * Why the command model did not load, if it was there and did not. Null when there is simply
+     * no model, which is not a failure — and not a reason to blame whisper for it either.
+     */
+    public static String getLoadError() {
+        return loadError;
+    }
+
     /** Loads the command model, or returns null when there is none to load. */
     public static CommandRecognizer load(Context context, int threads) {
+        loadError = null;
         try {
             byte[] metadata = read(context, METADATA);
             if (metadata == null) return null;
@@ -113,6 +125,7 @@ public final class CommandRecognizer {
             return recognizer;
         } catch (IOException | JSONException | RuntimeException e) {
             Log.w(TAG, "Could not load the command model", e);
+            loadError = e.getMessage() != null ? e.getMessage() : e.toString();
             return null;
         }
     }

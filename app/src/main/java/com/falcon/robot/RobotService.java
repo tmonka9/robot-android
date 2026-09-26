@@ -821,6 +821,10 @@ public class RobotService extends Service implements LifecycleOwner {
                 commandRecognizer = recognizer;
                 loadingCommandModel = false;
                 if (recognizer == null) {
+                    if (CommandRecognizer.getLoadError() != null) {
+                        message(getString(R.string.command_model_failed,
+                                CommandRecognizer.getLoadError()));
+                    }
                     loadSpeechModel(null);
                 } else {
                     int known = recognizer.commands().size();
@@ -940,7 +944,9 @@ public class RobotService extends Service implements LifecycleOwner {
 
     private void transcribe(final float[] samples) {
         if (!engine.isReady()) {
-            message(engine.getLoadError() != null ? engine.getLoadError()
+            String broken = CommandRecognizer.getLoadError();
+            message(broken != null ? getString(R.string.command_model_failed, broken)
+                    : engine.getLoadError() != null ? engine.getLoadError()
                     : getString(R.string.engine_not_built));
             return;
         }
