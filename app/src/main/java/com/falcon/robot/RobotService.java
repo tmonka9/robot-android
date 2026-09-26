@@ -854,9 +854,7 @@ public class RobotService extends Service implements LifecycleOwner {
     public void loadSpeechModel(String modelName) {
         if (!WhisperEngine.isLibraryAvailable()) return;
         List<String> models = WhisperEngine.listAvailableModels(this);
-        final String model = modelName != null ? modelName
-                : models.contains(WhisperEngine.DEFAULT_MODEL) ? WhisperEngine.DEFAULT_MODEL
-                : models.isEmpty() ? null : models.get(0);
+        final String model = modelName != null ? modelName : WhisperEngine.preferredModel(models);
         if (model == null || model.equals(speechModel)) return;
         loadingSpeechModel = true;
         notifyState();

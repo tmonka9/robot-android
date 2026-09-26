@@ -743,8 +743,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
     /** The speech model in use: the one bundled in the APK, or the first one on the device. */
     private String selectedModel() {
         List<String> models = WhisperEngine.listAvailableModels(this);
-        if (models.contains(WhisperEngine.DEFAULT_MODEL)) return WhisperEngine.DEFAULT_MODEL;
-        return models.isEmpty() ? WhisperEngine.DEFAULT_MODEL : models.get(0);
+        String model = WhisperEngine.preferredModel(models);
+        return model != null ? model : WhisperEngine.DEFAULT_MODEL;
     }
 
     /**

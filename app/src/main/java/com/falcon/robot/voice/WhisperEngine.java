@@ -35,7 +35,29 @@ public final class WhisperEngine {
     private static final String TAG = "WhisperEngine";
     /** What the stub reports when whisper.cpp was not compiled in (see cpp/whisper_jni_stub.cpp). */
     private static final String STUB_MARKER = "whisper.cpp not built";
-    public static final String DEFAULT_MODEL = "ggml-small.bin";
+    public static final String DEFAULT_MODEL = "ggml-tiny-q5_1.bin";
+
+    /**
+     * Which model to load when nobody has chosen one: the cheapest that is actually there.
+     *
+     * <p>Order matters more than it looks. tiny quantised is 32 MB and loads in a moment; small is
+     * 487 MB and wants about 600 MB of memory to do it, which on a tablet is the difference
+     * between speech that works and speech that gets killed. Anything the operator picks by hand
+     * is honoured — this is only the starting point.
+     */
+    private static final String[] PREFERRED = {
+            "ggml-tiny-q5_1.bin", "ggml-tiny.bin", "ggml-tiny.en.bin",
+            "ggml-base-q5_1.bin", "ggml-base.bin",
+            "ggml-small-q5_1.bin", "ggml-small.bin",
+    };
+
+    /** The model to use out of {@code available}, or null when there are none. */
+    public static String preferredModel(List<String> available) {
+        for (String name : PREFERRED) {
+            if (available.contains(name)) return name;
+        }
+        return available.isEmpty() ? null : available.get(0);
+    }
 
     private static boolean libraryLoaded;
 

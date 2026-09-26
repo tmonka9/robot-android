@@ -14,3 +14,6 @@ app/src/main/cpp/whisper.cpp/
 
 # speech models (large binaries: pushed to the device, or dropped in app/src/main/assets)
 *.bin
+# ...except quantised whisper-tiny: 32 MB, small enough to ship, so an offline build has
+# speech without anyone copying a model in by hand
+!app/src/main/assets/ggml-tiny-q5_1.bin
