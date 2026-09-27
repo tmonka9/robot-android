@@ -9,6 +9,8 @@ import android.graphics.RectF;
 import android.util.Log;
 
 import org.tensorflow.lite.DataType;
+import com.falcon.robot.voice.CommandRecognizer;
+
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.Tensor;
 
@@ -624,12 +626,23 @@ public final class YoloSegmenter implements Closeable {
             String[] assets = context.getAssets().list(folder);
             if (assets == null) return;
             for (String asset : assets) {
-                if (asset == null || !asset.endsWith(".tflite") || asset.equals(FACE_MODEL)) continue;
+                if (asset == null || !asset.endsWith(".tflite") || isNotADetector(asset)) continue;
                 names.add(folder.isEmpty() ? asset : folder + "/" + asset);
             }
         } catch (IOException | RuntimeException e) {
             Log.w(TAG, "Could not list the assets in '" + folder + "'", e);
         }
+    }
+
+    /**
+     * The app's other .tflite models live in the same folder, and offering them here means the
+     * detector tries to load a face embedder or a command recogniser and fails on the input
+     * shape. They are named rather than guessed at: a model this does not know about is more
+     * likely to be a detector someone added than something to hide.
+     */
+    private static boolean isNotADetector(String name) {
+        String file = name.substring(name.lastIndexOf('/') + 1);
+        return file.equals(FACE_MODEL) || file.equals(CommandRecognizer.MODEL);
     }
 
     /** Same folder the speech models use, so everything can be pushed to one place. */

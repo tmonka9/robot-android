@@ -27,3 +27,10 @@ python tools/train_commands.py record --label "Wave" --count 30 --data data/comm
 # Only the English models are MIT. Korean, Chinese and Japanese Moonshine models are under a
 # non-commercial licence, which is why those languages stay with whisper here.
 # The library itself comes from Maven (ai.moonshine:moonshine-voice) and needs minSdk 26.
+
+# fine-tuning the English model on your own recordings
+pip install torch transformers "optimum[onnxruntime]" jiwer soundfile
+python tools/train_moonshine.py scan   --data data/speech
+python tools/train_moonshine.py train  --data data/speech --epochs 8
+python tools/train_moonshine.py export --checkpoint out/moonshine --assets
+python tools/train_moonshine.py check  --model app/src/main/assets/moonshine/tiny-en

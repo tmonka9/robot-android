@@ -50,6 +50,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -699,12 +700,23 @@ public class RobotService extends Service implements LifecycleOwner {
         return lastInferenceMs;
     }
 
+    /**
+     * A YOLO model by name before anything else: the models folder is shared with the speech and
+     * face models, and alphabetical order once handed the detector a command recogniser.
+     */
+    private static String firstDetector(List<String> models) {
+        for (String name : models) {
+            if (name.toLowerCase(Locale.US).contains("yolo")) return name;
+        }
+        return models.isEmpty() ? null : models.get(0);
+    }
+
     /** Loads a detector model; {@code modelName} null picks the first one available. */
     public void loadDetector(String modelName) {
         List<String> models = YoloSegmenter.listModels(this);
         final String model = modelName != null ? modelName
                 : models.contains(YoloSegmenter.DEFAULT_MODEL) ? YoloSegmenter.DEFAULT_MODEL
-                : models.isEmpty() ? null : models.get(0);
+                : firstDetector(models);
         if (model == null) {
             detectorError = null;
             detectorModel = null;
