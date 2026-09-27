@@ -42,6 +42,7 @@ import com.falcon.robot.face.FaceDatabase;
 import com.falcon.robot.face.FaceEmbedder;
 import com.falcon.robot.voice.CommandRecognizer;
 import com.falcon.robot.voice.CustomPhrases;
+import com.falcon.robot.voice.MoonshineEngine;
 import com.falcon.robot.voice.SpeechRecorder;
 import com.falcon.robot.voice.VoiceCommands;
 import com.falcon.robot.voice.WhisperEngine;
@@ -184,6 +185,7 @@ public class RobotService extends Service implements LifecycleOwner {
     // voice
     private WhisperEngine engine;
     /** The small command model when one is installed; whisper is only the fallback. */
+    private MoonshineEngine moonshine;
     private volatile CommandRecognizer commandRecognizer;
     private volatile boolean loadingCommandModel;
     private float[] pendingCommandSamples;   // said before the model was ready, main thread
@@ -224,6 +226,7 @@ public class RobotService extends Service implements LifecycleOwner {
         faceDatabase = new FaceDatabase(this);
         customPhrases = new CustomPhrases(this);
         engine = new WhisperEngine(this);
+        moonshine = new MoonshineEngine(this);
         // auto-detect is unreliable on one-second commands, so start from the app language
         language = LocaleHelper.effectiveLanguage(this);
         recorder = new SpeechRecorder(recorderListener);
@@ -279,6 +282,7 @@ public class RobotService extends Service implements LifecycleOwner {
         commandRecognizer = null;
         speechExecutor.execute(() -> {
             engine.release();
+            moonshine.close();
             if (recognizer != null) recognizer.close();
         });
         cameraExecutor.shutdown();
@@ -764,7 +768,11 @@ public class RobotService extends Service implements LifecycleOwner {
     }
 
     public void setLanguage(String code) {
+        boolean changed = code != null && !code.equals(language);
         language = code;
+        // English is Moonshine's and the rest are whisper's, so a change of language can mean a
+        // different engine; loading one already loaded costs nothing
+        if (changed && voiceEnabled) loadTranscriber();
     }
 
     public void setWakeWord(String word) {
@@ -825,15 +833,15 @@ public class RobotService extends Service implements LifecycleOwner {
                         message(getString(R.string.command_model_failed,
                                 CommandRecognizer.getLoadError()));
                     }
-                    loadSpeechModel(null);
+                    loadTranscriber();
                 } else {
                     int known = recognizer.commands().size();
                     int all = VoiceCommands.actions().size();
                     if (known >= all) {
                         message(getString(R.string.command_model_ready, known));
-                    } else if (WhisperEngine.isEngineBuilt()) {
+                    } else if (canTranscribe()) {
                         message(getString(R.string.command_model_partial, known, all));
-                        loadSpeechModel(null);
+                        loadTranscriber();
                     } else {
                         // Without whisper the robot answers to what the model was trained on and
                         // nothing else — which is worth saying plainly, rather than asking for a
@@ -848,6 +856,39 @@ public class RobotService extends Service implements LifecycleOwner {
                 if (waiting != null) recognise(waiting);
             });
         });
+    }
+
+    /** True when anything can turn speech into text: Moonshine for English, whisper otherwise. */
+    private boolean canTranscribe() {
+        return WhisperEngine.isEngineBuilt() || MoonshineEngine.isBundled(this);
+    }
+
+    /**
+     * Moonshine is the English recogniser and whisper covers the other languages, so which one to
+     * load depends on what the operator will be speaking — and on what is actually there. Neither
+     * is loaded until the command model has had its say, because most utterances never get here.
+     */
+    private void loadTranscriber() {
+        boolean english = "en".equals(language) || language == null;
+        if ((english || !WhisperEngine.isEngineBuilt()) && MoonshineEngine.isBundled(this)) {
+            if (moonshine.isReady()) return;
+            speechExecutor.execute(() -> {
+                final boolean ok = moonshine.load();
+                main.post(() -> {
+                    message(ok ? getString(R.string.moonshine_ready)
+                            : getString(R.string.moonshine_failed, moonshine.getLoadError()));
+                    notifyState();
+                });
+            });
+            return;
+        }
+        if (WhisperEngine.isEngineBuilt()) loadSpeechModel(null);
+    }
+
+    /** Whether this utterance goes to Moonshine rather than whisper. */
+    private boolean moonshineFits() {
+        if (!moonshine.isReady()) return false;
+        return "en".equals(language) || !engine.isReady();
     }
 
     /** Loads a ggml model; {@code modelName} null picks the bundled one. */
@@ -941,6 +982,10 @@ public class RobotService extends Service implements LifecycleOwner {
     }
 
     private void transcribe(final float[] samples) {
+        if (moonshineFits()) {
+            transcribeWithMoonshine(samples);
+            return;
+        }
         if (!engine.isReady()) {
             String broken = CommandRecognizer.getLoadError();
             message(broken != null ? getString(R.string.command_model_failed, broken)
@@ -966,6 +1011,36 @@ public class RobotService extends Service implements LifecycleOwner {
                     handleTranscript(result.text, result.confidence * 100f);
                 } else {
                     // silence, noise, or a language the model did not expect
+                    for (Listener listener : listeners) {
+                        listener.onTranscript("", -1f, null, R.string.no_speech);
+                    }
+                }
+                float[] queued = pendingSamples;
+                pendingSamples = null;
+                if (queued != null) transcribe(queued);
+            });
+        });
+    }
+
+    /**
+     * The same as {@link #transcribe} but through Moonshine, which reports no confidence — so the
+     * Voice page shows a dash there rather than a number that would mean nothing.
+     */
+    private void transcribeWithMoonshine(final float[] samples) {
+        if (transcribing) {
+            pendingSamples = samples;
+            return;
+        }
+        transcribing = true;
+        notifyState();
+        speechExecutor.execute(() -> {
+            final String text = moonshine.transcribe(samples);
+            main.post(() -> {
+                transcribing = false;
+                notifyState();
+                if (text != null && !text.isEmpty()) {
+                    handleTranscript(text, -1f);
+                } else {
                     for (Listener listener : listeners) {
                         listener.onTranscript("", -1f, null, R.string.no_speech);
                     }

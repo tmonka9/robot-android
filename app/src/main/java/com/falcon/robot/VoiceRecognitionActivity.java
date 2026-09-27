@@ -33,6 +33,7 @@ import androidx.core.content.ContextCompat;
 
 import com.falcon.robot.voice.CommandRecognizer;
 import com.falcon.robot.voice.CustomPhrases;
+import com.falcon.robot.voice.MoonshineEngine;
 import com.falcon.robot.voice.VoiceCommands;
 import com.falcon.robot.voice.WhisperEngine;
 import com.falcon.robot.widget.CoverImageView;
@@ -233,7 +234,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
             return;
         }
         if (!service.getEngine().isReady() && !service.isLoadingSpeechModel()
-                && !CommandRecognizer.exists(this)) {
+                && !CommandRecognizer.exists(this) && !MoonshineEngine.isBundled(this)) {
             // with a command model there is nothing wrong: the robot's own orders are understood
             // without whisper, and only anything else said to it goes unrecognised
             toast(engineProblem());

@@ -8,7 +8,9 @@ android {
 
     defaultConfig {
         applicationId "com.falcon.robot"
-        minSdk 21
+        // 26 is Moonshine's floor (its AAR declares minSdkVersion 26); everything else here
+        // still runs on 21, so dropping Moonshine would let this go back down
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -54,7 +56,7 @@ android {
 
     androidResources {
         // keep the TFLite and ggml models uncompressed inside the APK
-        noCompress 'tflite', 'bin'
+        noCompress 'tflite', 'bin', 'ort'
     }
 }
 
@@ -77,4 +79,12 @@ dependencies {
 
     // MobileFaceNet embeddings (assets/mobilefacenet.tflite)
     implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+
+    // English speech recognition (MIT-licensed models; the other languages are not, see readme).
+    // okhttp and work-runtime are only for its opt-in model downloader -- the model is in assets,
+    // so they are left out rather than shipped and never called.
+    implementation('ai.moonshine:moonshine-voice:0.1.5') {
+        exclude group: 'com.squareup.okhttp3'
+        exclude group: 'androidx.work'
+    }
 }

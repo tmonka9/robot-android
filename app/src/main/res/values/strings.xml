@@ -405,6 +405,8 @@
     <string name="command_model_partial">Command model ready: %1$d of %2$d commands — the speech model covers the rest</string>
     <string name="command_model_only">Command model ready: %1$d of %2$d commands — record the other %3$d to add them</string>
     <string name="command_model_failed">Command model could not be loaded: %1$s</string>
+    <string name="moonshine_ready">English speech model ready (Moonshine tiny)</string>
+    <string name="moonshine_failed">English speech model could not be loaded: %1$s</string>
     <string name="command_unsure">Not sure — that sounded like “%1$s” (%2$d%%). Say it again, closer to the microphone.</string>
     <string name="model_too_large">Model needs about %1$d MB of memory but only %2$d MB is free — use a smaller one, such as ggml-base.bin</string>
     <string name="model_load_failed">Could not load %s</string>

@@ -15,3 +15,15 @@ python tools/train_commands.py record --label "Wave" --count 30 --data data/comm
 # not in git (see .gitignore), so copy these into the tree by hand for an offline build:
 #   app/src/main/assets/ggml-small.bin   whisper model, 487 MB
 #   app/src/main/cpp/whisper.cpp/        git clone --depth 1 --branch v1.7.4 https://github.com/ggerganov/whisper.cpp
+
+# English speech (app/src/main/assets/moonshine/tiny-en/)
+# Moonshine tiny-en, MIT-licensed, downloaded with their python package:
+#   pip install moonshine-voice
+#   python -m moonshine_voice.download --language en --stt --model-arch 0
+#   copy encoder_model.ort decoder_model_merged.ort tokenizer.bin into assets/moonshine/tiny-en/
+# --model-arch 1 is base-en (135 MB, a little more accurate): put it in assets/moonshine/base-en
+# and change MODEL/ARCH in MoonshineEngine.java.
+#
+# Only the English models are MIT. Korean, Chinese and Japanese Moonshine models are under a
+# non-commercial licence, which is why those languages stay with whisper here.
+# The library itself comes from Maven (ai.moonshine:moonshine-voice) and needs minSdk 26.

@@ -17,3 +17,5 @@ app/src/main/cpp/whisper.cpp/
 # ...except quantised whisper-tiny: 32 MB, small enough to ship, so an offline build has
 # speech without anyone copying a model in by hand
 !app/src/main/assets/ggml-tiny-q5_1.bin
+# ...and Moonshine's tokenizer, which is a .bin too and is useless without its model
+!app/src/main/assets/moonshine/**/tokenizer.bin

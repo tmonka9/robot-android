@@ -404,6 +404,8 @@
     <string name="command_model_partial">命令模型就绪：%1$d / %2$d 条命令 — 其余由语音模型识别</string>
     <string name="command_model_only">命令模型就绪：%1$d / %2$d 条命令 — 录制其余 %3$d 条即可添加</string>
     <string name="command_model_failed">无法加载命令模型：%1$s</string>
+    <string name="moonshine_ready">英语语音模型就绪（Moonshine tiny）</string>
+    <string name="moonshine_failed">无法加载英语语音模型：%1$s</string>
     <string name="command_unsure">不确定 — 听起来像“%1$s”（%2$d%%）。请靠近麦克风再说一遍。</string>
     <string name="model_too_large">模型约需 %1$d MB 内存，但可用内存仅 %2$d MB — 请改用更小的模型，例如 ggml-base.bin</string>
     <string name="model_load_failed">无法加载 %s</string>
