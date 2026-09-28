@@ -1,4 +1,4 @@
-robot-cmd-kp-2 — Moonshine speech recognition, ORT format
+robot-cmd-kp-v3 — Moonshine speech recognition, ORT format
 
 Language: ko   Architecture: tiny   Precision: int8
 
