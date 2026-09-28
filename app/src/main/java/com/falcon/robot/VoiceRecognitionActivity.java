@@ -1,7 +1,6 @@
 package com.falcon.robot;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.content.pm.PackageManager;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
@@ -57,6 +56,9 @@ import java.util.Locale;
 public class VoiceRecognitionActivity extends BaseActivity {
 
     private static final int MAX_HISTORY = 100;
+
+    /** How much of the panel's width the live waveform is given. */
+    private static final float WAVE_WIDTH = 0.90f;
 
     /** Artwork coordinates (voice_visual.png pixels) for the live overlays. */
     private static final RectF MIC_RECT = new RectF(205, 75, 405, 275);
@@ -139,7 +141,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns_bottom);
 
         clock = android.text.format.DateFormat.getTimeFormat(this);
-        selectAppLanguage();
+        selectSavedLanguage();
         customPhrases = new CustomPhrases(this);
 
         setupListening();
@@ -191,7 +193,15 @@ public class VoiceRecognitionActivity extends BaseActivity {
         visual.mapImageRect(HINT_RECT, rect);
         place(speakHint, rect);
         speakHint.setTextSize(TypedValue.COMPLEX_UNIT_PX, rect.height() * 0.62f);
+        // The artwork drew the waveform narrow. It reads better wide, so the mapped rectangle
+        // gives it only its height and vertical place; the width is 90% of the panel, centred.
         visual.mapImageRect(WAVE_RECT, rect);
+        float panel = ((View) liveWave.getParent()).getWidth();
+        if (panel > 0) {
+            float width = panel * WAVE_WIDTH;
+            rect.left = (panel - width) / 2f;
+            rect.right = rect.left + width;
+        }
         place(liveWave, rect);
     }
 
@@ -460,10 +470,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
     private void setupCommands() {
         setIcon(findViewById(R.id.voice_db_title), R.drawable.ic_mic, 22, color(R.color.cyan), Gravity.START);
-        TextView add = findViewById(R.id.btn_add_voice);
-        setIcon(add, R.drawable.ic_add, 16, color(R.color.text_primary), Gravity.START);
-        add.setOnClickListener(v -> showAddPhraseDialog());
-
         commandList = findViewById(R.id.voice_db_list);
         commandSearch = findViewById(R.id.voice_search);
         setIcon(commandSearch, R.drawable.ic_search, 18, color(R.color.text_secondary), Gravity.START);
@@ -533,48 +539,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
         return row;
     }
 
-    private void showAddPhraseDialog() {
-        final List<VoiceCommands.Action> actions = VoiceCommands.actions();
-        final EditText input = textInput(null);
-        input.setHint(R.string.enter_phrase);
-        final Spinner spinner = new Spinner(this);
-        List<CharSequence> names = new ArrayList<>();
-        for (VoiceCommands.Action a : actions) names.add(getString(a.labelRes));
-        ArrayAdapter<CharSequence> adapter = new ArrayAdapter<>(this, R.layout.item_spinner, names);
-        adapter.setDropDownViewResource(R.layout.item_spinner_dropdown);
-        spinner.setAdapter(adapter);
-        spinner.setBackgroundResource(R.drawable.bg_input);
-
-        float density = getResources().getDisplayMetrics().density;
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        int pad = Math.round(24 * density);
-        content.setPadding(pad, pad / 2, pad, 0);
-        content.addView(input);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, Math.round(46 * density));
-        lp.topMargin = Math.round(10 * density);
-        content.addView(spinner, lp);
-
-        final AlertDialog dialog = new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
-                .setTitle(R.string.add_phrase)
-                .setView(content)
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.save, null)
-                .create();
-        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-            String text = input.getText().toString().trim();
-            if (text.isEmpty()) {
-                input.setError(getString(R.string.enter_phrase));
-                return;
-            }
-            customPhrases.add(text, actions.get(spinner.getSelectedItemPosition()));
-            renderCommands();
-            dialog.dismiss();
-        }));
-        dialog.show();
-    }
-
     // ---- voice control ---------------------------------------------------------------------
 
     private void setupVoiceControl() {
@@ -604,21 +568,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
         toggle.setChecked(checked);
         parent.addView(row);
         return toggle;
-    }
-
-    private EditText textInput(String value) {
-        EditText input = new EditText(this);
-        input.setSingleLine(true);
-        input.setTextColor(color(R.color.text_primary));
-        input.setHintTextColor(color(R.color.text_muted));
-        input.setBackgroundResource(R.drawable.bg_input);
-        int pad = Math.round(12 * getResources().getDisplayMetrics().density);
-        input.setPadding(pad, pad, pad, pad);
-        if (value != null) {
-            input.setText(value);
-            input.setSelection(value.length());
-        }
-        return input;
     }
 
     // ---- history ---------------------------------------------------------------------------
@@ -713,12 +662,14 @@ public class VoiceRecognitionActivity extends BaseActivity {
     }
 
     /**
-     * Starts the Language tab on the app language when speech is recognised in it, and on the
-     * first language offered otherwise: there is one model per language, and none of them guess.
+     * Starts the Language tab on the language chosen last time — it is remembered by the service,
+     * so it survives leaving the page — and on the app language until one has been chosen. Falls
+     * back to the first language offered: there is one model per language, and none of them guess.
      */
-    private void selectAppLanguage() {
+    private void selectSavedLanguage() {
         String[] codes = getResources().getStringArray(R.array.adv_language_codes);
-        String language = LocaleHelper.effectiveLanguage(this);
+        String saved = RobotService.savedLanguage(this);
+        String language = saved != null ? saved : LocaleHelper.effectiveLanguage(this);
         for (int i = 0; i < codes.length; i++) {
             if (codes[i].equals(language)) {
                 advancedSelection[0][0] = i; // recognition language

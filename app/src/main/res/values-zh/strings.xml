@@ -172,9 +172,6 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">位置已复位</string>
     <string name="camera_view">摄像头画面</string>
-    <string name="feature_face">人脸</string>
-    <string name="feature_object">物体</string>
-    <string name="feature_voice">语音</string>
     <string name="cam_front">前</string>
     <string name="cam_rear">后</string>
     <string name="cam_left">左</string>
@@ -222,6 +219,17 @@
     <string name="custom_actions">自定义动作</string>
     <string name="custom_action">动作 %d</string>
     <string name="robot_tip">使用虚拟摇杆或预设按钮控制机器人。</string>
+    <string name="panel_control">控制</string>
+    <string name="panel_ai">AI</string>
+    <string name="panel_log">日志</string>
+    <string name="log_start">开始记录</string>
+    <string name="log_stop">停止记录</string>
+    <string name="log_off">记录已关闭</string>
+    <string name="log_waiting">等待识别结果…</string>
+    <string name="log_face">人脸：%1$s</string>
+    <string name="log_objects">物体：%1$s</string>
+    <string name="log_voice">语音：%1$s</string>
+    <string name="status_line">%1$s  ·  %2$s</string>
     <string name="pose_stand">站立</string>
     <string name="pose_sit">坐下</string>
     <string name="pose_wave">挥手</string>
@@ -368,7 +376,6 @@
     <string name="command_action">指令动作</string>
     <string name="execute_label">执行： </string>
     <string name="voice_database">语音指令</string>
-    <string name="add_voice">添加短语</string>
     <string name="search_by_name">搜索指令…</string>
     <string name="voice_control">语音控制</string>
     <string name="vc_command">语音指令控制</string>
@@ -415,8 +422,6 @@
     <string name="quoted">“%1$s”</string>
     <string name="built_in">内置</string>
     <string name="custom_phrase">自定义</string>
-    <string name="add_phrase">添加短语</string>
-    <string name="enter_phrase">要说的短语</string>
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->

@@ -349,22 +349,6 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:text="@string/voice_database" />
-
-                        <TextView
-                            android:id="@+id/btn_add_voice"
-                            android:layout_width="wrap_content"
-                            android:layout_height="34dp"
-                            android:background="@drawable/bg_control_button"
-                            android:clickable="true"
-                            android:drawablePadding="6dp"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:paddingLeft="10dp"
-                            android:paddingRight="12dp"
-                            android:singleLine="true"
-                            android:text="@string/add_voice"
-                            android:textColor="@color/text_primary"
-                            android:textSize="12sp" />
                     </LinearLayout>
 
                     <EditText

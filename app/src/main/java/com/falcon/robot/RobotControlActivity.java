@@ -38,9 +38,13 @@ import com.falcon.robot.widget.Robot3DView;
 import com.falcon.robot.widget.JoystickView;
 import com.falcon.robot.widget.TrackingOverlayView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Robot Control page (design/robot.png): robot status, camera view with image settings,
@@ -48,8 +52,9 @@ import java.util.Locale;
  * Robot telemetry and the camera stream are simulated until the real robot protocol exists.
  *
  * <p>The three recognition features are switched on from here as well, since this is the page the
- * robot is driven from: faces and objects are drawn over the feed, and a spoken command is carried
- * out exactly as the button for it would be.
+ * robot is driven from: faces and objects are drawn over the feed, a spoken command is carried out
+ * exactly as the button for it would be, and the Log panel keeps what each model reported. The
+ * status bar along the foot says what happened last, whichever panel it happened in.
  */
 public class RobotControlActivity extends BaseActivity {
 
@@ -92,8 +97,12 @@ public class RobotControlActivity extends BaseActivity {
     private static final int OBJECTS = 1;
     private static final int VOICE = 2;
 
+    /** How many lines the Log panel keeps; it scrolls, and older than this is of no use. */
+    private static final int MAX_LOG = 80;
+
     private final RobotSession session = RobotSession.get();
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
 
     private TextView valueMode;
     private TextView valueSpeed;
@@ -127,6 +136,15 @@ public class RobotControlActivity extends BaseActivity {
     private int pendingFeature = NO_FEATURE;
     /** A detector that will not load is said once, not on every frame. */
     private boolean detectorReported;
+    private TextView aiStatus;
+
+    // log
+    private TextView logButton;
+    private LinearLayout logList;
+    private final List<String> logLines = new ArrayList<>();
+    private boolean logging;
+    /** The objects last written down, so a steady scene is logged once and not every frame. */
+    private String lastObjects;
 
     /** The panel filling the page, or 0 when the page is laid out normally. */
     private int fullscreenPanel;
@@ -188,14 +206,15 @@ public class RobotControlActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // no page header on this page: the screen goes to the panels instead
         setPage(R.layout.activity_robot_control, R.id.nav_robot, 0);
-        setupRichHeader(R.drawable.ic_robot, R.string.nav_robot, R.string.robot_subtitle);
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
 
         setupStatusPanel();
         setupCamera();
         setupRecognition();
+        setupLog();
         setupMovement();
         setupArm();
         setupActions();
@@ -264,7 +283,6 @@ public class RobotControlActivity extends BaseActivity {
 
     @Override
     protected void onConnectionChanged() {
-        refreshRichHeader();
         refreshStatus();
     }
 
@@ -343,8 +361,6 @@ public class RobotControlActivity extends BaseActivity {
         if (full) refreshFullscreenBar();
 
         boolean camera = fullscreenPanel == R.id.camera_panel;
-        // the colour and resolution controls are not what a full-screen feed is for
-        findViewById(R.id.camera_settings_column).setVisibility(camera ? View.GONE : View.VISIBLE);
         // the overlay is a surface drawn over the window, and a hidden ancestor does not reach it:
         // without this it would go on drawing the robot over whatever took the panel's place
         if (feedOverlay != null) {
@@ -480,6 +496,8 @@ public class RobotControlActivity extends BaseActivity {
 
     private void setupCamera() {
         setIcon(findViewById(R.id.camera_title), R.drawable.ic_camera, 20, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.camera_settings_title), R.drawable.ic_tune, 20,
+                color(R.color.blue_light), Gravity.START);
         cameraFeed = findViewById(R.id.camera_feed);
         cameraFeed.setFocus(0.25f, 0.2f, 0.75f, 1f); // keep the robot in frame
         findViewById(R.id.camera_feed_frame).setClipToOutline(true);
@@ -620,6 +638,8 @@ public class RobotControlActivity extends BaseActivity {
         faceOverlay.setLabels(getString(R.string.unknown_person), getString(R.string.face_label_face));
         objectOverlay = findViewById(R.id.tracking_overlay);
 
+        setIcon(findViewById(R.id.ai_title), R.drawable.ic_chip, 20, color(R.color.cyan), Gravity.START);
+        aiStatus = findViewById(R.id.ai_status);
         faceButton = bindFeature(R.id.toggle_face, R.drawable.ic_face_id, FACE);
         objectButton = bindFeature(R.id.toggle_object, R.drawable.ic_cube, OBJECTS);
         voiceButton = bindFeature(R.id.toggle_voice, R.drawable.ic_mic, VOICE);
@@ -628,7 +648,7 @@ public class RobotControlActivity extends BaseActivity {
 
     private TextView bindFeature(int id, int icon, final int feature) {
         TextView button = findViewById(id);
-        setIcon(button, icon, 18, color(R.color.text_primary), Gravity.START);
+        setIcon(button, icon, 20, color(R.color.text_primary), Gravity.START);
         button.setOnClickListener(v -> toggleFeature(feature));
         return button;
     }
@@ -679,6 +699,7 @@ public class RobotControlActivity extends BaseActivity {
                 break;
             case OBJECTS:
                 detectorReported = false;
+                lastObjects = null; // so the scene is written down again when it comes back
                 service.setDetectionEnabled(on);
                 break;
             default:
@@ -707,6 +728,7 @@ public class RobotControlActivity extends BaseActivity {
         objectOverlay.setVisibility(objects ? View.VISIBLE : View.GONE);
         if (!face) faceOverlay.clear();
         if (!objects) objectOverlay.clear();
+        renderAiStatus();
 
         // a detector that will not load draws nothing at all, which looks like the switch failing
         if (objects && !detectorReported && service.getDetectorError() != null) {
@@ -714,6 +736,103 @@ public class RobotControlActivity extends BaseActivity {
             toast(getString(R.string.detector_failed, String.valueOf(service.getDetectorModel()),
                     service.getDetectorError()));
         }
+    }
+
+    /** What the AI panel says under its switches: what is running, and how it is doing. */
+    private void renderAiStatus() {
+        if (aiStatus == null) return;
+        RobotService service = getRobotService();
+        StringBuilder text = new StringBuilder();
+        if (service != null && service.isFaceEnabled()) text.append(getString(R.string.nav_face));
+        if (service != null && service.isDetectionEnabled()) {
+            if (text.length() > 0) text.append('\n');
+            text.append(service.getDetectorModel() != null
+                    ? getString(R.string.inference_info, service.getDetectorModel(),
+                            (int) service.getLastInferenceMs())
+                    : getString(R.string.no_detector));
+        }
+        if (service != null && service.isVoiceEnabled()) {
+            if (text.length() > 0) text.append('\n');
+            text.append(getString(service.isTranscribing()
+                    ? R.string.status_processing : R.string.status_listening));
+        }
+        aiStatus.setText(text.length() == 0 ? getString(R.string.status_paused) : text);
+    }
+
+    // ---- Log ---------------------------------------------------------------------------------
+
+    /**
+     * The Log panel: switched on with the button at its head, and then every face, object and
+     * voice result is written down with the time it arrived. It is off to begin with, because a
+     * log nobody asked for is only noise on a driving screen.
+     */
+    private void setupLog() {
+        setIcon(findViewById(R.id.log_title), R.drawable.ic_history, 20,
+                color(R.color.text_primary), Gravity.START);
+        logList = findViewById(R.id.log_list);
+        logButton = findViewById(R.id.btn_log);
+        setIcon(logButton, R.drawable.ic_play_white, 14, color(R.color.text_primary), Gravity.START);
+        logButton.setOnClickListener(v -> setLogging(!logging));
+        renderLog();
+    }
+
+    private void setLogging(boolean on) {
+        logging = on;
+        logButton.setActivated(on);
+        logButton.setText(on ? R.string.log_stop : R.string.log_start);
+        lastObjects = null;
+        renderLog(); // whatever was collected stays in view after the log is stopped
+    }
+
+    /**
+     * One recognition result: the status bar always says it, and the log keeps it while it is
+     * running. Button presses go to the status bar only — the log is for what the models report.
+     */
+    private void recognised(String line) {
+        setTip(line);
+        if (!logging) return;
+        logLines.add(getString(R.string.status_line, clock.format(new Date()), line));
+        while (logLines.size() > MAX_LOG) logLines.remove(0);
+        renderLog();
+    }
+
+    private void renderLog() {
+        if (logList == null) return;
+        logList.removeAllViews();
+        if (logLines.isEmpty()) {
+            logList.addView(logLine(getString(logging ? R.string.log_waiting : R.string.log_off),
+                    color(R.color.text_muted)));
+            return;
+        }
+        for (int i = logLines.size() - 1; i >= 0; i--) { // newest at the top
+            logList.addView(logLine(logLines.get(i), color(R.color.text_primary)));
+        }
+    }
+
+    private TextView logLine(String text, int textColor) {
+        int pad = Math.round(3 * getResources().getDisplayMetrics().density);
+        TextView line = new TextView(this);
+        line.setText(text);
+        line.setTextColor(textColor);
+        line.setTextSize(11);
+        line.setPadding(0, pad, 0, pad);
+        return line;
+    }
+
+    /** "person x2, chair" — what is in frame, so a scene that has not changed is logged once. */
+    private static String objectSummary(List<ObjectTracker.Snapshot> objects) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (ObjectTracker.Snapshot object : objects) {
+            Integer seen = counts.get(object.label);
+            counts.put(object.label, seen == null ? 1 : seen + 1);
+        }
+        StringBuilder text = new StringBuilder();
+        for (Map.Entry<String, Integer> entry : counts.entrySet()) {
+            if (text.length() > 0) text.append(", ");
+            text.append(entry.getKey());
+            if (entry.getValue() > 1) text.append(" x").append(entry.getValue());
+        }
+        return text.toString();
     }
 
     /** The front lens mirrors the picture, so the overlays have to be mirrored with it. */
@@ -730,9 +849,23 @@ public class RobotControlActivity extends BaseActivity {
         }
 
         @Override
+        public void onFaceEvent(FaceAnalyzer.FaceEvent event) {
+            String who = event.record != null ? event.record.name
+                    : getString(R.string.unknown_person);
+            recognised(getString(R.string.log_face, who + "  "
+                    + getString(R.string.similarity_value, event.similarity)));
+        }
+
+        @Override
         public void onObjects(List<ObjectTracker.Snapshot> objects, int width, int height,
                               long inferenceMs) {
             objectOverlay.setObjects(objects, width, height, frontCamera());
+            renderAiStatus(); // the inference time is part of what the panel reports
+            String summary = objectSummary(objects);
+            if (!summary.isEmpty() && !summary.equals(lastObjects)) {
+                lastObjects = summary;
+                recognised(getString(R.string.log_objects, summary));
+            }
         }
 
         @Override
@@ -761,14 +894,11 @@ public class RobotControlActivity extends BaseActivity {
      * and not as whatever the model guessed at, which is noise rather than an order.
      */
     private void showVoiceCommand(VoiceCommands.Action action, int result) {
-        if (result == R.string.no_speech) {
-            setTip(getString(R.string.no_speech));
-            return;
-        }
-        if (action == null || result == R.string.command_unsure) {
-            setTip(getString(R.string.result_no_match));
-            return;
-        }
+        boolean heard = action != null && result != R.string.command_unsure;
+        recognised(getString(R.string.log_voice, heard ? getString(action.labelRes)
+                : result == R.string.no_speech ? getString(R.string.no_speech)
+                : getString(R.string.result_no_match)));
+        if (!heard) return; // nothing was ordered, so there is nothing for the robot to show
         if (action.command == null) { // the robot answers instead of moving, such as the time
             setTip(getString(R.string.result_answered));
             return;
@@ -783,8 +913,10 @@ public class RobotControlActivity extends BaseActivity {
 
     private void setupMovement() {
         int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.movement_title), R.drawable.ic_crosshair, 22, 0, Gravity.START);
-        setIcon(findViewById(R.id.label_speed_slider), R.drawable.ic_run, 18, 0, Gravity.START);
+        setIcon(findViewById(R.id.control_panel_title), R.drawable.ic_gamepad, 20,
+                color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.movement_title), R.drawable.ic_crosshair, 16, 0, Gravity.START);
+        setIcon(findViewById(R.id.label_speed_slider), R.drawable.ic_run, 16, 0, Gravity.START);
 
         bindMoveButton(R.id.move_forward, R.drawable.ic_arrow_up, "MOVE FORWARD", 0, 1);
         bindMoveButton(R.id.move_backward, R.drawable.ic_arrow_down, "MOVE BACKWARD", 0, -1);
@@ -833,7 +965,7 @@ public class RobotControlActivity extends BaseActivity {
 
     private void bindMoveButton(int id, int icon, final String command, final int dx, final int dy) {
         final TextView button = findViewById(id);
-        setIcon(button, icon, 20, color(R.color.text_primary), Gravity.TOP);
+        setIcon(button, icon, 18, color(R.color.text_primary), Gravity.TOP);
         button.setOnClickListener(v -> {
             if (!sendCommand(command)) return;
             float step = STEP_M * speedFraction();
@@ -881,7 +1013,7 @@ public class RobotControlActivity extends BaseActivity {
     // ---- Arm -------------------------------------------------------------------------------
 
     private void setupArm() {
-        setIcon(findViewById(R.id.arm_title), R.drawable.ic_arm, 22, 0, Gravity.START);
+        setIcon(findViewById(R.id.arm_title), R.drawable.ic_arm, 16, 0, Gravity.START);
         int white = color(R.color.text_primary);
 
         armParts = new TextView[] {
@@ -922,20 +1054,20 @@ public class RobotControlActivity extends BaseActivity {
     // ---- Quick & custom actions ----------------------------------------------------------
 
     private void setupActions() {
-        setIcon(findViewById(R.id.quick_title), R.drawable.ic_bolt, 22, color(R.color.cyan), Gravity.START);
-        setIcon(findViewById(R.id.custom_title), R.drawable.ic_star, 22, 0, Gravity.START);
-        setIcon(findViewById(R.id.robot_tip), R.drawable.ic_info, 20, 0, Gravity.START);
+        setIcon(findViewById(R.id.quick_title), R.drawable.ic_bolt, 16, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.custom_title), R.drawable.ic_star, 16, 0, Gravity.START);
+        setIcon(findViewById(R.id.robot_tip), R.drawable.ic_info, 16, 0, Gravity.START);
         tip = findViewById(R.id.robot_tip);
         int white = color(R.color.text_primary);
 
         TextView home = findViewById(R.id.qa_home);
-        setIcon(home, R.drawable.ic_home, 22, white, Gravity.START);
+        setIcon(home, R.drawable.ic_home, 16, white, Gravity.START);
         home.setOnClickListener(v -> {
             if (sendCommand("GO_HOME")) setTip(getString(R.string.sent_command, home.getText()));
         });
 
         patrol = findViewById(R.id.qa_patrol);
-        setIcon(patrol, R.drawable.ic_shield, 22, white, Gravity.START);
+        setIcon(patrol, R.drawable.ic_shield, 16, white, Gravity.START);
         patrol.setOnClickListener(v -> {
             boolean start = !patrol.isActivated();
             if (!sendCommand(start ? "PATROL START" : "PATROL STOP")) return;
@@ -945,7 +1077,7 @@ public class RobotControlActivity extends BaseActivity {
         });
 
         follow = findViewById(R.id.qa_follow);
-        setIcon(follow, R.drawable.ic_follow, 22, white, Gravity.START);
+        setIcon(follow, R.drawable.ic_follow, 16, white, Gravity.START);
         follow.setOnClickListener(v -> {
             boolean start = !follow.isActivated();
             if (!sendCommand(start ? "FOLLOW START" : "FOLLOW STOP")) return;
@@ -955,7 +1087,7 @@ public class RobotControlActivity extends BaseActivity {
         });
 
         TextView shutdown = findViewById(R.id.qa_shutdown);
-        setIcon(shutdown, R.drawable.ic_power, 22, white, Gravity.START);
+        setIcon(shutdown, R.drawable.ic_power, 16, white, Gravity.START);
         shutdown.setOnClickListener(v -> new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
                 .setTitle(R.string.qa_shutdown)
                 .setMessage(R.string.shutdown_confirm)
@@ -995,7 +1127,8 @@ public class RobotControlActivity extends BaseActivity {
         }
     }
 
+    /** The status bar: the time, and the last thing that happened. */
     private void setTip(CharSequence text) {
-        tip.setText(text);
+        tip.setText(getString(R.string.status_line, clock.format(new Date()), text));
     }
 }

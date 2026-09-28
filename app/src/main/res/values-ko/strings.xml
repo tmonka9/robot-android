@@ -173,9 +173,6 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">위치 초기화</string>
     <string name="camera_view">카메라 화면</string>
-    <string name="feature_face">얼굴</string>
-    <string name="feature_object">물체</string>
-    <string name="feature_voice">음성</string>
     <string name="cam_front">전방</string>
     <string name="cam_rear">후방</string>
     <string name="cam_left">좌측</string>
@@ -223,6 +220,17 @@
     <string name="custom_actions">사용자 동작</string>
     <string name="custom_action">동작 %d</string>
     <string name="robot_tip">가상 조이스틱이나 사전 설정 버튼으로 로봇을 제어하세요.</string>
+    <string name="panel_control">조종</string>
+    <string name="panel_ai">AI</string>
+    <string name="panel_log">기록</string>
+    <string name="log_start">기록 시작</string>
+    <string name="log_stop">기록 중지</string>
+    <string name="log_off">기록이 꺼져 있습니다</string>
+    <string name="log_waiting">인식 결과를 기다리고 있습니다…</string>
+    <string name="log_face">얼굴: %1$s</string>
+    <string name="log_objects">물체: %1$s</string>
+    <string name="log_voice">음성: %1$s</string>
+    <string name="status_line">%1$s  ·  %2$s</string>
     <string name="pose_stand">서기</string>
     <string name="pose_sit">앉기</string>
     <string name="pose_wave">손 흔들기</string>
@@ -369,7 +377,6 @@
     <string name="command_action">명령 동작</string>
     <string name="execute_label">실행: </string>
     <string name="voice_database">음성 명령</string>
-    <string name="add_voice">문구 추가</string>
     <string name="search_by_name">명령 검색…</string>
     <string name="voice_control">음성 제어</string>
     <string name="vc_command">음성 명령 제어</string>
@@ -416,8 +423,6 @@
     <string name="quoted">“%1$s”</string>
     <string name="built_in">기본</string>
     <string name="custom_phrase">사용자</string>
-    <string name="add_phrase">문구 추가</string>
-    <string name="enter_phrase">말할 문구</string>
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->

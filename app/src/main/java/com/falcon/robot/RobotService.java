@@ -84,6 +84,7 @@ public class RobotService extends Service implements LifecycleOwner {
     private static final String KEY_FACE = "face_enabled";
     private static final String KEY_DETECTION = "detection_enabled";
     private static final String KEY_VOICE = "voice_enabled";
+    private static final String KEY_LANGUAGE = "voice_language";
     private static final String KEY_LENS = "lens_facing";
     private static final String KEY_ANALYSIS_WIDTH = "analysis_width";
     private static final String KEY_ANALYSIS_HEIGHT = "analysis_height";
@@ -226,8 +227,9 @@ public class RobotService extends Service implements LifecycleOwner {
         customPhrases = new CustomPhrases(this);
         engine = new WhisperEngine(this);
         moonshine = new MoonshineEngine(this);
-        // auto-detect is unreliable on one-second commands, so start from the app language
-        language = recognisedLanguage(LocaleHelper.effectiveLanguage(this));
+        // the language chosen last time, or the app language until one is chosen
+        language = recognisedLanguage(prefs.getString(KEY_LANGUAGE,
+                LocaleHelper.effectiveLanguage(this)));
         recorder = new SpeechRecorder(recorderListener);
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
@@ -789,9 +791,20 @@ public class RobotService extends Service implements LifecycleOwner {
         return "en";
     }
 
+    /**
+     * The recognition language the Voice page last read, for the pages that need it before they
+     * have bound to the service; null until one has been chosen.
+     */
+    public static String savedLanguage(Context context) {
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .getString(KEY_LANGUAGE, null);
+    }
+
     public void setLanguage(String code) {
         boolean changed = code != null && !code.equals(language);
         language = code;
+        // remembered, so the choice survives the page being left and the app being restarted
+        if (code != null) prefs.edit().putString(KEY_LANGUAGE, code).apply();
         // each language has its own Moonshine model, so a change of language means a different
         // model — and possibly a different engine; loading one already loaded costs nothing
         if (changed && voiceEnabled) loadTranscriber();

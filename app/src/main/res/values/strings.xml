@@ -173,9 +173,6 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">Position reset</string>
     <string name="camera_view">Camera View</string>
-    <string name="feature_face">Face</string>
-    <string name="feature_object">Objects</string>
-    <string name="feature_voice">Voice</string>
     <string name="cam_front">Front</string>
     <string name="cam_rear">Rear</string>
     <string name="cam_left">Left</string>
@@ -223,6 +220,17 @@
     <string name="custom_actions">Custom Actions</string>
     <string name="custom_action">Action %d</string>
     <string name="robot_tip">Use the virtual joystick or preset buttons to control the robot.</string>
+    <string name="panel_control">Control</string>
+    <string name="panel_ai">AI</string>
+    <string name="panel_log">Log</string>
+    <string name="log_start">Start Log</string>
+    <string name="log_stop">Stop Log</string>
+    <string name="log_off">Logging is off</string>
+    <string name="log_waiting">Waiting for recognition results…</string>
+    <string name="log_face">Face: %1$s</string>
+    <string name="log_objects">Objects: %1$s</string>
+    <string name="log_voice">Voice: %1$s</string>
+    <string name="status_line">%1$s  ·  %2$s</string>
     <string name="pose_stand">Stand</string>
     <string name="pose_sit">Sit</string>
     <string name="pose_wave">Wave</string>
@@ -369,7 +377,6 @@
     <string name="command_action">Command Action</string>
     <string name="execute_label">Execute: </string>
     <string name="voice_database">Voice Commands</string>
-    <string name="add_voice">Add Phrase</string>
     <string name="search_by_name">Search commands…</string>
     <string name="voice_control">Voice Control</string>
     <string name="vc_command">Voice Command Control</string>
@@ -416,8 +423,6 @@
     <string name="quoted">“%1$s”</string>
     <string name="built_in">Built-in</string>
     <string name="custom_phrase">Custom</string>
-    <string name="add_phrase">Add Phrase</string>
-    <string name="enter_phrase">Phrase to say</string>
     <!-- Voice commands the simulator recognizes: parallel arrays (phrase / action / description) -->
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->
