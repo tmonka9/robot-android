@@ -436,48 +436,6 @@
                             android:layout_height="wrap_content"
                             android:orientation="vertical" />
                     </ScrollView>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/divider" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/wake_word"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="42dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@drawable/bg_input"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingLeft="14dp">
-
-                        <TextView
-                            android:id="@+id/wake_word"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:singleLine="true"
-                            android:textColor="@color/white"
-                            android:textSize="14sp" />
-
-                        <ImageButton
-                            android:id="@+id/btn_edit_wake"
-                            android:layout_width="42dp"
-                            android:layout_height="42dp"
-                            android:background="?android:attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/wake_word"
-                            android:padding="11dp"
-                            android:scaleType="fitCenter"
-                            android:src="@drawable/ic_edit" />
-                    </LinearLayout>
                 </LinearLayout>
 
                 <!-- Voice command history -->
@@ -590,7 +548,7 @@
                         <TextView
                             android:id="@+id/adv_tab_hotword"
                             style="@style/SettingsTab"
-                            android:text="@string/tab_hotword" />
+                            android:text="@string/tab_listening" />
 
                         <TextView
                             android:id="@+id/adv_tab_audio"

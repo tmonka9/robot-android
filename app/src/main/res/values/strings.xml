@@ -173,6 +173,9 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">Position reset</string>
     <string name="camera_view">Camera View</string>
+    <string name="feature_face">Face</string>
+    <string name="feature_object">Objects</string>
+    <string name="feature_voice">Voice</string>
     <string name="cam_front">Front</string>
     <string name="cam_rear">Rear</string>
     <string name="cam_left">Left</string>
@@ -371,14 +374,10 @@
     <string name="voice_control">Voice Control</string>
     <string name="vc_command">Voice Command Control</string>
     <string name="vc_command_sub">Enable voice commands for the robot</string>
-    <string name="vc_wake">Wake Word (Hey Robot)</string>
-    <string name="vc_wake_sub">Activate listening mode with wake word</string>
     <string name="vc_continuous">Continuous Listening</string>
     <string name="vc_continuous_sub">Keep listening all the time</string>
     <string name="vc_noise">Noise Reduction</string>
     <string name="vc_noise_sub">Improve recognition in noisy environment</string>
-    <string name="wake_word">Wake Word</string>
-    <string name="wake_word_title">Wake Word (%s)</string>
     <string name="voice_history">Voice Command History</string>
     <string name="command">Command</string>
     <string name="result">Result</string>
@@ -387,13 +386,13 @@
     <string name="result_not_sent">Not sent</string>
     <string name="advanced_settings">Advanced Settings</string>
     <string name="tab_language">Language</string>
-    <string name="tab_hotword">Hotword</string>
+    <string name="tab_listening">Listening</string>
     <string name="tab_audio">Audio</string>
     <string name="apply_settings">Apply Settings</string>
     <string name="time_answer">It is %s</string>
     <string name="status_processing">Processing…</string>
     <string name="no_speech">Nothing recognised — speak a little longer, closer to the microphone</string>
-    <string name="result_no_match">No match</string>
+    <string name="result_no_match">Unknown Command</string>
     <string name="mic_permission_needed">Microphone permission is required for voice commands</string>
     <string name="engine_not_built">Speech engine not built: clone whisper.cpp into app/src/main/cpp and rebuild</string>
     <string name="engine_unavailable">Speech engine library could not be loaded</string>
@@ -405,8 +404,10 @@
     <string name="command_model_partial">Command model ready: %1$d of %2$d commands — the speech model covers the rest</string>
     <string name="command_model_only">Command model ready: %1$d of %2$d commands — record the other %3$d to add them</string>
     <string name="command_model_failed">Command model could not be loaded: %1$s</string>
-    <string name="moonshine_ready">English speech model ready (Moonshine tiny)</string>
-    <string name="moonshine_failed">English speech model could not be loaded: %1$s</string>
+    <string name="moonshine_ready">Speech model ready (Moonshine %1$s)</string>
+    <string name="moonshine_failed">Speech model could not be loaded: %1$s</string>
+    <string name="moonshine_missing">Speech model missing: put moonshine/%1$s in the app assets</string>
+    <string name="speech_model_chosen">Speech model for %1$s: %2$s</string>
     <string name="command_unsure">Not sure — that sounded like “%1$s” (%2$d%%). Say it again, closer to the microphone.</string>
     <string name="model_too_large">Model needs about %1$d MB of memory but only %2$d MB is free — use a smaller one, such as ggml-base.bin</string>
     <string name="model_load_failed">Could not load %s</string>
@@ -421,25 +422,14 @@
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->
     <string name="adv_recognition_language">Recognition Language</string>
-    <string name="adv_response_language">Response Language</string>
     <string-array name="adv_language_options">
-        <item>Auto detect</item>
         <item>English</item>
         <item>Korean</item>
-        <item>Chinese (Mandarin)</item>
-        <item>Japanese</item>
-        <item>Spanish</item>
-        <item>German</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
-        <item>auto</item>
         <item>en</item>
         <item>ko</item>
-        <item>zh</item>
-        <item>ja</item>
-        <item>es</item>
-        <item>de</item>
     </string-array>
     <string name="adv_auto_detect">Auto Detect Language</string>
     <string-array name="adv_on_off_options">
@@ -447,12 +437,6 @@
         <item>On</item>
     </string-array>
     <string name="adv_punctuation">Auto Punctuation</string>
-    <string name="adv_hotword_engine">Wake Word Engine</string>
-    <string-array name="adv_hotword_engine_options">
-        <item>Porcupine</item>
-        <item>Snowboy</item>
-        <item>Built-in</item>
-    </string-array>
     <string name="adv_sensitivity">Sensitivity</string>
     <string-array name="adv_sensitivity_options">
         <item>Medium</item>

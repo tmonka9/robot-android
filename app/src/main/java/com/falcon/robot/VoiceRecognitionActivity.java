@@ -67,12 +67,10 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private static final int[][][] ADVANCED = {
             {
                     {R.string.adv_recognition_language, R.array.adv_language_options},
-                    {R.string.adv_response_language, R.array.adv_language_options},
                     {R.string.adv_auto_detect, R.array.adv_on_off_options},
                     {R.string.adv_punctuation, R.array.adv_on_off_options},
             },
             {
-                    {R.string.adv_hotword_engine, R.array.adv_hotword_engine_options},
                     {R.string.adv_sensitivity, R.array.adv_sensitivity_options},
                     {R.string.adv_timeout, R.array.adv_timeout_options},
                     {R.string.adv_confirm_sound, R.array.adv_confirm_sound_options},
@@ -108,7 +106,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
 
     private CustomPhrases customPhrases; // the service's copy, so both match the same phrases
     private int advancedTab;
-    private String wakeWordText = "Hey Robot";
     private String transcript = "";
     private VoiceCommands.Action currentAction;
 
@@ -124,11 +121,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private LinearLayout advancedRows;
     private TextView[] advancedTabs;
     private Switch commandSwitch;
-    private Switch wakeSwitch;
     private Switch continuousSwitch;
     private Switch noiseSwitch;
-    private TextView wakeWord;
-    private TextView wakeTitle;
 
     private final ActivityResultLauncher<String> micPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
@@ -234,7 +228,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
             return;
         }
         if (!service.getEngine().isReady() && !service.isLoadingSpeechModel()
-                && !CommandRecognizer.exists(this) && !MoonshineEngine.isBundled(this)) {
+                && !CommandRecognizer.exists(this)
+                && !MoonshineEngine.isBundled(this, MoonshineEngine.modelFor(this, languageCode()))) {
             // with a command model there is nothing wrong: the robot's own orders are understood
             // without whisper, and only anything else said to it goes unrecognised
             toast(engineProblem());
@@ -270,7 +265,12 @@ public class VoiceRecognitionActivity extends BaseActivity {
         visual.animate().alpha(listening ? 1f : 0.6f).setDuration(250).start();
     }
 
+    /** Why nothing can turn speech into text, nearest thing to fix first. */
     private String engineProblem() {
+        String model = MoonshineEngine.modelFor(this, languageCode());
+        if (!MoonshineEngine.isBundled(this, model)) {
+            return getString(R.string.moonshine_missing, model);
+        }
         if (!WhisperEngine.isLibraryAvailable()) return getString(R.string.engine_unavailable);
         if (!WhisperEngine.isEngineBuilt()) return getString(R.string.engine_not_built);
         return getString(R.string.model_not_found, selectedModel(),
@@ -281,8 +281,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
     protected void onRobotServiceReady(RobotService service) {
         customPhrases = service.getCustomPhrases();
         service.setCommandControl(commandSwitch.isChecked());
-        service.setWakeWordRequired(wakeSwitch.isChecked());
-        service.setWakeWord(wakeWordText);
         service.setNoiseSuppression(noiseSwitch.isChecked());
         service.setLanguage(languageCode());
         renderServiceState();
@@ -303,14 +301,18 @@ public class VoiceRecognitionActivity extends BaseActivity {
                 return;
             }
             if (result == R.string.command_unsure) { // nearly a command, not surely enough
-                toast(getString(R.string.command_unsure, text, Math.round(confidence)));
+                toast(R.string.result_no_match);
                 if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
                 return;
             }
-            transcript = text;
+            // An utterance that matched no command is reported as one thing -- Unknown Command
+            // -- rather than as whatever the model thought it heard: that was not an order, and
+            // printing it only invites an argument with the transcript.
+            boolean unknown = result == R.string.result_no_match;
+            transcript = unknown ? getString(R.string.result_no_match) : text;
             currentAction = action;
-            addHistory(text, result, confidence);
-            renderResult(confidence);
+            addHistory(transcript, result, unknown ? -1f : confidence);
+            renderResult(unknown ? -1f : confidence);
             // a command that was understood but could not be sent is the moment to ask for
             // the robot, rather than when the microphone is switched on
             if (result == R.string.result_not_sent && action != null && action.command != null
@@ -579,8 +581,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setIcon(findViewById(R.id.control_title), R.drawable.ic_settings, 22, color(R.color.text_primary), Gravity.START);
         LinearLayout toggles = findViewById(R.id.voice_toggles);
         commandSwitch = addToggle(toggles, R.drawable.ic_mic, R.string.vc_command, R.string.vc_command_sub, true);
-        wakeSwitch = addToggle(toggles, R.drawable.ic_bolt, R.string.vc_wake, R.string.vc_wake_sub, false);
-        wakeTitle = ((View) wakeSwitch.getParent()).findViewById(R.id.toggle_title);
         continuousSwitch = addToggle(toggles, R.drawable.ic_refresh, R.string.vc_continuous, R.string.vc_continuous_sub, true);
         noiseSwitch = addToggle(toggles, R.drawable.ic_tune, R.string.vc_noise, R.string.vc_noise_sub, true);
         noiseSwitch.setOnCheckedChangeListener((b, on) -> {
@@ -591,34 +591,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
             RobotService service = getRobotService();
             if (service != null) service.setCommandControl(on);
         });
-        wakeSwitch.setOnCheckedChangeListener((b, on) -> {
-            RobotService service = getRobotService();
-            if (service != null) service.setWakeWordRequired(on);
-        });
-
-        wakeWord = findViewById(R.id.wake_word);
-        setWakeWord(wakeWordText);
-        ((ImageView) findViewById(R.id.btn_edit_wake)).setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
-        findViewById(R.id.btn_edit_wake).setOnClickListener(v -> {
-            final EditText input = textInput(wakeWordText);
-            new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
-                    .setTitle(R.string.wake_word)
-                    .setView(wrapInput(input))
-                    .setNegativeButton(R.string.cancel, null)
-                    .setPositiveButton(R.string.save, (d, w) -> {
-                        String word = input.getText().toString().trim();
-                        if (!word.isEmpty()) setWakeWord(word);
-                    })
-                    .show();
-        });
-    }
-
-    private void setWakeWord(String word) {
-        wakeWordText = word;
-        RobotService service = getRobotService();
-        if (service != null) service.setWakeWord(word);
-        wakeWord.setText(word);
-        wakeTitle.setText(getString(R.string.wake_word_title, word));
     }
 
     private Switch addToggle(LinearLayout parent, int icon, int title, int subtitle, boolean checked) {
@@ -647,14 +619,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
             input.setSelection(value.length());
         }
         return input;
-    }
-
-    private View wrapInput(EditText input) {
-        FrameLayout frame = new FrameLayout(this);
-        int pad = Math.round(24 * getResources().getDisplayMetrics().density);
-        frame.setPadding(pad, pad / 2, pad, 0);
-        frame.addView(input);
-        return frame;
     }
 
     // ---- history ---------------------------------------------------------------------------
@@ -702,7 +666,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
         }
         TextView apply = findViewById(R.id.btn_apply_settings);
         setIcon(apply, R.drawable.ic_check, 18, color(R.color.white), Gravity.START);
-        apply.setOnClickListener(v -> loadSelectedModel());
+        apply.setOnClickListener(v -> applySelectedLanguage());
         renderAdvancedTab(0);
     }
 
@@ -749,8 +713,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
     }
 
     /**
-     * Starts the Language tab on the app language rather than "Auto detect": whisper guesses the
-     * language badly from a one-second command, which reads as the recognition being broken.
+     * Starts the Language tab on the app language when speech is recognised in it, and on the
+     * first language offered otherwise: there is one model per language, and none of them guess.
      */
     private void selectAppLanguage() {
         String[] codes = getResources().getStringArray(R.array.adv_language_codes);
@@ -758,34 +722,54 @@ public class VoiceRecognitionActivity extends BaseActivity {
         for (int i = 0; i < codes.length; i++) {
             if (codes[i].equals(language)) {
                 advancedSelection[0][0] = i; // recognition language
-                advancedSelection[0][1] = i; // response language
                 return;
             }
         }
     }
 
-    /** whisper language code from the Language tab. */
+    /** The language code from the Language tab. */
     private String languageCode() {
         String[] codes = getResources().getStringArray(R.array.adv_language_codes);
         int index = advancedSelection[0][0];
-        return index < codes.length ? codes[index] : "auto";
+        return index < codes.length ? codes[index] : codes[0];
     }
 
-    /** Asks the service to load the speech model (a few seconds for ggml-small). */
-    private void loadSelectedModel() {
+    /** The name the Language tab shows for the language chosen. */
+    private String languageName() {
+        String[] names = getResources().getStringArray(R.array.adv_language_options);
+        int index = advancedSelection[0][0];
+        return index < names.length ? names[index] : names[0];
+    }
+
+    /**
+     * Apply Settings: the recognition language decides the speech model, because Moonshine has one
+     * model per language -- English on tiny-en, Korean on the Korean model in the APK. A language
+     * no Moonshine model here covers falls back to whisper, if whisper was built.
+     */
+    private void applySelectedLanguage() {
         RobotService service = getRobotService();
         if (service == null) return;
-        if (!WhisperEngine.isLibraryAvailable()) {
-            toast(R.string.engine_unavailable);
+        final String code = languageCode();
+        final String model = MoonshineEngine.modelFor(this, code);
+        if (MoonshineEngine.isBundled(this, model)) {
+            service.setLanguage(code);
+            // the model is loaded while listening, so name it rather than promise it is loading
+            toast(service.isVoiceEnabled() ? getString(R.string.loading_model, model)
+                    : getString(R.string.speech_model_chosen, languageName(), model));
             return;
         }
-        final String model = selectedModel();
-        final File file = new File(WhisperEngine.getModelDir(this), model);
-        if (!file.exists() && !WhisperEngine.isBundled(this, model)) {
-            toast(getString(R.string.model_not_found, model, file.getParent()));
+        if (!WhisperEngine.isLibraryAvailable() || !WhisperEngine.isEngineBuilt()) {
+            toast(getString(R.string.moonshine_missing, model));
             return;
         }
-        toast(getString(R.string.loading_model, model));
-        service.loadSpeechModel(model);
+        final String whisper = selectedModel();
+        final File file = new File(WhisperEngine.getModelDir(this), whisper);
+        if (!file.exists() && !WhisperEngine.isBundled(this, whisper)) {
+            toast(getString(R.string.model_not_found, whisper, file.getParent()));
+            return;
+        }
+        service.setLanguage(code);
+        toast(getString(R.string.loading_model, whisper));
+        service.loadSpeechModel(whisper);
     }
 }

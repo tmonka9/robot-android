@@ -24,12 +24,19 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.camera.core.CameraSelector;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
+import com.falcon.robot.detect.CocoLabels;
+import com.falcon.robot.detect.ObjectTracker;
+import com.falcon.robot.face.FaceAnalyzer;
+import com.falcon.robot.voice.VoiceCommands;
 import com.falcon.robot.widget.CoverImageView;
+import com.falcon.robot.widget.FaceOverlayView;
 import com.falcon.robot.widget.Robot3DView;
 import com.falcon.robot.widget.JoystickView;
+import com.falcon.robot.widget.TrackingOverlayView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +46,10 @@ import java.util.Locale;
  * Robot Control page (design/robot.png): robot status, camera view with image settings,
  * joystick and button movement, arm control with preset poses, quick and custom actions.
  * Robot telemetry and the camera stream are simulated until the real robot protocol exists.
+ *
+ * <p>The three recognition features are switched on from here as well, since this is the page the
+ * robot is driven from: faces and objects are drawn over the feed, and a spoken command is carried
+ * out exactly as the button for it would be.
  */
 public class RobotControlActivity extends BaseActivity {
 
@@ -75,6 +86,12 @@ public class RobotControlActivity extends BaseActivity {
             {R.drawable.ic_power, R.id.qa_shutdown},
     };
 
+    /** The recognition features, as {@link #toggleFeature} counts them. */
+    private static final int NO_FEATURE = -1;
+    private static final int FACE = 0;
+    private static final int OBJECTS = 1;
+    private static final int VOICE = 2;
+
     private final RobotSession session = RobotSession.get();
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -100,6 +117,17 @@ public class RobotControlActivity extends BaseActivity {
     private TextView patrol;
     private TextView follow;
 
+    // recognition
+    private TextView faceButton;
+    private TextView objectButton;
+    private TextView voiceButton;
+    private FaceOverlayView faceOverlay;
+    private TrackingOverlayView objectOverlay;
+    /** The feature waiting for a permission answer, or {@link #NO_FEATURE}. */
+    private int pendingFeature = NO_FEATURE;
+    /** A detector that will not load is said once, not on every frame. */
+    private boolean detectorReported;
+
     /** The panel filling the page, or 0 when the page is laid out normally. */
     private int fullscreenPanel;
     /** Whether Robot Status is folded down to its title bar, and the height to put back. */
@@ -113,7 +141,22 @@ public class RobotControlActivity extends BaseActivity {
 
     private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
-                if (granted) attachPreview();
+                if (!granted) {
+                    pendingFeature = NO_FEATURE;
+                    return;
+                }
+                attachPreview();
+                startPendingFeature();
+            });
+
+    private final ActivityResultLauncher<String> microphonePermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    startPendingFeature();
+                } else {
+                    pendingFeature = NO_FEATURE;
+                    toast(R.string.mic_permission_needed);
+                }
             });
     private TextView[] customActions;
     private final List<TextView> barButtons = new ArrayList<>();
@@ -152,16 +195,23 @@ public class RobotControlActivity extends BaseActivity {
 
         setupStatusPanel();
         setupCamera();
+        setupRecognition();
         setupMovement();
         setupArm();
         setupActions();
         buildFullscreenBar(); // mirrors buttons the three setups above have just made
-        bindRobotService(null); // for the camera only: this page has no state to listen for
+        bindRobotService(recognitionListener);
     }
 
     @Override
     protected void onRobotServiceReady(RobotService service) {
         attachPreview();
+        renderRecognition();
+        // whatever the models found while the page was elsewhere, so the feed is not blank
+        faceOverlay.setFaces(service.getLastFaces(), service.getFrameWidth(),
+                service.getFrameHeight(), frontCamera());
+        objectOverlay.setObjects(service.getLastObjects(), service.getFrameWidth(),
+                service.getFrameHeight(), frontCamera());
     }
 
     /**
@@ -188,6 +238,7 @@ public class RobotControlActivity extends BaseActivity {
         if (robot3D != null) robot3D.onResume();
         if (feedOverlay != null) feedOverlay.onResume();
         attachPreview();
+        renderRecognition(); // the features can have been switched on elsewhere
         onConnectionChanged();
         handler.removeCallbacks(odometry);
         handler.post(odometry);
@@ -553,6 +604,179 @@ public class RobotControlActivity extends BaseActivity {
         if (resolution == null || fps == null) return;
         String size = getResources().getStringArray(R.array.camera_resolution_sizes)[resolution.getSelectedItemPosition()];
         cameraInfo.setText(getString(R.string.feed_info, size, fps.getSelectedItem()));
+    }
+
+    // ---- Recognition -----------------------------------------------------------------------
+
+    /**
+     * The face, object and voice switches. They are {@link RobotService}'s own switches, so a
+     * feature turned on here is still on from the Face, Object or Voice page — and keeps running
+     * when this page is left.
+     */
+    private void setupRecognition() {
+        CocoLabels.init(this); // class names in the app language
+
+        faceOverlay = findViewById(R.id.face_overlay);
+        faceOverlay.setLabels(getString(R.string.unknown_person), getString(R.string.face_label_face));
+        objectOverlay = findViewById(R.id.tracking_overlay);
+
+        faceButton = bindFeature(R.id.toggle_face, R.drawable.ic_face_id, FACE);
+        objectButton = bindFeature(R.id.toggle_object, R.drawable.ic_cube, OBJECTS);
+        voiceButton = bindFeature(R.id.toggle_voice, R.drawable.ic_mic, VOICE);
+        renderRecognition();
+    }
+
+    private TextView bindFeature(int id, int icon, final int feature) {
+        TextView button = findViewById(id);
+        setIcon(button, icon, 18, color(R.color.text_primary), Gravity.START);
+        button.setOnClickListener(v -> toggleFeature(feature));
+        return button;
+    }
+
+    /** Switches a feature, asking for the camera or the microphone the first time. */
+    private void toggleFeature(int feature) {
+        if (getRobotService() == null) return;
+        if (isFeatureEnabled(feature)) {
+            setFeatureEnabled(feature, false);
+            return;
+        }
+        ensureNotificationPermission(); // the service needs it to keep running in the background
+        String permission = feature == VOICE
+                ? Manifest.permission.RECORD_AUDIO : Manifest.permission.CAMERA;
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            pendingFeature = feature;
+            (feature == VOICE ? microphonePermission : cameraPermission).launch(permission);
+            return;
+        }
+        setFeatureEnabled(feature, true);
+    }
+
+    private void startPendingFeature() {
+        int feature = pendingFeature;
+        pendingFeature = NO_FEATURE;
+        if (feature != NO_FEATURE) setFeatureEnabled(feature, true);
+    }
+
+    private boolean isFeatureEnabled(int feature) {
+        RobotService service = getRobotService();
+        if (service == null) return false;
+        switch (feature) {
+            case FACE:
+                return service.isFaceEnabled();
+            case OBJECTS:
+                return service.isDetectionEnabled();
+            default:
+                return service.isVoiceEnabled();
+        }
+    }
+
+    private void setFeatureEnabled(int feature, boolean on) {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        switch (feature) {
+            case FACE:
+                service.setFaceEnabled(on);
+                break;
+            case OBJECTS:
+                detectorReported = false;
+                service.setDetectionEnabled(on);
+                break;
+            default:
+                // listening from this page is for driving the robot, so the commands are switched
+                // through whatever the Voice page was last left set to
+                if (on) service.setCommandControl(true);
+                service.setVoiceEnabled(on);
+                session.send(on ? "VOICE LISTEN ON" : "VOICE LISTEN OFF");
+                break;
+        }
+        renderRecognition();
+    }
+
+    /** Puts the switches and the overlays in step with what the service is actually doing. */
+    private void renderRecognition() {
+        RobotService service = getRobotService();
+        boolean face = service != null && service.isFaceEnabled();
+        boolean objects = service != null && service.isDetectionEnabled();
+        boolean voice = service != null && service.isVoiceEnabled();
+
+        faceButton.setActivated(face);
+        objectButton.setActivated(objects);
+        voiceButton.setActivated(voice);
+
+        faceOverlay.setVisibility(face ? View.VISIBLE : View.GONE);
+        objectOverlay.setVisibility(objects ? View.VISIBLE : View.GONE);
+        if (!face) faceOverlay.clear();
+        if (!objects) objectOverlay.clear();
+
+        // a detector that will not load draws nothing at all, which looks like the switch failing
+        if (objects && !detectorReported && service.getDetectorError() != null) {
+            detectorReported = true;
+            toast(getString(R.string.detector_failed, String.valueOf(service.getDetectorModel()),
+                    service.getDetectorError()));
+        }
+    }
+
+    /** The front lens mirrors the picture, so the overlays have to be mirrored with it. */
+    private boolean frontCamera() {
+        RobotService service = getRobotService();
+        return service == null || service.getLensFacing() == CameraSelector.LENS_FACING_FRONT;
+    }
+
+    private final RobotService.Listener recognitionListener = new RobotService.Adapter() {
+        @Override
+        public void onFaceFrame(List<FaceAnalyzer.FrameFace> faces, int width, int height,
+                                long inferenceMs) {
+            faceOverlay.setFaces(faces, width, height, frontCamera());
+        }
+
+        @Override
+        public void onObjects(List<ObjectTracker.Snapshot> objects, int width, int height,
+                              long inferenceMs) {
+            objectOverlay.setObjects(objects, width, height, frontCamera());
+        }
+
+        @Override
+        public void onTranscript(String text, float confidence, VoiceCommands.Action action,
+                                 int result) {
+            showVoiceCommand(action, result);
+        }
+
+        @Override
+        public void onServiceState() {
+            renderRecognition();
+        }
+
+        @Override
+        public void onMessage(String text) {
+            toast(text);
+        }
+    };
+
+    /**
+     * A spoken command arrives here after the service has already sent it to the robot, so all
+     * that is left is to show it: the figure acts the order out, as it does for the button of the
+     * same name, and the tip says what was obeyed.
+     *
+     * <p>Anything that was not one of the commands is reported as one thing — Unknown Command —
+     * and not as whatever the model guessed at, which is noise rather than an order.
+     */
+    private void showVoiceCommand(VoiceCommands.Action action, int result) {
+        if (result == R.string.no_speech) {
+            setTip(getString(R.string.no_speech));
+            return;
+        }
+        if (action == null || result == R.string.command_unsure) {
+            setTip(getString(R.string.result_no_match));
+            return;
+        }
+        if (action.command == null) { // the robot answers instead of moving, such as the time
+            setTip(getString(R.string.result_answered));
+            return;
+        }
+        showOnModel(action.command);
+        setTip(result == R.string.result_executed
+                ? getString(R.string.sent_command, getString(action.labelRes))
+                : getString(result));
     }
 
     // ---- Movement --------------------------------------------------------------------------
