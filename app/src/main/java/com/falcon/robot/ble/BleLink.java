@@ -286,23 +286,49 @@ public final class BleLink {
 
     // ---- the Android side -------------------------------------------------------------------
 
+    /**
+     * Whichever kind of write the characteristic says it takes. Nordic's RX usually offers both;
+     * a firmware that offers only write-without-response turns the other kind down flat, and the
+     * command is simply never delivered.
+     */
+    private int writeType() {
+        int properties = writeTo == null ? 0 : writeTo.getProperties();
+        if ((properties & BluetoothGattCharacteristic.PROPERTY_WRITE) != 0) {
+            return BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
+        }
+        if ((properties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0) {
+            return BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
+        }
+        return BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
+    }
+
     private void writeNext() {
         if (writing || outbox.isEmpty() || gatt == null || writeTo == null) return;
-        byte[] chunk = outbox.poll();
-        writing = true;
+        byte[] chunk = outbox.peek();
+        boolean accepted;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                gatt.writeCharacteristic(writeTo, chunk,
-                        BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+                accepted = gatt.writeCharacteristic(writeTo, chunk, writeType())
+                        == BluetoothGatt.GATT_SUCCESS;
             } else {
                 writeTo.setValue(chunk);
-                writeTo.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
-                gatt.writeCharacteristic(writeTo);
+                writeTo.setWriteType(writeType());
+                accepted = gatt.writeCharacteristic(writeTo);
             }
         } catch (SecurityException e) {
             Log.w(TAG, "write refused: " + e);
-            writing = false;
+            outbox.poll();
+            return;
         }
+        if (!accepted) {
+            // busy with another operation: nothing was sent, so the chunk stays at the head of
+            // the queue and the next completion picks it up. Leaving "writing" set here is what
+            // used to wedge the link after one refusal.
+            Log.w(TAG, "the stack would not take the write; it waits for the next turn");
+            return;
+        }
+        outbox.poll();
+        writing = true;
     }
 
     private final ScanCallback scanCallback = new ScanCallback() {
@@ -378,36 +404,48 @@ public final class BleLink {
                 });
                 return;
             }
+            // when a descriptor write goes out, the link is ready in onDescriptorWrite and
+            // not before; otherwise there is nothing to wait for
+            boolean waiting = false;
             if (notify != null) {
                 try {
                     gatt.setCharacteristicNotification(notify, true);
                     BluetoothGattDescriptor cccd = notify.getDescriptor(CCCD);
                     if (cccd != null) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            gatt.writeDescriptor(cccd,
-                                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                            waiting = gatt.writeDescriptor(cccd,
+                                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+                                    == BluetoothGatt.GATT_SUCCESS;
                         } else {
                             cccd.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-                            gatt.writeDescriptor(cccd);
+                            waiting = gatt.writeDescriptor(cccd);
                         }
                     }
                 } catch (SecurityException e) {
                     Log.w(TAG, "notifications refused: " + e);
                 }
             }
-            main.post(() -> {
-                writeTo = write;
-                setState(State.CONNECTED, deviceName);
-            });
+            if (!waiting) main.post(() -> ready(service));
         }
 
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic c,
                                           int status) {
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.w(TAG, "the robot refused a write: status " + status);
+            }
             main.post(() -> {
                 writing = false;
                 writeNext();
             });
+        }
+
+        @Override
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor,
+                                      int status) {
+            // notifications are on (or were refused): the link is ready either way, and this is
+            // the moment commands may go out without racing this very operation
+            main.post(() -> ready(descriptor.getCharacteristic().getService()));
         }
 
         @Override
@@ -421,6 +459,15 @@ public final class BleLink {
             deliver(value);
         }
     };
+
+    /** The link is usable: the characteristic to write to is known and notifications are set. */
+    private void ready(BluetoothGattService service) {
+        if (gatt == null) return;
+        if (writeTo == null && service != null) writeTo = service.getCharacteristic(WRITE);
+        if (writeTo == null) return;
+        setState(State.CONNECTED, deviceName);
+        writeNext(); // anything that was asked for while connecting
+    }
 
     private void deliver(byte[] value) {
         if (value == null || value.length == 0) return;

@@ -68,8 +68,9 @@ SILENCE = "_silence"
 UNKNOWN = "_unknown"
 
 DEFAULT_ACTIONS = [
-    "Go Home", "Move Forward", "Move Backward", "Stop", "Turn Left", "Turn Right",
-    "Wave", "Dance", "Arm Left", "Arm Right", "Hello", "T-Pose", "No", "Recording",
+    "Forward", "Backward", "Turn Right", "Turn Left", "Follow me", "Face Recognize",
+    "Object Detect", "Dance", "Stop", "Arm Left", "Arm Right", "Wave", "Hello", "T-Pose",
+    "No", "Recording",
 ]
 
 
@@ -279,12 +280,12 @@ SPEECH_COMMANDS_URL = ("https://storage.googleapis.com/download.tensorflow.org/d
 # corpus word -> the robot's action. The words the corpus does not have ("sit", "dance", "wave"
 # and so on) stay out of the model rather than being faked from something that sounds similar.
 SPEECH_COMMANDS_WORDS = {
-    "forward": "Move Forward",
-    "backward": "Move Backward",
+    "forward": "Forward",
+    "backward": "Backward",
     "left": "Turn Left",
     "right": "Turn Right",
     "stop": "Stop",
-    "go": "Go Home",
+    "follow": "Follow me",
     "no": "No",
 }
 

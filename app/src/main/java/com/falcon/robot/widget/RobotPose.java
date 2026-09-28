@@ -330,6 +330,9 @@ final class RobotPose {
         if (command.equals("ARM SELECT HEAD")) return NOD;
         if (command.equals("ARM SELECT WAIST")) return TWIST;
 
+        if (command.equals("POSE DANCE")) return TWIST; // the nearest thing the figure can do
+        if (command.equals("GREET")) return WAVE;
+        if (command.equals("CANCEL")) return IDLE;
         if (command.equals("GO_HOME")) return WALK_AWHILE;
         if (command.equals("PATROL START") || command.equals("FOLLOW START")) return WALK;
         if (command.equals("PATROL STOP") || command.equals("FOLLOW STOP")) return IDLE;

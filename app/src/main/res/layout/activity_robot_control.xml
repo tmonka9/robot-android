@@ -799,7 +799,6 @@
                         android:layout_marginTop="6dp"
                         android:text="@string/feature_voice" />
 
-
                     <TextView
                         android:id="@+id/move_title"
                         style="@style/SettingLabel"
@@ -831,6 +830,12 @@
                         android:text="@string/act_turn_right" />
 
                     <TextView
+                        android:id="@+id/move_stop"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/act_stop" />
+
+                    <TextView
                         android:id="@+id/arm_title"
                         style="@style/SettingLabel"
                         android:layout_marginTop="14dp"
@@ -849,18 +854,6 @@
                         android:text="@string/arm_right" />
 
                     <TextView
-                        android:id="@+id/arm_head"
-                        style="@style/SidebarButton"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/arm_head" />
-
-                    <TextView
-                        android:id="@+id/arm_waist"
-                        style="@style/SidebarButton"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/arm_waist" />
-
-                    <TextView
                         style="@style/SettingLabel"
                         android:layout_marginTop="14dp"
                         android:text="@string/preset_pose" />
@@ -872,10 +865,22 @@
                         android:text="@string/pose_wave" />
 
                     <TextView
+                        android:id="@+id/pose_hello"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/cmd_hello" />
+
+                    <TextView
                         android:id="@+id/pose_tpose"
                         style="@style/SidebarButton"
                         android:layout_marginTop="6dp"
                         android:text="@string/pose_t" />
+
+                    <TextView
+                        android:id="@+id/pose_dance"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/cmd_dance" />
 
                     <TextView
                         android:id="@+id/quick_title"
@@ -884,16 +889,28 @@
                         android:text="@string/quick_actions" />
 
                     <TextView
-                        android:id="@+id/qa_home"
-                        style="@style/SidebarButton"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/qa_go_home" />
-
-                    <TextView
                         android:id="@+id/qa_follow"
                         style="@style/SidebarButton"
                         android:layout_marginTop="6dp"
                         android:text="@string/qa_follow_me" />
+
+                    <TextView
+                        android:id="@+id/qa_recording"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/cmd_recording" />
+
+                    <TextView
+                        android:id="@+id/qa_no"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/cmd_no" />
+
+                    <TextView
+                        android:id="@+id/qa_home"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/qa_go_home" />
 
                     <TextView
                         android:id="@+id/qa_shutdown"

@@ -87,9 +87,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class RobotService extends Service implements LifecycleOwner {
 
     private static final String TAG = "RobotService";
-
-    /** What a spoken order goes out as: the prefix, then the command the button would send. */
-    public static final String VOICE_PREFIX = "VOICE_COMMAND ";
     private static final String CHANNEL_ID = "robot_recognition";
     private static final int NOTIFICATION_ID = 42;
     /** Sent by the notification's Stop action. */
@@ -1235,16 +1232,59 @@ public class RobotService extends Service implements LifecycleOwner {
         int result;
         if (action == null) {
             result = R.string.result_no_match;
+        } else if (action.command == null) {
+            result = runHere(action); // the tablet's own: the cameras and the recorder
         } else if (!commandControl) {
             result = R.string.result_not_sent;
         } else {
-            result = RobotSession.get().send(VOICE_PREFIX + VoiceCommands.commandFor(action))
+            // word for word what the button for this action sends: one wording for the robot to
+            // understand, not one for buttons and another for speech
+            result = RobotSession.get().send(VoiceCommands.commandFor(action))
                     ? R.string.result_executed : R.string.result_not_sent;
         }
         // the answer is to being understood, not to the robot obeying: the operator hears that
         // the order was heard whether or not there is a robot on the other end just now
         if (action != null) acknowledge();
         for (Listener listener : listeners) listener.onTranscript(text, confidence, action, result);
+    }
+
+    /**
+     * The orders the tablet carries out rather than the robot: the two models and the recorder.
+     * Each is a switch, and what it switches to is read from what is actually running, so a
+     * spoken order and the sidebar button can never disagree about which way it goes.
+     */
+    public int runHere(VoiceCommands.Action action) {
+        boolean on;
+        if (VoiceCommands.FACE.equals(action.name)) {
+            on = !faceEnabled;
+            if (on && !hasCamera()) return R.string.result_not_sent;
+            setFaceEnabled(on);
+            on = faceEnabled;
+        } else if (VoiceCommands.OBJECT.equals(action.name)) {
+            on = !detectionEnabled;
+            if (on && !hasCamera()) return R.string.result_not_sent;
+            setDetectionEnabled(on);
+            on = detectionEnabled;
+        } else if (VoiceCommands.RECORDING.equals(action.name)) {
+            on = !isRecording();
+            if (on && !hasCamera()) return R.string.result_not_sent;
+            setRecording(on);
+            on = isRecording();
+        } else {
+            return R.string.result_not_sent;
+        }
+        VoiceCommands.setSwitchedOn(action.name, on);
+        return R.string.result_executed;
+    }
+
+    /** A service cannot ask for a permission, so it says what is missing and leaves it there. */
+    private boolean hasCamera() {
+        if (checkSelfPermission(android.Manifest.permission.CAMERA)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return true;
+        }
+        message(getString(R.string.camera_permission_needed));
+        return false;
     }
 
     /**

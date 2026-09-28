@@ -203,8 +203,6 @@
     <string name="arm_control">机械臂控制</string>
     <string name="arm_left">左臂</string>
     <string name="arm_right">右臂</string>
-    <string name="arm_head">头部</string>
-    <string name="arm_waist">腰部</string>
     <string name="preset_pose">预设姿态</string>
     <string name="pose_t">T 字姿态</string>
     <string name="qa_go_home">返回原点</string>
@@ -516,8 +514,6 @@
     <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
     <string name="cmd_stop">停止</string>
     <string name="cmd_stop_desc">机器人将停止所有运动。</string>
-    <string name="cmd_home">返回原点</string>
-    <string name="cmd_home_desc">机器人将返回原点。</string>
     <string name="cmd_forward">前进</string>
     <string name="cmd_forward_desc">机器人将向前移动。</string>
     <string name="cmd_backward">后退</string>
@@ -658,4 +654,16 @@
     <string name="open_recordings">录像文件</string>
     <string name="no_recordings">尚未录制任何内容</string>
     <string name="no_video_player">没有可播放 %1$s 的应用</string>
+    <!-- the spoken commands, and what became of one -->
+    <string name="cmd_follow">跟随我</string>
+    <string name="cmd_follow_desc">机器人将跟随您，再说一次即停止。</string>
+    <string name="cmd_face">人脸识别</string>
+    <string name="cmd_face_desc">打开人脸识别，再说一次即关闭。</string>
+    <string name="cmd_object">目标检测</string>
+    <string name="cmd_object_desc">打开目标检测，再说一次即关闭。</string>
+    <string name="sent_via_ble">已发送到机器人：%1$s</string>
+    <string name="sent_demo">%1$s：当前为演示连接，未发送到机器人</string>
+    <string name="not_sent_no_robot">%1$s 未发送：机器人未连接（远程控制 → BLE）</string>
+    <string name="done_here">%1$s：已在平板上执行</string>
+    <string name="connection_demo_note">该地址尚未接通实际链路，连接后只能试用界面；机器人通过远程控制页面的 BLE 连接驱动。</string>
 </resources>

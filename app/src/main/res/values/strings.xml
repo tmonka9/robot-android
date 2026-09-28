@@ -204,8 +204,6 @@
     <string name="arm_control">Arm Control</string>
     <string name="arm_left">Left Arm</string>
     <string name="arm_right">Right Arm</string>
-    <string name="arm_head">Head</string>
-    <string name="arm_waist">Waist</string>
     <string name="preset_pose">Preset Pose</string>
     <string name="pose_t">T-Pose</string>
     <string name="qa_go_home">Go Home</string>
@@ -521,8 +519,6 @@
          stored phrases key off the English action name. -->
     <string name="cmd_stop">Stop</string>
     <string name="cmd_stop_desc">Robot will stop all movement.</string>
-    <string name="cmd_home">Go Home</string>
-    <string name="cmd_home_desc">Robot will return to the home position.</string>
     <string name="cmd_forward">Move Forward</string>
     <string name="cmd_forward_desc">Robot will move forward.</string>
     <string name="cmd_backward">Move Backward</string>
@@ -665,4 +661,16 @@
     <string name="open_recordings">Recordings</string>
     <string name="no_recordings">Nothing has been recorded yet</string>
     <string name="no_video_player">Nothing here plays %1$s</string>
+    <!-- the spoken commands, and what became of one -->
+    <string name="cmd_follow">Follow me</string>
+    <string name="cmd_follow_desc">Robot will follow you, and stop when told again.</string>
+    <string name="cmd_face">Face Recognize</string>
+    <string name="cmd_face_desc">Switches face recognition on, and off when told again.</string>
+    <string name="cmd_object">Object Detect</string>
+    <string name="cmd_object_desc">Switches object detection on, and off when told again.</string>
+    <string name="sent_via_ble">Sent to the robot: %1$s</string>
+    <string name="sent_demo">%1$s: the link is the demo one, so nothing reached the robot</string>
+    <string name="not_sent_no_robot">%1$s not sent: no robot connected (Remote Control → BLE)</string>
+    <string name="done_here">%1$s: done on the tablet</string>
+    <string name="connection_demo_note">This address is not a transport yet: connecting to it only lets the screens be tried out. The robot itself is driven over BLE, from the Remote Control page.</string>
 </resources>

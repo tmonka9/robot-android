@@ -203,8 +203,6 @@
     <string name="arm_control">アーム制御</string>
     <string name="arm_left">左アーム</string>
     <string name="arm_right">右アーム</string>
-    <string name="arm_head">ヘッド</string>
-    <string name="arm_waist">腰部</string>
     <string name="preset_pose">プリセット姿勢</string>
     <string name="pose_t">Tポーズ</string>
     <string name="qa_go_home">ホームへ戻る</string>
@@ -516,8 +514,6 @@
          stored phrases key off the English action name. -->
     <string name="cmd_stop">停止</string>
     <string name="cmd_stop_desc">ロボットがすべての動作を停止します。</string>
-    <string name="cmd_home">ホームへ戻る</string>
-    <string name="cmd_home_desc">ロボットがホーム位置に戻ります。</string>
     <string name="cmd_forward">前進</string>
     <string name="cmd_forward_desc">ロボットが前進します。</string>
     <string name="cmd_backward">後退</string>
@@ -660,4 +656,16 @@
     <string name="open_recordings">録画ファイル</string>
     <string name="no_recordings">まだ録画がありません</string>
     <string name="no_video_player">%1$s を再生できるアプリがありません</string>
+    <!-- the spoken commands, and what became of one -->
+    <string name="cmd_follow">追従</string>
+    <string name="cmd_follow_desc">ロボットが追従し、もう一度言うと止まります。</string>
+    <string name="cmd_face">顔認識</string>
+    <string name="cmd_face_desc">顔認識をオンにし、もう一度言うとオフにします。</string>
+    <string name="cmd_object">物体検出</string>
+    <string name="cmd_object_desc">物体検出をオンにし、もう一度言うとオフにします。</string>
+    <string name="sent_via_ble">ロボットに送信しました: %1$s</string>
+    <string name="sent_demo">%1$s: デモ接続のためロボットには届いていません</string>
+    <string name="not_sent_no_robot">%1$s を送信できません: ロボットが未接続です (リモート操作 → BLE)</string>
+    <string name="done_here">%1$s: タブレットで実行しました</string>
+    <string name="connection_demo_note">このアドレスはまだ実際の通信路ではありません。接続しても画面を試せるだけで、ロボットはリモート操作画面の BLE 接続で動きます。</string>
 </resources>

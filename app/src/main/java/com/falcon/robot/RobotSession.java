@@ -35,6 +35,15 @@ public final class RobotSession {
         return connected && (!overBle || BleLink.get().isConnected());
     }
 
+    /**
+     * Whether a command sent now actually goes somewhere. The address below is not a transport
+     * yet: connecting to it makes the app behave as though there were a robot, which is useful
+     * for showing the screens and useless for driving anything, so the pages say which it is.
+     */
+    public boolean isLive() {
+        return isConnected() && overBle;
+    }
+
     public void setConnected(boolean connected) {
         this.connected = connected;
         if (!connected) {

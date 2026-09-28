@@ -324,7 +324,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
             // the robot, rather than when the microphone is switched on
             if (result == R.string.result_not_sent && action != null && action.command != null
                     && commandSwitch.isChecked()) {
-                sendCommand("VOICE_COMMAND " + action.command);
+                sendCommand(action.command);
             }
             // one-shot mode: stop after each utterance
             if (!continuousSwitch.isChecked()) setVoiceEnabled(false);
@@ -358,7 +358,10 @@ public class VoiceRecognitionActivity extends BaseActivity {
         if (action == null) return R.string.result_no_match;
         if (service != null) service.acknowledge(); // "OK": the order was understood
         if (!commandSwitch.isChecked()) return R.string.result_not_sent; // voice control is off
-        return RobotSession.get().send(RobotService.VOICE_PREFIX + VoiceCommands.commandFor(action))
+        if (action.command == null) { // the tablet's own work, so the service carries it out
+            return service == null ? R.string.result_not_sent : service.runHere(action);
+        }
+        return RobotSession.get().send(VoiceCommands.commandFor(action))
                 ? R.string.result_executed : R.string.result_not_sent;
     }
 

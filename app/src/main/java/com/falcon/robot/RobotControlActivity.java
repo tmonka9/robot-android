@@ -69,6 +69,9 @@ public class RobotControlActivity extends BaseActivity {
     /** The robot overlay on the camera feed, in dp: width and height, then the same full screen. */
     private static final int[] OVERLAY_DP = {150, 118, 255, 200};
 
+    /** The Follow me switch, which the button and the spoken order share. */
+    private static final String FOLLOW = VoiceCommands.FOLLOW;
+
     /** The recognition features, as {@link #toggleFeature} counts them. */
     private static final int NO_FEATURE = -1;
     private static final int FACE = 0;
@@ -87,6 +90,11 @@ public class RobotControlActivity extends BaseActivity {
     /** The four sidebar directions, in button order. */
     private static final String[] MOVE_COMMANDS =
             {"MOVE FORWARD", "MOVE BACKWARD", "TURN LEFT", "TURN RIGHT"};
+
+    /** The arm buttons and the pose buttons, in button order. */
+    private static final String[] ARM_COMMANDS = {"ARM SELECT LEFT_ARM", "ARM SELECT RIGHT_ARM"};
+    private static final String[] POSE_COMMANDS =
+            {"POSE WAVE", "GREET", "POSE T_POSE", "POSE DANCE"};
 
     private final RobotSession session = RobotSession.get();
     private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
@@ -251,8 +259,9 @@ public class RobotControlActivity extends BaseActivity {
     /**
      * Every command goes past here, so the 3D robot acts out whatever was asked for: it walks on
      * a move, waves on a greeting, raises the arm that was selected. It shows the command rather
-     * than the robot's own state, so it still demonstrates the action while nothing is connected;
-     * the status panel is what says whether anything is.
+     * than the robot's own state, so it still demonstrates the action while nothing is connected
+     * — which is why {@link #report} says, for every command, whether it reached the robot, the
+     * demo link, or nothing at all.
      */
     @Override
     protected boolean sendCommand(String command) {
@@ -967,9 +976,12 @@ public class RobotControlActivity extends BaseActivity {
     };
 
     /**
-     * A spoken command arrives here after the service has already sent it to the robot, so all
-     * that is left is to show it: the figure acts the order out, as it does for the button of the
-     * same name, and the tip says what was obeyed.
+     * A spoken command arrives here after the service has already dealt with it, so what is
+     * left is to show it: the figure acts the order out, the button for that order lights up as
+     * though it had been pressed, and the line underneath says where the command went.
+     *
+     * <p>That line matters: the figure moves for every order that was understood, whether or not
+     * anything reached the robot. Only the report says whether it did.
      *
      * <p>Anything that was not one of the commands is reported as one thing — Unknown Command —
      * and not as whatever the model guessed at, which is noise rather than an order.
@@ -981,10 +993,12 @@ public class RobotControlActivity extends BaseActivity {
                 : getString(R.string.result_no_match)));
         if (!heard) return; // nothing was ordered, so there is nothing for the robot to show
         showOnModel(action.command);
-        if (result == R.string.result_executed) followVoice(action);
-        setTip(result == R.string.result_executed
-                ? getString(R.string.sent_command, getString(action.labelRes))
-                : getString(result));
+        followVoice(action, result);
+        if (action.command == null) { // the tablet's own work: face, objects, the recorder
+            recognised(getString(R.string.done_here, getString(action.labelRes)));
+            return;
+        }
+        report(action.command, result == R.string.result_executed);
     }
 
     // ---- Move ------------------------------------------------------------------------------
@@ -1009,6 +1023,10 @@ public class RobotControlActivity extends BaseActivity {
             setIcon(moveButtons[i], icons[i], 14, white, Gravity.START);
             moveButtons[i].setOnClickListener(v -> hold(index, MOVE_COMMANDS[index], true));
         }
+
+        TextView stop = findViewById(R.id.move_stop);
+        setIcon(stop, R.drawable.ic_square, 14, white, Gravity.START);
+        stop.setOnClickListener(v -> stopMoving());
     }
 
     /**
@@ -1035,8 +1053,9 @@ public class RobotControlActivity extends BaseActivity {
     /** Ends the movement: the robot is told to stop and the button goes out. */
     private void stopMoving() {
         releaseHold();
-        session.send("STOP"); // stop is never held up by the connect prompt
-        setTip(getString(R.string.sent_command, getString(R.string.act_stop)));
+        showOnModel("STOP");
+        // stop is never held up by the connect prompt, but it is still reported like the rest
+        report("STOP", session.send("STOP"));
     }
 
     /** Lets go of the latch without ordering anything, for when something else has taken over. */
@@ -1057,18 +1076,43 @@ public class RobotControlActivity extends BaseActivity {
     };
 
     /**
-     * A spoken order takes the sidebar's latch over, so "Forward" keeps the robot going exactly
-     * as the button does and "Stop" ends it. Anything else leaves the latch alone.
+     * Shows a spoken order on the buttons it belongs to: the direction latches on exactly as the
+     * button does, so "Forward" keeps going and "Stop" ends it; the arm, the pose and Follow me
+     * light up the same way. Nothing is sent from here — the service has already done that.
      */
-    private void followVoice(VoiceCommands.Action action) {
-        if (action == null || action.command == null || moveButtons == null) return;
-        for (int i = 0; i < MOVE_COMMANDS.length; i++) {
-            if (MOVE_COMMANDS[i].equals(action.command)) {
-                hold(i, RobotService.VOICE_PREFIX + action.command, false);
-                return;
+    private void followVoice(VoiceCommands.Action action, int result) {
+        if (action == null || action.command == null) return;
+        if ("STOP".equals(action.command) || "CANCEL".equals(action.command)) {
+            releaseHold();
+            return;
+        }
+        if (result != R.string.result_executed) return; // it never left, so show nothing as on
+        if (moveButtons != null) {
+            for (int i = 0; i < MOVE_COMMANDS.length; i++) {
+                if (MOVE_COMMANDS[i].equals(action.command)) {
+                    hold(i, action.command, false);
+                    return;
+                }
             }
         }
-        if ("STOP".equals(action.command)) releaseHold();
+        if (armParts != null) {
+            for (int i = 0; i < ARM_COMMANDS.length; i++) {
+                if (ARM_COMMANDS[i].equals(action.command)) {
+                    selectOnly(armParts, armParts[i]);
+                    return;
+                }
+            }
+        }
+        if (poses != null) {
+            for (int i = 0; i < POSE_COMMANDS.length; i++) {
+                if (POSE_COMMANDS[i].equals(action.command)) {
+                    selectOnly(poses, poses[i]);
+                    return;
+                }
+            }
+        }
+        // Follow me: the service has flipped the switch, so the button follows it
+        if (FOLLOW.equals(action.name) && follow != null) setFollowing(VoiceCommands.isSwitchedOn(FOLLOW), false);
     }
 
     // ---- Arm -------------------------------------------------------------------------------
@@ -1079,31 +1123,28 @@ public class RobotControlActivity extends BaseActivity {
 
         armParts = new TextView[] {
                 findViewById(R.id.arm_left), findViewById(R.id.arm_right),
-                findViewById(R.id.arm_head), findViewById(R.id.arm_waist),
         };
-        final String[] partCommands = {"LEFT_ARM", "RIGHT_ARM", "HEAD", "WAIST"};
         for (int i = 0; i < armParts.length; i++) {
             final int index = i;
-            setIcon(armParts[i], R.drawable.ic_play_white, 14, white, Gravity.START);
+            setIcon(armParts[i], R.drawable.ic_arm, 14, white, Gravity.START);
             armParts[i].setOnClickListener(v -> {
-                if (!sendCommand("ARM SELECT " + partCommands[index])) return;
+                if (!sendAndReport(ARM_COMMANDS[index])) return;
                 selectOnly(armParts, armParts[index]);
-                setTip(getString(R.string.sent_command, armParts[index].getText()));
             });
         }
 
         poses = new TextView[] {
-                findViewById(R.id.pose_wave), findViewById(R.id.pose_tpose),
+                findViewById(R.id.pose_wave), findViewById(R.id.pose_hello),
+                findViewById(R.id.pose_tpose), findViewById(R.id.pose_dance),
         };
-        final String[] poseCommands = {"WAVE", "T_POSE"};
-        int[] poseIcons = {R.drawable.ic_pose_wave, R.drawable.ic_tpose};
+        int[] poseIcons = {R.drawable.ic_pose_wave, R.drawable.ic_person,
+                R.drawable.ic_tpose, R.drawable.ic_robot};
         for (int i = 0; i < poses.length; i++) {
             final int index = i;
             setIcon(poses[i], poseIcons[i], 14, white, Gravity.START);
             poses[i].setOnClickListener(v -> {
-                if (!sendCommand("POSE " + poseCommands[index])) return;
+                if (!sendAndReport(POSE_COMMANDS[index])) return;
                 selectOnly(poses, poses[index]);
-                setTip(getString(R.string.sent_command, poses[index].getText()));
             });
         }
     }
@@ -1120,21 +1161,22 @@ public class RobotControlActivity extends BaseActivity {
         tip = findViewById(R.id.robot_tip);
         int white = color(R.color.text_primary);
 
-        TextView home = findViewById(R.id.qa_home);
-        setIcon(home, R.drawable.ic_home, 14, white, Gravity.START);
-        home.setOnClickListener(v -> {
-            if (sendCommand("GO_HOME")) setTip(getString(R.string.sent_command, home.getText()));
-        });
-
         follow = findViewById(R.id.qa_follow);
         setIcon(follow, R.drawable.ic_follow, 14, white, Gravity.START);
-        follow.setOnClickListener(v -> {
-            boolean start = !follow.isActivated();
-            if (!sendCommand(start ? "FOLLOW START" : "FOLLOW STOP")) return;
-            follow.setActivated(start);
-            follow.setText(start ? R.string.qa_stop_follow : R.string.qa_follow_me);
-            setTip(getString(R.string.sent_command, getString(start ? R.string.qa_follow_me : R.string.qa_stop_follow)));
-        });
+        follow.setOnClickListener(v -> setFollowing(!VoiceCommands.isSwitchedOn(FOLLOW), true));
+        setFollowing(VoiceCommands.isSwitchedOn(FOLLOW), false);
+
+        TextView recording = findViewById(R.id.qa_recording);
+        setIcon(recording, R.drawable.ic_videocam, 14, white, Gravity.START);
+        recording.setOnClickListener(v -> toggleRecording());
+
+        TextView no = findViewById(R.id.qa_no);
+        setIcon(no, R.drawable.ic_square, 14, white, Gravity.START);
+        no.setOnClickListener(v -> cancel());
+
+        TextView home = findViewById(R.id.qa_home);
+        setIcon(home, R.drawable.ic_home, 14, white, Gravity.START);
+        home.setOnClickListener(v -> sendAndReport("GO_HOME"));
 
         TextView shutdown = findViewById(R.id.qa_shutdown);
         setIcon(shutdown, R.drawable.ic_power, 14, white, Gravity.START);
@@ -1142,13 +1184,45 @@ public class RobotControlActivity extends BaseActivity {
                 .setTitle(R.string.qa_shutdown)
                 .setMessage(R.string.shutdown_confirm)
                 .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.qa_shutdown, (d, w) -> {
-                    if (sendCommand("SHUTDOWN")) setTip(getString(R.string.sent_command, shutdown.getText()));
-                })
+                .setPositiveButton(R.string.qa_shutdown, (d, w) -> sendAndReport("SHUTDOWN"))
                 .show());
+    }
+
+    /**
+     * Follow me is a switch, and the button and the spoken order share which way it is set
+     * ({@link VoiceCommands#isSwitchedOn}), so saying it and tapping it cannot disagree.
+     */
+    private void setFollowing(boolean on, boolean send) {
+        if (send && !sendAndReport(on ? "FOLLOW START" : "FOLLOW STOP")) return;
+        VoiceCommands.setSwitchedOn(FOLLOW, on);
+        follow.setActivated(on);
+        follow.setText(on ? R.string.qa_stop_follow : R.string.qa_follow_me);
+    }
+
+    /** No: the robot is told to drop what it was asked for, and the page lets go of its latch. */
+    private void cancel() {
+        releaseHold();
+        sendAndReport("CANCEL");
     }
 
     private void setTip(CharSequence text) {
         tip.setText(getString(R.string.status_line, clock.format(new Date()), text));
+    }
+
+    /**
+     * Sends a command and says what became of it: which link carried it, that the link is the
+     * demo one and nothing left the tablet, or that there is no robot to send to. The 3D figure
+     * acts every order out whether or not it was delivered, so this is the part to read.
+     */
+    private boolean sendAndReport(String command) {
+        boolean sent = sendCommand(command); // offers the connection dialog when there is none
+        report(command, sent);
+        return sent;
+    }
+
+    private void report(String command, boolean sent) {
+        int line = !sent ? R.string.not_sent_no_robot
+                : session.isLive() ? R.string.sent_via_ble : R.string.sent_demo;
+        recognised(getString(line, command)); // the status bar, and the log while it is running
     }
 }

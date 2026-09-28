@@ -204,8 +204,6 @@
     <string name="arm_control">팔 제어</string>
     <string name="arm_left">왼팔</string>
     <string name="arm_right">오른팔</string>
-    <string name="arm_head">머리</string>
-    <string name="arm_waist">허리</string>
     <string name="preset_pose">사전 설정 자세</string>
     <string name="pose_t">T 자세</string>
     <string name="qa_go_home">홈으로 복귀</string>
@@ -517,8 +515,6 @@
          stored phrases key off the English action name. -->
     <string name="cmd_stop">정지</string>
     <string name="cmd_stop_desc">로봇이 모든 이동을 멈춥니다.</string>
-    <string name="cmd_home">홈으로 복귀</string>
-    <string name="cmd_home_desc">로봇이 홈 위치로 돌아갑니다.</string>
     <string name="cmd_forward">전진</string>
     <string name="cmd_forward_desc">로봇이 앞으로 이동합니다.</string>
     <string name="cmd_backward">후진</string>
@@ -661,4 +657,16 @@
     <string name="open_recordings">록화 파일</string>
     <string name="no_recordings">아직 록화한 것이 없습니다</string>
     <string name="no_video_player">%1$s 을(를) 재생할 프로그람이 없습니다</string>
+    <!-- the spoken commands, and what became of one -->
+    <string name="cmd_follow">따라오기</string>
+    <string name="cmd_follow_desc">로봇이 따라오며, 다시 말하면 멈춥니다.</string>
+    <string name="cmd_face">얼굴인식</string>
+    <string name="cmd_face_desc">얼굴인식을 켜고, 다시 말하면 끕니다.</string>
+    <string name="cmd_object">대상추적</string>
+    <string name="cmd_object_desc">대상추적을 켜고, 다시 말하면 끕니다.</string>
+    <string name="sent_via_ble">로봇에 보냈습니다: %1$s</string>
+    <string name="sent_demo">%1$s: 모의 련결이므로 로봇에 전달되지 않았습니다</string>
+    <string name="not_sent_no_robot">%1$s 보내지 못했습니다: 로봇이 련결되지 않았습니다 (원격 조종 → BLE)</string>
+    <string name="done_here">%1$s: 태블리트에서 실행했습니다</string>
+    <string name="connection_demo_note">이 주소는 아직 실제 통로가 아닙니다. 련결해도 화면을 시험해 볼 수 있을 뿐이며, 로봇은 원격 조종 화면의 BLE 련결로 움직입니다.</string>
 </resources>
