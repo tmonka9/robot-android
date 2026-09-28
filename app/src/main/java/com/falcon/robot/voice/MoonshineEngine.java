@@ -13,18 +13,20 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Locale;
 
 /**
- * English speech, from Moonshine.
+ * Speech, from Moonshine.
  *
  * <p>Where {@link WhisperEngine} needs whisper.cpp cloned and compiled by whoever builds the app,
  * this arrives as an ordinary Gradle dependency with its own native library, so there is no NDK
- * step and no "speech engine not built". The model — 42 MB of it — ships in the APK, so it works
- * on a tablet that has never seen a network.
+ * step and no "speech engine not built". The models ship in the APK, so they work on a tablet that
+ * has never seen a network.
  *
- * <p>English only, on purpose: Moonshine's other languages are released under a non-commercial
- * licence, while the English models are MIT. Chinese, Japanese and Korean stay with whisper (or
- * with a command model trained on recordings, which needs no licence at all).
+ * <p>One model per language, because Moonshine's are not multilingual: {@link #ENGLISH} for
+ * English and {@link #KOREAN} for Korean, which is all the Voice page offers. Mind the licences —
+ * the English model is MIT, the others are released under Moonshine's non-commercial Community
+ * Licence.
  *
  * <p>All calls must be made from a background thread.
  */
@@ -32,8 +34,15 @@ public final class MoonshineEngine {
 
     private static final String TAG = "MoonshineEngine";
 
-    /** The bundled model: a folder of .ort files, as Moonshine's downloader lays them out. */
-    public static final String MODEL = "tiny-kp";
+
+    /** The English model: a folder of .ort files, as Moonshine's downloader lays them out. */
+    public static final String ENGLISH = "tiny-en";
+    /**
+     * Korean, in the order to prefer: the North Korean model when one has been installed, and
+     * otherwise {@code tiny-ko}, which is the Korean model Moonshine publishes.
+     */
+    public static final String[] KOREAN = {"tiny-kp", "tiny-ko"};
+
     private static final String ASSETS = "moonshine";
     private static final int ARCH = JNI.MOONSHINE_MODEL_ARCH_TINY;
     private static final String[] FILES = {
@@ -49,6 +58,7 @@ public final class MoonshineEngine {
 
     private final Context context;
     private Transcriber transcriber;
+    private String model;
     private String loadError;
 
     public MoonshineEngine(Context context) {
@@ -59,39 +69,71 @@ public final class MoonshineEngine {
         return transcriber != null;
     }
 
+    /** The model that is loaded, or null when none is. */
+    public String getModel() {
+        return transcriber != null ? model : null;
+    }
+
     /** Why the last load failed, or null. */
     public String getLoadError() {
         return loadError;
     }
 
-    /** True when there is a model to load, without loading it. */
+    /** The model that covers {@code language}; the folder need not be there. */
+    public static String modelFor(Context context, String language) {
+        if (language != null && language.toLowerCase(Locale.US).startsWith("ko")) {
+            for (String name : KOREAN) {
+                if (isBundled(context, name)) return name;
+            }
+            return KOREAN[KOREAN.length - 1];
+        }
+        return ENGLISH;
+    }
+
+    /** True when any model is there to load, without loading it. */
     public static boolean isBundled(Context context) {
-        if (new File(models(context), FILES[0]).exists()) return true;
+        if (isBundled(context, ENGLISH)) return true;
+        for (String name : KOREAN) {
+            if (isBundled(context, name)) return true;
+        }
+        return false;
+    }
+
+    /** True when {@code model} is there to load, in the APK or already unpacked. */
+    public static boolean isBundled(Context context, String model) {
+        if (new File(models(context, model), FILES[0]).exists()) return true;
         try {
-            String[] names = context.getAssets().list(ASSETS + "/" + MODEL);
+            String[] names = context.getAssets().list(ASSETS + "/" + model);
             return names != null && names.length > 0;
         } catch (IOException notBundled) {
             return false;
         }
     }
 
-    /** The folder the model is read from: the device's copy, filled from the APK the first time. */
-    private static File models(Context context) {
-        return new File(WhisperEngine.getModelDir(context), ASSETS + "/" + MODEL);
+    /** The folder a model is read from: the device's copy, filled from the APK the first time. */
+    private static File models(Context context, String model) {
+        return new File(WhisperEngine.getModelDir(context), ASSETS + "/" + model);
     }
 
-    /** Loads the model, which takes a moment the first time because the APK copy is unpacked. */
-    public synchronized boolean load() {
-        if (transcriber != null) return true;
+    /**
+     * Loads the model for {@code language}, which takes a moment the first time because the APK
+     * copy is unpacked. A model already loaded for that language is left alone; another one is
+     * freed first, since two of these will not fit in memory together.
+     */
+    public synchronized boolean load(String language) {
+        String wanted = modelFor(context, language);
+        if (transcriber != null && wanted.equals(model)) return true;
+        close();
         loadError = null;
         try {
-            File folder = unpack();
+            File folder = unpack(wanted);
             Transcriber loaded = new Transcriber();
             loaded.loadFromFiles(folder.getAbsolutePath(), ARCH);
             transcriber = loaded;
+            model = wanted;
             return true;
         } catch (IOException | RuntimeException | UnsatisfiedLinkError e) {
-            Log.w(TAG, "Could not load Moonshine", e);
+            Log.w(TAG, "Could not load Moonshine " + wanted, e);
             loadError = e.getMessage() != null ? e.getMessage() : e.toString();
             return false;
         }
@@ -122,16 +164,16 @@ public final class MoonshineEngine {
         return text.toString();
     }
 
-    /** Copies the model out of the APK the first time; later runs find it already there. */
-    private File unpack() throws IOException {
-        File folder = models(context);
+    /** Copies a model out of the APK the first time; later runs find it already there. */
+    private File unpack(String model) throws IOException {
+        File folder = models(context, model);
         //noinspection ResultOfMethodCallIgnored
         folder.mkdirs();
         for (String name : FILES) {
             File file = new File(folder, name);
             if (file.exists() && file.length() > 0) continue;
             File partial = new File(folder, name + ".part");
-            try (InputStream in = context.getAssets().open(ASSETS + "/" + MODEL + "/" + name);
+            try (InputStream in = context.getAssets().open(ASSETS + "/" + model + "/" + name);
                  OutputStream out = new FileOutputStream(partial)) {
                 byte[] chunk = new byte[256 * 1024];
                 int read;
@@ -144,7 +186,7 @@ public final class MoonshineEngine {
         return folder;
     }
 
-    /** Frees the model; the next {@link #load()} brings it back. */
+    /** Frees the model; the next {@link #load(String)} brings it back. */
     public synchronized void close() {
         if (transcriber != null) {
             transcriber.close();

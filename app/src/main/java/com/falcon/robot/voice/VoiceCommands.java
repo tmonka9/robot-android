@@ -12,8 +12,10 @@ import java.util.Locale;
  * <p>English is matched by keyword, so small recognition errors ("move forward please", "go
  * forwards") still work. Chinese, Japanese and Korean are matched as substrings instead: the
  * first two put no spaces between words, and Korean glues endings onto the verb, so "문을 열어"
- * and "문 열어줘" share "문 열" and little else. Every rule understands all three languages, whichever the app is
- * set to — what matters is the language the operator speaks, and whisper transcribes all of them.
+ * and "문 열어줘" share "문 열" and little else. Every rule understands all of them, whichever
+ * the app is set to — what matters is the language the operator speaks. The Voice page recognises
+ * English and Korean; the Chinese and Japanese phrases are here for whenever a model for those
+ * languages is put in the assets.
  */
 public final class VoiceCommands {
 
@@ -217,19 +219,5 @@ public final class VoiceCommands {
             if (rule.action.name.equals(name)) return rule.action;
         }
         return null;
-    }
-
-    /** Removes a leading wake word ("hey robot, move forward" → "move forward"). */
-    public static String stripWakeWord(String transcript, String wakeWord) {
-        String lower = transcript.toLowerCase(Locale.US);
-        String wake = wakeWord.toLowerCase(Locale.US);
-        int index = lower.indexOf(wake);
-        if (index < 0) return null;
-        String rest = transcript.substring(index + wake.length());
-        return rest.replaceFirst("^[,.!?、。\\s]+", "").trim();
-    }
-
-    public static boolean containsWakeWord(String transcript, String wakeWord) {
-        return transcript != null && transcript.toLowerCase(Locale.US).contains(wakeWord.toLowerCase(Locale.US));
     }
 }

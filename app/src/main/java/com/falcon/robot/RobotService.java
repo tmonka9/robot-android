@@ -197,8 +197,6 @@ public class RobotService extends Service implements LifecycleOwner {
     private boolean transcribing;
     private float[] pendingSamples; // the utterance heard while the last one was transcribing
     private String language; // set from the app language in onCreate
-    private String wakeWord = "Hey Robot";
-    private boolean wakeWordRequired;
     private boolean commandControl = true;
     private TextToSpeech tts;
     private boolean ttsReady;
@@ -229,7 +227,7 @@ public class RobotService extends Service implements LifecycleOwner {
         engine = new WhisperEngine(this);
         moonshine = new MoonshineEngine(this);
         // auto-detect is unreliable on one-second commands, so start from the app language
-        language = LocaleHelper.effectiveLanguage(this);
+        language = recognisedLanguage(LocaleHelper.effectiveLanguage(this));
         recorder = new SpeechRecorder(recorderListener);
         tts = new TextToSpeech(this, status -> {
             ttsReady = status == TextToSpeech.SUCCESS;
@@ -779,24 +777,24 @@ public class RobotService extends Service implements LifecycleOwner {
         return transcribing;
     }
 
+    /**
+     * The app language when speech can be recognised in it, and English otherwise: the Voice page
+     * offers the languages there are models for, and this reads the same list.
+     */
+    private String recognisedLanguage(String code) {
+        if (code == null) return "en";
+        for (String offered : getResources().getStringArray(R.array.adv_language_codes)) {
+            if (offered.equals(code)) return code;
+        }
+        return "en";
+    }
+
     public void setLanguage(String code) {
         boolean changed = code != null && !code.equals(language);
         language = code;
-        // English is Moonshine's and the rest are whisper's, so a change of language can mean a
-        // different engine; loading one already loaded costs nothing
+        // each language has its own Moonshine model, so a change of language means a different
+        // model — and possibly a different engine; loading one already loaded costs nothing
         if (changed && voiceEnabled) loadTranscriber();
-    }
-
-    public void setWakeWord(String word) {
-        wakeWord = word;
-    }
-
-    public void setWakeWordRequired(boolean required) {
-        wakeWordRequired = required;
-    }
-
-    public String getWakeWord() {
-        return wakeWord;
     }
 
     public void setCommandControl(boolean enabled) {
@@ -817,6 +815,9 @@ public class RobotService extends Service implements LifecycleOwner {
 
     private void startVoice() {
         loadCommandModel();
+        // the language can have been changed while nothing was listening, which means a different
+        // model; one already loaded for this language is left where it is
+        if (moonshine.isReady()) loadTranscriber();
         recorder.start();
     }
 
@@ -876,31 +877,39 @@ public class RobotService extends Service implements LifecycleOwner {
     }
 
     /**
-     * Moonshine is the English recogniser and whisper covers the other languages, so which one to
-     * load depends on what the operator will be speaking — and on what is actually there. Neither
+     * Moonshine has a model per language rather than one multilingual model, so which to load
+     * depends on what the operator will be speaking — and on which models were built into the
+     * APK. whisper is the fallback for a language no Moonshine model here covers. Neither engine
      * is loaded until the command model has had its say, because most utterances never get here.
      */
     private void loadTranscriber() {
-        boolean english = "en".equals(language) || language == null;
-        if ((english || !WhisperEngine.isEngineBuilt()) && MoonshineEngine.isBundled(this)) {
-            if (moonshine.isReady()) return;
+        final String code = language;
+        final String model = MoonshineEngine.modelFor(this, code);
+        if (MoonshineEngine.isBundled(this, model)) {
+            if (model.equals(moonshine.getModel())) return;
             speechExecutor.execute(() -> {
-                final boolean ok = moonshine.load();
+                final boolean ok = moonshine.load(code);
                 main.post(() -> {
-                    message(ok ? getString(R.string.moonshine_ready)
+                    message(ok ? getString(R.string.moonshine_ready, model)
                             : getString(R.string.moonshine_failed, moonshine.getLoadError()));
                     notifyState();
                 });
             });
             return;
         }
-        if (WhisperEngine.isEngineBuilt()) loadSpeechModel(null);
+        if (WhisperEngine.isEngineBuilt()) {
+            loadSpeechModel(null);
+            return;
+        }
+        message(getString(R.string.moonshine_missing, model));
     }
 
     /** Whether this utterance goes to Moonshine rather than whisper. */
     private boolean moonshineFits() {
-        if (!moonshine.isReady()) return false;
-        return "en".equals(language) || !engine.isReady();
+        String loaded = moonshine.getModel();
+        if (loaded == null) return false;
+        // the model for another language is still better than nothing, but only just
+        return loaded.equals(MoonshineEngine.modelFor(this, language)) || !engine.isReady();
     }
 
     /** Loads a ggml model; {@code modelName} null picks the bundled one. */
@@ -947,9 +956,6 @@ public class RobotService extends Service implements LifecycleOwner {
      * One utterance. The command model gets it first, since the robot's own orders are all it has
      * to tell apart; whisper is only asked about what the command model does not know, and only
      * when a whisper model happens to be loaded.
-     *
-     * <p>The wake word is a transcript rule, so it applies to the whisper path. A command model
-     * answers to the words it was trained on; train the wake word in as a label to require it.
      */
     private void recognise(final float[] samples) {
         final CommandRecognizer recognizer = commandRecognizer;
@@ -1066,11 +1072,6 @@ public class RobotService extends Service implements LifecycleOwner {
 
     /** Matches a command in the transcript and runs it, wherever the operator is in the app. */
     private void handleTranscript(String text, float confidence) {
-        if (wakeWordRequired) {
-            if (!VoiceCommands.containsWakeWord(text, wakeWord)) return;
-            String rest = VoiceCommands.stripWakeWord(text, wakeWord);
-            if (rest != null && !rest.isEmpty()) text = rest;
-        }
         VoiceCommands.Action action = customPhrases.match(text);
         if (action == null) action = VoiceCommands.match(text);
         runAction(action, text, confidence);

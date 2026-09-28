@@ -282,6 +282,36 @@
                             android:src="@drawable/ic_fullscreen" />
                     </LinearLayout>
 
+                    <!--
+                      The three recognition features, switched on from the page the robot is
+                      driven from. Faces and objects are drawn over the feed below; spoken
+                      commands are carried out. The switches belong to RobotService, so what is
+                      on here is still on after leaving the page.
+                    -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="38dp"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/toggle_face"
+                            style="@style/RecognitionToggle"
+                            android:text="@string/feature_face" />
+
+                        <TextView
+                            android:id="@+id/toggle_object"
+                            style="@style/RecognitionToggle"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/feature_object" />
+
+                        <TextView
+                            android:id="@+id/toggle_voice"
+                            style="@style/RecognitionToggle"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/feature_voice" />
+                    </LinearLayout>
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
@@ -315,6 +345,16 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent" />
 
+                            <com.falcon.robot.widget.TrackingOverlayView
+                                android:id="@+id/tracking_overlay"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <com.falcon.robot.widget.FaceOverlayView
+                                android:id="@+id/face_overlay"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
                             <TextView
                                 android:id="@+id/camera_info"
                                 android:layout_width="wrap_content"
@@ -330,185 +370,191 @@
                                 android:textSize="12sp" />
                         </FrameLayout>
 
-                        <!-- Camera settings: hidden while the feed is full screen -->
-                        <LinearLayout
+                        <!--
+                          Camera settings: hidden while the feed is full screen. The panel is
+                          squeezed to the height of the page, which is not always enough for
+                          every row, so it scrolls — see PanelScrollView.
+                        -->
+                        <com.falcon.robot.widget.PanelScrollView
                             android:id="@+id/camera_settings_column"
                             android:layout_width="200dp"
                             android:layout_height="match_parent"
                             android:layout_marginStart="10dp"
                             android:background="@drawable/bg_table_box"
-                            android:orientation="vertical"
                             android:paddingLeft="12dp"
                             android:paddingTop="10dp"
                             android:paddingRight="10dp"
-                            android:paddingBottom="10dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-medium"
-                                android:text="@string/camera_settings"
-                                android:textColor="@color/blue_light"
-                                android:textSize="14sp" />
-
-                            <TextView
-                                android:id="@+id/label_brightness"
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="8dp"
-                                android:text="@string/brightness" />
+                            android:paddingBottom="10dp"
+                            android:scrollbars="vertical">
 
                             <LinearLayout
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <SeekBar
-                                    android:id="@+id/seek_brightness"
-                                    android:layout_width="0dp"
-                                    android:layout_height="28dp"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="8dp"
-                                    android:paddingEnd="8dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
+                                android:orientation="vertical">
 
                                 <TextView
-                                    android:id="@+id/value_brightness"
-                                    android:layout_width="36dp"
+                                    android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/label_contrast"
-                                style="@style/SettingLabel"
-                                android:text="@string/contrast" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <SeekBar
-                                    android:id="@+id/seek_contrast"
-                                    android:layout_width="0dp"
-                                    android:layout_height="28dp"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="8dp"
-                                    android:paddingEnd="8dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
+                                    android:fontFamily="sans-serif-medium"
+                                    android:text="@string/camera_settings"
+                                    android:textColor="@color/blue_light"
+                                    android:textSize="14sp" />
 
                                 <TextView
-                                    android:id="@+id/value_contrast"
-                                    android:layout_width="36dp"
+                                    android:id="@+id/label_brightness"
+                                    style="@style/SettingLabel"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/brightness" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
 
-                            <TextView
-                                android:id="@+id/label_saturation"
-                                style="@style/SettingLabel"
-                                android:text="@string/saturation" />
+                                    <SeekBar
+                                        android:id="@+id/seek_brightness"
+                                        android:layout_width="0dp"
+                                        android:layout_height="28dp"
+                                        android:layout_weight="1"
+                                        android:max="100"
+                                        android:maxHeight="4dp"
+                                        android:minHeight="4dp"
+                                        android:paddingStart="8dp"
+                                        android:paddingEnd="8dp"
+                                        android:progress="50"
+                                        android:progressDrawable="@drawable/progress_loading"
+                                        android:splitTrack="false"
+                                        android:thumb="@drawable/seekbar_thumb" />
 
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <SeekBar
-                                    android:id="@+id/seek_saturation"
-                                    android:layout_width="0dp"
-                                    android:layout_height="28dp"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="8dp"
-                                    android:paddingEnd="8dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
+                                    <TextView
+                                        android:id="@+id/value_brightness"
+                                        android:layout_width="36dp"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="end"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
 
                                 <TextView
-                                    android:id="@+id/value_saturation"
-                                    android:layout_width="36dp"
+                                    android:id="@+id/label_contrast"
+                                    style="@style/SettingLabel"
+                                    android:text="@string/contrast" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="11sp" />
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <SeekBar
+                                        android:id="@+id/seek_contrast"
+                                        android:layout_width="0dp"
+                                        android:layout_height="28dp"
+                                        android:layout_weight="1"
+                                        android:max="100"
+                                        android:maxHeight="4dp"
+                                        android:minHeight="4dp"
+                                        android:paddingStart="8dp"
+                                        android:paddingEnd="8dp"
+                                        android:progress="50"
+                                        android:progressDrawable="@drawable/progress_loading"
+                                        android:splitTrack="false"
+                                        android:thumb="@drawable/seekbar_thumb" />
+
+                                    <TextView
+                                        android:id="@+id/value_contrast"
+                                        android:layout_width="36dp"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="end"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/label_saturation"
+                                    style="@style/SettingLabel"
+                                    android:text="@string/saturation" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <SeekBar
+                                        android:id="@+id/seek_saturation"
+                                        android:layout_width="0dp"
+                                        android:layout_height="28dp"
+                                        android:layout_weight="1"
+                                        android:max="100"
+                                        android:maxHeight="4dp"
+                                        android:minHeight="4dp"
+                                        android:paddingStart="8dp"
+                                        android:paddingEnd="8dp"
+                                        android:progress="50"
+                                        android:progressDrawable="@drawable/progress_loading"
+                                        android:splitTrack="false"
+                                        android:thumb="@drawable/seekbar_thumb" />
+
+                                    <TextView
+                                        android:id="@+id/value_saturation"
+                                        android:layout_width="36dp"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="end"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    style="@style/SettingLabel"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/resolution" />
+
+                                <FrameLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp">
+
+                                    <Spinner
+                                        android:id="@+id/camera_resolution"
+                                        style="@style/Dropdown"
+                                        android:layout_height="36dp" />
+
+                                    <ImageView
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        android:layout_gravity="end|center_vertical"
+                                        android:layout_marginEnd="8dp"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_dropdown" />
+                                </FrameLayout>
+
+                                <TextView
+                                    style="@style/SettingLabel"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/fps" />
+
+                                <FrameLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp">
+
+                                    <Spinner
+                                        android:id="@+id/camera_fps"
+                                        style="@style/Dropdown"
+                                        android:layout_height="36dp" />
+
+                                    <ImageView
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        android:layout_gravity="end|center_vertical"
+                                        android:layout_marginEnd="8dp"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_dropdown" />
+                                </FrameLayout>
                             </LinearLayout>
-
-                            <Space
-                                android:layout_width="0dp"
-                                android:layout_height="0dp"
-                                android:layout_weight="1" />
-
-                            <TextView
-                                style="@style/SettingLabel"
-                                android:text="@string/resolution" />
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp">
-
-                                <Spinner
-                                    android:id="@+id/camera_resolution"
-                                    style="@style/Dropdown"
-                                    android:layout_height="36dp" />
-
-                                <ImageView
-                                    android:layout_width="20dp"
-                                    android:layout_height="20dp"
-                                    android:layout_gravity="end|center_vertical"
-                                    android:layout_marginEnd="8dp"
-                                    android:contentDescription="@null"
-                                    android:src="@drawable/ic_dropdown" />
-                            </FrameLayout>
-
-                            <TextView
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="8dp"
-                                android:text="@string/fps" />
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp">
-
-                                <Spinner
-                                    android:id="@+id/camera_fps"
-                                    style="@style/Dropdown"
-                                    android:layout_height="36dp" />
-
-                                <ImageView
-                                    android:layout_width="20dp"
-                                    android:layout_height="20dp"
-                                    android:layout_gravity="end|center_vertical"
-                                    android:layout_marginEnd="8dp"
-                                    android:contentDescription="@null"
-                                    android:src="@drawable/ic_dropdown" />
-                            </FrameLayout>
-                        </LinearLayout>
+                        </com.falcon.robot.widget.PanelScrollView>
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>

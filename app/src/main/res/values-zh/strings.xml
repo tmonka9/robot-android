@@ -172,6 +172,9 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">位置已复位</string>
     <string name="camera_view">摄像头画面</string>
+    <string name="feature_face">人脸</string>
+    <string name="feature_object">物体</string>
+    <string name="feature_voice">语音</string>
     <string name="cam_front">前</string>
     <string name="cam_rear">后</string>
     <string name="cam_left">左</string>
@@ -370,14 +373,10 @@
     <string name="voice_control">语音控制</string>
     <string name="vc_command">语音指令控制</string>
     <string name="vc_command_sub">启用机器人语音指令</string>
-    <string name="vc_wake">唤醒词（Hey Robot）</string>
-    <string name="vc_wake_sub">通过唤醒词进入聆听模式</string>
     <string name="vc_continuous">持续聆听</string>
     <string name="vc_continuous_sub">始终保持聆听状态</string>
     <string name="vc_noise">降噪</string>
     <string name="vc_noise_sub">提升嘈杂环境下的识别率</string>
-    <string name="wake_word">唤醒词</string>
-    <string name="wake_word_title">唤醒词（%s）</string>
     <string name="voice_history">语音指令记录</string>
     <string name="command">指令</string>
     <string name="result">结果</string>
@@ -386,13 +385,13 @@
     <string name="result_not_sent">未发送</string>
     <string name="advanced_settings">高级设置</string>
     <string name="tab_language">语言</string>
-    <string name="tab_hotword">唤醒词</string>
+    <string name="tab_listening">收听</string>
     <string name="tab_audio">音频</string>
     <string name="apply_settings">应用设置</string>
     <string name="time_answer">现在是 %s</string>
     <string name="status_processing">处理中…</string>
     <string name="no_speech">未识别到语音 — 请靠近麦克风并说得久一点</string>
-    <string name="result_no_match">无匹配</string>
+    <string name="result_no_match">未知命令</string>
     <string name="mic_permission_needed">语音指令需要麦克风权限</string>
     <string name="engine_not_built">语音引擎未编译：请将 whisper.cpp 克隆到 app/src/main/cpp 后重新构建</string>
     <string name="engine_unavailable">无法加载语音引擎库</string>
@@ -404,8 +403,10 @@
     <string name="command_model_partial">命令模型就绪：%1$d / %2$d 条命令 — 其余由语音模型识别</string>
     <string name="command_model_only">命令模型就绪：%1$d / %2$d 条命令 — 录制其余 %3$d 条即可添加</string>
     <string name="command_model_failed">无法加载命令模型：%1$s</string>
-    <string name="moonshine_ready">英语语音模型就绪（Moonshine tiny）</string>
-    <string name="moonshine_failed">无法加载英语语音模型：%1$s</string>
+    <string name="moonshine_ready">语音模型已就绪（Moonshine %1$s）</string>
+    <string name="moonshine_failed">无法加载语音模型：%1$s</string>
+    <string name="moonshine_missing">缺少语音模型：请将 moonshine/%1$s 放入应用 assets</string>
+    <string name="speech_model_chosen">%1$s 语音模型：%2$s</string>
     <string name="command_unsure">不确定 — 听起来像“%1$s”（%2$d%%）。请靠近麦克风再说一遍。</string>
     <string name="model_too_large">模型约需 %1$d MB 内存，但可用内存仅 %2$d MB — 请改用更小的模型，例如 ggml-base.bin</string>
     <string name="model_load_failed">无法加载 %s</string>
@@ -420,25 +421,14 @@
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->
     <string name="adv_recognition_language">识别语言</string>
-    <string name="adv_response_language">应答语言</string>
     <string-array name="adv_language_options">
-        <item>自动检测</item>
         <item>英语</item>
-        <item>韩语</item>
-        <item>中文（普通话）</item>
-        <item>日语</item>
-        <item>西班牙语</item>
-        <item>德语</item>
+        <item>朝鲜语</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
-        <item>auto</item>
         <item>en</item>
         <item>ko</item>
-        <item>zh</item>
-        <item>ja</item>
-        <item>es</item>
-        <item>de</item>
     </string-array>
     <string name="adv_auto_detect">自动检测语言</string>
     <string-array name="adv_on_off_options">
@@ -446,12 +436,6 @@
         <item>开启</item>
     </string-array>
     <string name="adv_punctuation">自动标点</string>
-    <string name="adv_hotword_engine">唤醒词引擎</string>
-    <string-array name="adv_hotword_engine_options">
-        <item>Porcupine</item>
-        <item>Snowboy</item>
-        <item>内置</item>
-    </string-array>
     <string name="adv_sensitivity">灵敏度</string>
     <string-array name="adv_sensitivity_options">
         <item>中</item>

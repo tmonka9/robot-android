@@ -172,6 +172,9 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">位置をリセットしました</string>
     <string name="camera_view">カメラ映像</string>
+    <string name="feature_face">顔</string>
+    <string name="feature_object">物体</string>
+    <string name="feature_voice">音声</string>
     <string name="cam_front">前方</string>
     <string name="cam_rear">後方</string>
     <string name="cam_left">左</string>
@@ -370,14 +373,10 @@
     <string name="voice_control">音声制御</string>
     <string name="vc_command">音声コマンド制御</string>
     <string name="vc_command_sub">ロボットの音声コマンドを有効にします</string>
-    <string name="vc_wake">ウェイクワード (Hey Robot)</string>
-    <string name="vc_wake_sub">ウェイクワードで待機モードを開始します</string>
     <string name="vc_continuous">常時待機</string>
     <string name="vc_continuous_sub">常に音声を待機します</string>
     <string name="vc_noise">ノイズ低減</string>
     <string name="vc_noise_sub">騒音環境での認識精度を改善します</string>
-    <string name="wake_word">ウェイクワード</string>
-    <string name="wake_word_title">ウェイクワード (%s)</string>
     <string name="voice_history">音声コマンド履歴</string>
     <string name="command">コマンド</string>
     <string name="result">結果</string>
@@ -386,13 +385,13 @@
     <string name="result_not_sent">未送信</string>
     <string name="advanced_settings">詳細設定</string>
     <string name="tab_language">言語</string>
-    <string name="tab_hotword">ホットワード</string>
+    <string name="tab_listening">リスニング</string>
     <string name="tab_audio">オーディオ</string>
     <string name="apply_settings">設定を適用</string>
     <string name="time_answer">現在 %s です</string>
     <string name="status_processing">処理中…</string>
     <string name="no_speech">音声を認識できません — マイクに近づき、少し長めに話してください</string>
-    <string name="result_no_match">該当なし</string>
+    <string name="result_no_match">不明なコマンド</string>
     <string name="mic_permission_needed">音声コマンドにはマイクの権限が必要です</string>
     <string name="engine_not_built">音声エンジンが未ビルドです: whisper.cpp を app/src/main/cpp にクローンして再ビルドしてください</string>
     <string name="engine_unavailable">音声エンジンのライブラリを読み込めません</string>
@@ -404,8 +403,10 @@
     <string name="command_model_partial">コマンドモデル準備完了：%1$d / %2$d 件 — 残りは音声モデルが認識</string>
     <string name="command_model_only">コマンドモデル準備完了：%1$d / %2$d 件 — 残り %3$d 件は録音すれば追加できます</string>
     <string name="command_model_failed">コマンドモデルを読み込めません：%1$s</string>
-    <string name="moonshine_ready">英語音声モデル準備完了（Moonshine tiny）</string>
-    <string name="moonshine_failed">英語音声モデルを読み込めません：%1$s</string>
+    <string name="moonshine_ready">音声モデルを読み込みました（Moonshine %1$s）</string>
+    <string name="moonshine_failed">音声モデルを読み込めませんでした: %1$s</string>
+    <string name="moonshine_missing">音声モデルがありません: moonshine/%1$s をアプリの assets に置いてください</string>
+    <string name="speech_model_chosen">%1$s の音声モデル: %2$s</string>
     <string name="command_unsure">確信が持てません — 「%1$s」に聞こえました（%2$d%%）。マイクに近づいてもう一度言ってください。</string>
     <string name="model_too_large">モデルには約 %1$d MB のメモリが必要ですが、空きは %2$d MB です — ggml-base.bin などの小さいモデルをご利用ください</string>
     <string name="model_load_failed">%s を読み込めませんでした</string>
@@ -420,25 +421,14 @@
     <!-- Advanced settings rows: label + options, grouped by tab -->
     <!-- replaced at runtime by the ggml models found on the device -->
     <string name="adv_recognition_language">認識言語</string>
-    <string name="adv_response_language">応答言語</string>
     <string-array name="adv_language_options">
-        <item>自動検出</item>
         <item>英語</item>
-        <item>韓国語</item>
-        <item>中国語 (標準語)</item>
-        <item>日本語</item>
-        <item>スペイン語</item>
-        <item>ドイツ語</item>
+        <item>朝鮮語</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
-        <item>auto</item>
         <item>en</item>
         <item>ko</item>
-        <item>zh</item>
-        <item>ja</item>
-        <item>es</item>
-        <item>de</item>
     </string-array>
     <string name="adv_auto_detect">言語の自動検出</string>
     <string-array name="adv_on_off_options">
@@ -446,12 +436,6 @@
         <item>オン</item>
     </string-array>
     <string name="adv_punctuation">句読点の自動付与</string>
-    <string name="adv_hotword_engine">ウェイクワードエンジン</string>
-    <string-array name="adv_hotword_engine_options">
-        <item>Porcupine</item>
-        <item>Snowboy</item>
-        <item>内蔵</item>
-    </string-array>
     <string name="adv_sensitivity">感度</string>
     <string-array name="adv_sensitivity_options">
         <item>中</item>
