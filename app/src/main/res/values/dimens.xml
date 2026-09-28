@@ -3,6 +3,7 @@
     <dimen name="screen_padding">12dp</dimen>
     <dimen name="gap">10dp</dimen>
     <dimen name="sidebar_width">78dp</dimen>
+    <dimen name="action_sidebar_width">168dp</dimen>
     <dimen name="title_text">18sp</dimen>
 
     <dimen name="hero_min_height">240dp</dimen>

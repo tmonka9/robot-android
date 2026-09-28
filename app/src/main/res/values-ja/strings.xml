@@ -172,6 +172,9 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">位置をリセットしました</string>
     <string name="camera_view">カメラ映像</string>
+    <string name="feature_face">顔</string>
+    <string name="feature_object">物体</string>
+    <string name="feature_voice">音声</string>
     <string name="cam_front">前方</string>
     <string name="cam_rear">後方</string>
     <string name="cam_left">左</string>
@@ -216,11 +219,9 @@
     <string name="qa_shutdown">シャットダウン</string>
     <string name="shutdown_confirm">ロボットをシャットダウンしますか？</string>
     <string name="cancel">キャンセル</string>
-    <string name="custom_actions">カスタム動作</string>
-    <string name="custom_action">動作 %d</string>
     <string name="robot_tip">仮想ジョイスティックまたはプリセットボタンでロボットを操作します。</string>
-    <string name="panel_control">操作</string>
-    <string name="panel_ai">AI</string>
+    <string name="panel_actions">操作</string>
+    <string name="panel_camera_ai">カメラ &amp; AI</string>
     <string name="panel_log">ログ</string>
     <string name="log_start">ログ開始</string>
     <string name="log_stop">ログ停止</string>

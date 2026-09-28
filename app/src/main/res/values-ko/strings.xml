@@ -173,6 +173,9 @@
     <string name="position_z">Z:  %.2f m</string>
     <string name="position_reset">위치 초기화</string>
     <string name="camera_view">카메라 화면</string>
+    <string name="feature_face">얼굴</string>
+    <string name="feature_object">물체</string>
+    <string name="feature_voice">음성</string>
     <string name="cam_front">전방</string>
     <string name="cam_rear">후방</string>
     <string name="cam_left">좌측</string>
@@ -217,11 +220,9 @@
     <string name="qa_shutdown">전원 끄기</string>
     <string name="shutdown_confirm">로봇의 전원을 끄시겠습니까?</string>
     <string name="cancel">취소</string>
-    <string name="custom_actions">사용자 동작</string>
-    <string name="custom_action">동작 %d</string>
     <string name="robot_tip">가상 조이스틱이나 사전 설정 버튼으로 로봇을 제어하세요.</string>
-    <string name="panel_control">조종</string>
-    <string name="panel_ai">AI</string>
+    <string name="panel_actions">동작</string>
+    <string name="panel_camera_ai">카메라 &amp; AI</string>
     <string name="panel_log">기록</string>
     <string name="log_start">기록 시작</string>
     <string name="log_stop">기록 중지</string>

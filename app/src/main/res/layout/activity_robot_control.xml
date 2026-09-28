@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Robot Control page: the screen the robot is driven from.
-  Top row: the robot in 3D | the camera feed, given the same room. Bottom row: Control, Camera
-  Settings, AI and Log. A status bar along the foot says what happened last.
+  Top row: the robot in 3D | the camera feed with the AI switches. Bottom row: the LiDAR map (kept
+  as wide as the robot above it), Camera Settings and the Log. The actions live in a sidebar down
+  the right-hand side and a status bar runs along the foot; both sit outside the scrolling page, so
+  they are always in reach.
   Rows are arranged side by side on wide screens and stacked otherwise (BaseActivity#setupColumns);
   icons, sizes and state are bound in RobotControlActivity. There is deliberately no page header:
   the space goes to the panels.
@@ -12,992 +14,973 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.falcon.robot.widget.FitScrollView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:orientation="horizontal">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="@dimen/screen_padding">
+        <com.falcon.robot.widget.FitScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:fillViewport="true">
 
-            <!-- ======================= Top row ======================= -->
             <LinearLayout
-                android:id="@+id/columns"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1.1">
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/screen_padding">
 
-                <!-- Robot Status: robot artwork with live status overlays -->
-                <FrameLayout
-                    android:id="@+id/robot_status_panel"
+                <!-- ======================= Top row ======================= -->
+                <LinearLayout
+                    android:id="@+id/columns"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_panel_robot"
-                    android:minHeight="280dp"
-                    android:tag="1">
-
-                    <!-- the robot as a model you can turn with a finger -->
-                    <com.falcon.robot.widget.Robot3DView
-                        android:id="@+id/robot_3d"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
-
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start|top"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <TextView
-                            android:id="@+id/robot_status_title"
-                            android:layout_width="wrap_content"
-                            android:layout_height="42dp"
-                            android:background="@drawable/bg_title_chip"
-                            android:clickable="true"
-                            android:drawablePadding="12dp"
-                            android:focusable="true"
-                            android:fontFamily="sans-serif-medium"
-                            android:gravity="center_vertical"
-                            android:paddingLeft="16dp"
-                            android:paddingRight="20dp"
-                            android:text="@string/robot_status"
-                            android:textColor="@color/white"
-                            android:textSize="16sp" />
-
-                        <LinearLayout
-                            android:id="@+id/robot_status_table"
-                            android:layout_width="230dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:background="@drawable/bg_table_box"
-                            android:orientation="vertical"
-                            android:paddingLeft="12dp"
-                            android:paddingRight="12dp">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="40dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/label_mode"
-                                    style="@style/StatusRowLabel"
-                                    android:text="@string/mode" />
-
-                                <TextView
-                                    android:id="@+id/value_mode"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="1dp"
-                                android:background="@color/divider" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="40dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/label_speed"
-                                    style="@style/StatusRowLabel"
-                                    android:text="@string/speed" />
-
-                                <TextView
-                                    android:id="@+id/value_speed"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="1dp"
-                                android:background="@color/divider" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="40dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/label_battery"
-                                    style="@style/StatusRowLabel"
-                                    android:text="@string/battery" />
-
-                                <TextView
-                                    android:id="@+id/value_battery"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
-
-                            <View
-                                android:layout_width="match_parent"
-                                android:layout_height="1dp"
-                                android:background="@color/divider" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="40dp"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/label_temperature"
-                                    style="@style/StatusRowLabel"
-                                    android:text="@string/temperature" />
-
-                                <TextView
-                                    android:id="@+id/value_temperature"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/robot_position"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="end|top"
-                        android:layout_marginTop="80dp"
-                        android:layout_marginEnd="18dp"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/position"
-                            android:textColor="@color/blue_light"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/position_x"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/position_y"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/position_z"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <!-- panel controls: fill the page with the robot, or fold the panel away -->
-                    <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="end|top"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginEnd="10dp"
-                        android:orientation="horizontal">
-
-                        <ImageButton
-                            android:id="@+id/robot_fullscreen"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:background="?android:attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/full_screen"
-                            android:padding="8dp"
-                            android:scaleType="fitCenter"
-                            android:src="@drawable/ic_fullscreen" />
-
-                        <ImageButton
-                            android:id="@+id/robot_collapse"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:layout_marginStart="2dp"
-                            android:background="?android:attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/collapse"
-                            android:padding="7dp"
-                            android:scaleType="fitCenter"
-                            android:src="@drawable/ic_chevron_up" />
-                    </LinearLayout>
-                </FrameLayout>
-
-                <!-- Camera View -->
-                <LinearLayout
-                    android:id="@+id/camera_panel"
-                    style="@style/RobotPanel"
-                    android:tag="1">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/camera_title"
-                            style="@style/RobotPanelTitle"
-                            android:layout_width="wrap_content"
-                            android:text="@string/camera_view" />
-
-                        <View
-                            android:layout_width="0dp"
-                            android:layout_height="1dp"
-                            android:layout_weight="1" />
-
-                        <ImageButton
-                            android:id="@+id/camera_fullscreen"
-                            android:layout_width="36dp"
-                            android:layout_height="36dp"
-                            android:layout_marginStart="6dp"
-                            android:background="?android:attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/full_screen"
-                            android:padding="8dp"
-                            android:scaleType="fitCenter"
-                            android:src="@drawable/ic_fullscreen" />
-                    </LinearLayout>
-
-                    <!--
-                      The live camera, with the design artwork behind it until frames arrive.
-                      The preview runs in COMPATIBLE mode so it is a view in the hierarchy
-                      rather than its own surface: the artwork shows through it while it is
-                      empty, and the robot overlay sits on top of it.
-                    -->
+                    android:layout_height="0dp"
+                    android:layout_weight="1.1">
+                    <!-- Robot Status: robot artwork with live status overlays -->
                     <FrameLayout
-                        android:id="@+id/camera_feed_frame"
+                        android:id="@+id/robot_status_panel"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_table_box"
-                        android:minHeight="200dp">
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_panel_robot"
+                        android:minHeight="280dp"
+                        android:tag="1">
 
-                        <com.falcon.robot.widget.CoverImageView
-                            android:id="@+id/camera_feed"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:contentDescription="@string/camera_view"
-                            android:src="@drawable/robot_camera_front" />
-
-                        <androidx.camera.view.PreviewView
-                            android:id="@+id/camera_preview"
+                        <!-- the robot as a model you can turn with a finger -->
+                        <com.falcon.robot.widget.Robot3DView
+                            android:id="@+id/robot_3d"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent" />
-
-                        <com.falcon.robot.widget.TrackingOverlayView
-                            android:id="@+id/tracking_overlay"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent" />
-
-                        <com.falcon.robot.widget.FaceOverlayView
-                            android:id="@+id/face_overlay"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent" />
-
-                        <TextView
-                            android:id="@+id/camera_info"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|start"
-                            android:layout_margin="10dp"
-                            android:background="@drawable/bg_feed_label"
-                            android:paddingLeft="10dp"
-                            android:paddingTop="4dp"
-                            android:paddingRight="10dp"
-                            android:paddingBottom="4dp"
-                            android:textColor="@color/white"
-                            android:textSize="12sp" />
-                    </FrameLayout>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- ======================= Bottom row ======================= -->
-            <LinearLayout
-                android:id="@+id/columns_bottom"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginTop="@dimen/gap"
-                android:layout_weight="1">
-
-                <!--
-                  Control: everything the robot is driven with, in one panel. There is more here
-                  than fits a quarter of the screen, so it scrolls (PanelScrollView).
-                -->
-                <LinearLayout
-                    style="@style/RobotPanel"
-                    android:tag="1.5">
-
-                    <TextView
-                        android:id="@+id/control_panel_title"
-                        style="@style/RobotPanelTitle"
-                        android:text="@string/panel_control" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/divider" />
-
-                    <com.falcon.robot.widget.PanelScrollView
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_weight="1"
-                        android:scrollbars="vertical">
 
                         <LinearLayout
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:layout_gravity="start|top"
+                            android:orientation="vertical"
+                            android:padding="12dp">
 
                             <TextView
-                                android:id="@+id/movement_title"
-                                style="@style/SettingLabel"
-                                android:text="@string/movement_control" />
-
-                            <com.falcon.robot.widget.JoystickView
-                                android:id="@+id/joystick"
-                                android:layout_width="match_parent"
-                                android:layout_height="@dimen/joystick_size"
-                                android:layout_marginTop="6dp" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="52dp"
-                                android:layout_marginTop="8dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/move_forward"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:text="@string/act_forward" />
-
-                                <TextView
-                                    android:id="@+id/move_backward"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:text="@string/act_backward" />
-                            </LinearLayout>
+                                android:id="@+id/robot_status_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="42dp"
+                                android:background="@drawable/bg_title_chip"
+                                android:clickable="true"
+                                android:drawablePadding="12dp"
+                                android:focusable="true"
+                                android:fontFamily="sans-serif-medium"
+                                android:gravity="center_vertical"
+                                android:paddingLeft="16dp"
+                                android:paddingRight="20dp"
+                                android:text="@string/robot_status"
+                                android:textColor="@color/white"
+                                android:textSize="16sp" />
 
                             <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="52dp"
-                                android:layout_marginTop="8dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/move_left"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:text="@string/act_turn_left" />
-
-                                <TextView
-                                    android:id="@+id/move_right"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:text="@string/act_turn_right" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="52dp"
-                                android:layout_marginTop="8dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/move_stop"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:text="@string/act_stop" />
-
-                                <TextView
-                                    android:id="@+id/move_reset"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:text="@string/act_reset" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="44dp"
+                                android:id="@+id/robot_status_table"
+                                android:layout_width="230dp"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
                                 android:background="@drawable/bg_table_box"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal"
+                                android:orientation="vertical"
                                 android:paddingLeft="12dp"
                                 android:paddingRight="12dp">
 
-                                <TextView
-                                    android:id="@+id/label_speed_slider"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:drawablePadding="8dp"
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="40dp"
                                     android:gravity="center_vertical"
-                                    android:text="@string/speed"
-                                    android:textColor="@color/blue_light"
-                                    android:textSize="13sp" />
+                                    android:orientation="horizontal">
 
-                                <SeekBar
-                                    android:id="@+id/speed_seek"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="12dp"
-                                    android:paddingEnd="10dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
+                                    <TextView
+                                        android:id="@+id/label_mode"
+                                        style="@style/StatusRowLabel"
+                                        android:text="@string/mode" />
 
-                                <TextView
-                                    android:id="@+id/speed_value"
-                                    android:layout_width="42dp"
-                                    android:layout_height="wrap_content"
-                                    android:fontFamily="sans-serif-medium"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="13sp" />
+                                    <TextView
+                                        android:id="@+id/value_mode"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="13sp" />
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="1dp"
+                                    android:background="@color/divider" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="40dp"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <TextView
+                                        android:id="@+id/label_speed"
+                                        style="@style/StatusRowLabel"
+                                        android:text="@string/speed" />
+
+                                    <TextView
+                                        android:id="@+id/value_speed"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="13sp" />
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="1dp"
+                                    android:background="@color/divider" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="40dp"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <TextView
+                                        android:id="@+id/label_battery"
+                                        style="@style/StatusRowLabel"
+                                        android:text="@string/battery" />
+
+                                    <TextView
+                                        android:id="@+id/value_battery"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="13sp" />
+                                </LinearLayout>
+
+                                <View
+                                    android:layout_width="match_parent"
+                                    android:layout_height="1dp"
+                                    android:background="@color/divider" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="40dp"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <TextView
+                                        android:id="@+id/label_temperature"
+                                        style="@style/StatusRowLabel"
+                                        android:text="@string/temperature" />
+
+                                    <TextView
+                                        android:id="@+id/value_temperature"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:singleLine="true"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="13sp" />
+                                </LinearLayout>
                             </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/arm_title"
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="12dp"
-                                android:text="@string/arm_control" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="42dp"
-                                android:layout_marginTop="6dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/arm_left"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/arm_left" />
-
-                                <TextView
-                                    android:id="@+id/arm_right"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/arm_right" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="42dp"
-                                android:layout_marginTop="8dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/arm_head"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/arm_head" />
-
-                                <TextView
-                                    android:id="@+id/arm_waist"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/arm_waist" />
-                            </LinearLayout>
-
-                            <TextView
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="12dp"
-                                android:text="@string/preset_pose" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="42dp"
-                                android:layout_marginTop="6dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/pose_stand"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/pose_stand" />
-
-                                <TextView
-                                    android:id="@+id/pose_sit"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/pose_sit" />
-
-                                <TextView
-                                    android:id="@+id/pose_wave"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/pose_wave" />
-
-                                <TextView
-                                    android:id="@+id/pose_tpose"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/pose_t" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/quick_title"
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="12dp"
-                                android:text="@string/quick_actions" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="44dp"
-                                android:layout_marginTop="6dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/qa_home"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/qa_go_home" />
-
-                                <TextView
-                                    android:id="@+id/qa_patrol"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/qa_start_patrol" />
-                            </LinearLayout>
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="44dp"
-                                android:layout_marginTop="8dp"
-                                android:orientation="horizontal">
-
-                                <TextView
-                                    android:id="@+id/qa_follow"
-                                    style="@style/ControlButton"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/qa_follow_me" />
-
-                                <TextView
-                                    android:id="@+id/qa_shutdown"
-                                    style="@style/ControlButton"
-                                    android:layout_marginStart="6dp"
-                                    android:minHeight="0dp"
-                                    android:paddingTop="0dp"
-                                    android:paddingBottom="0dp"
-                                    android:text="@string/qa_shutdown" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/custom_title"
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="12dp"
-                                android:text="@string/custom_actions" />
-
-                            <!-- Filled by RobotControlActivity#buildCustomActions -->
-                            <LinearLayout
-                                android:id="@+id/custom_actions"
-                                android:layout_width="match_parent"
-                                android:layout_height="44dp"
-                                android:layout_marginTop="6dp"
-                                android:orientation="horizontal" />
                         </LinearLayout>
-                    </com.falcon.robot.widget.PanelScrollView>
-                </LinearLayout>
 
-                <!--
-                  Camera Settings: its own panel now, rather than a column squeezed in beside the
-                  feed where the last rows were cut off. It scrolls, so every row is reachable.
-                -->
-                <LinearLayout
-                    android:id="@+id/camera_settings_panel"
-                    style="@style/RobotPanel"
-                    android:tag="1">
+                        <LinearLayout
+                            android:id="@+id/robot_position"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end|top"
+                            android:layout_marginTop="80dp"
+                            android:layout_marginEnd="18dp"
+                            android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/camera_settings_title"
-                        style="@style/RobotPanelTitle"
-                        android:text="@string/camera_settings" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/position"
+                                android:textColor="@color/blue_light"
+                                android:textSize="13sp" />
 
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/divider" />
+                            <TextView
+                                android:id="@+id/position_x"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
 
-                    <com.falcon.robot.widget.PanelScrollView
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_weight="1"
-                        android:scrollbars="vertical">
+                            <TextView
+                                android:id="@+id/position_y"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/position_z"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/text_primary"
+                                android:textSize="13sp" />
+                        </LinearLayout>
+
+                        <!-- panel controls: fill the page with the robot, or fold the panel away -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end|top"
+                            android:layout_marginTop="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:orientation="horizontal">
+
+                            <ImageButton
+                                android:id="@+id/robot_fullscreen"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/full_screen"
+                                android:padding="8dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_fullscreen" />
+
+                            <ImageButton
+                                android:id="@+id/robot_collapse"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:layout_marginStart="2dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/collapse"
+                                android:padding="7dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_chevron_up" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <!--
+                      Camera and AI in one panel: the feed, the three recognition switches under it,
+                      and a line saying what is running. Face and object results are drawn on the feed.
+                    -->
+                    <LinearLayout
+                        android:id="@+id/camera_panel"
+                        style="@style/RobotPanel"
+                        android:tag="1">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
                             <TextView
-                                android:id="@+id/label_brightness"
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="8dp"
-                                android:text="@string/brightness" />
+                                android:id="@+id/camera_title"
+                                style="@style/RobotPanelTitle"
+                                android:layout_width="wrap_content"
+                                android:text="@string/panel_camera_ai" />
 
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
+                            <View
+                                android:layout_width="0dp"
+                                android:layout_height="1dp"
+                                android:layout_weight="1" />
 
-                                <SeekBar
-                                    android:id="@+id/seek_brightness"
-                                    android:layout_width="0dp"
-                                    android:layout_height="28dp"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="8dp"
-                                    android:paddingEnd="8dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
-
-                                <TextView
-                                    android:id="@+id/value_brightness"
-                                    android:layout_width="36dp"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/label_contrast"
-                                style="@style/SettingLabel"
-                                android:text="@string/contrast" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <SeekBar
-                                    android:id="@+id/seek_contrast"
-                                    android:layout_width="0dp"
-                                    android:layout_height="28dp"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="8dp"
-                                    android:paddingEnd="8dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
-
-                                <TextView
-                                    android:id="@+id/value_contrast"
-                                    android:layout_width="36dp"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-
-                            <TextView
-                                android:id="@+id/label_saturation"
-                                style="@style/SettingLabel"
-                                android:text="@string/saturation" />
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:gravity="center_vertical"
-                                android:orientation="horizontal">
-
-                                <SeekBar
-                                    android:id="@+id/seek_saturation"
-                                    android:layout_width="0dp"
-                                    android:layout_height="28dp"
-                                    android:layout_weight="1"
-                                    android:max="100"
-                                    android:maxHeight="4dp"
-                                    android:minHeight="4dp"
-                                    android:paddingStart="8dp"
-                                    android:paddingEnd="8dp"
-                                    android:progress="50"
-                                    android:progressDrawable="@drawable/progress_loading"
-                                    android:splitTrack="false"
-                                    android:thumb="@drawable/seekbar_thumb" />
-
-                                <TextView
-                                    android:id="@+id/value_saturation"
-                                    android:layout_width="36dp"
-                                    android:layout_height="wrap_content"
-                                    android:gravity="end"
-                                    android:textColor="@color/text_primary"
-                                    android:textSize="11sp" />
-                            </LinearLayout>
-
-                            <TextView
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="12dp"
-                                android:text="@string/resolution" />
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp">
-
-                                <Spinner
-                                    android:id="@+id/camera_resolution"
-                                    style="@style/Dropdown"
-                                    android:layout_height="36dp" />
-
-                                <ImageView
-                                    android:layout_width="20dp"
-                                    android:layout_height="20dp"
-                                    android:layout_gravity="end|center_vertical"
-                                    android:layout_marginEnd="8dp"
-                                    android:contentDescription="@null"
-                                    android:src="@drawable/ic_dropdown" />
-                            </FrameLayout>
-
-                            <TextView
-                                style="@style/SettingLabel"
-                                android:layout_marginTop="8dp"
-                                android:text="@string/fps" />
-
-                            <FrameLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp">
-
-                                <Spinner
-                                    android:id="@+id/camera_fps"
-                                    style="@style/Dropdown"
-                                    android:layout_height="36dp" />
-
-                                <ImageView
-                                    android:layout_width="20dp"
-                                    android:layout_height="20dp"
-                                    android:layout_gravity="end|center_vertical"
-                                    android:layout_marginEnd="8dp"
-                                    android:contentDescription="@null"
-                                    android:src="@drawable/ic_dropdown" />
-                            </FrameLayout>
+                            <ImageButton
+                                android:id="@+id/camera_fullscreen"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:layout_marginStart="6dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/full_screen"
+                                android:padding="8dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_fullscreen" />
                         </LinearLayout>
-                    </com.falcon.robot.widget.PanelScrollView>
+
+                        <!--
+                          The live camera, with the design artwork behind it until frames arrive.
+                          The preview runs in COMPATIBLE mode so it is a view in the hierarchy
+                          rather than its own surface: the artwork shows through it while it is
+                          empty, and the robot overlay sits on top of it.
+                        -->
+                        <FrameLayout
+                            android:id="@+id/camera_feed_frame"
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_table_box"
+                            android:minHeight="200dp">
+
+                            <com.falcon.robot.widget.CoverImageView
+                                android:id="@+id/camera_feed"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/camera_view"
+                                android:src="@drawable/robot_camera_front" />
+
+                            <androidx.camera.view.PreviewView
+                                android:id="@+id/camera_preview"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <com.falcon.robot.widget.TrackingOverlayView
+                                android:id="@+id/tracking_overlay"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <com.falcon.robot.widget.FaceOverlayView
+                                android:id="@+id/face_overlay"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+
+                            <!-- which camera the feed comes from; tapping it offers the others -->
+                            <TextView
+                                android:id="@+id/camera_source"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|end"
+                                android:layout_margin="10dp"
+                                android:background="@drawable/bg_feed_label"
+                                android:clickable="true"
+                                android:drawableEnd="@drawable/ic_dropdown"
+                                android:drawablePadding="6dp"
+                                android:focusable="true"
+                                android:gravity="center_vertical"
+                                android:paddingLeft="10dp"
+                                android:paddingTop="4dp"
+                                android:paddingRight="10dp"
+                                android:paddingBottom="4dp"
+                                android:textColor="@color/white"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/camera_info"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|start"
+                                android:layout_margin="10dp"
+                                android:background="@drawable/bg_feed_label"
+                                android:paddingLeft="10dp"
+                                android:paddingTop="4dp"
+                                android:paddingRight="10dp"
+                                android:paddingBottom="4dp"
+                                android:textColor="@color/white"
+                                android:textSize="12sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="38dp"
+                            android:layout_marginTop="10dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/toggle_face"
+                                style="@style/RecognitionToggle"
+                                android:text="@string/feature_face" />
+
+                            <TextView
+                                android:id="@+id/toggle_object"
+                                style="@style/RecognitionToggle"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/feature_object" />
+
+                            <TextView
+                                android:id="@+id/toggle_voice"
+                                style="@style/RecognitionToggle"
+                                android:layout_marginStart="8dp"
+                                android:text="@string/feature_voice" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/ai_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:ellipsize="end"
+                            android:singleLine="true"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
                 </LinearLayout>
 
-                <!--
-                  AI: the three recognition features. The switches belong to RobotService, so what
-                  is on here is still on from the Face, Object and Voice pages, and keeps running
-                  after this page is left. Face and object results are drawn over the feed above.
-                -->
+                <!-- ======================= Bottom row ======================= -->
                 <LinearLayout
-                    style="@style/RobotPanel"
-                    android:tag="0.95">
+                    android:id="@+id/columns_bottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="@dimen/gap"
+                    android:layout_weight="1">
 
-                    <TextView
-                        android:id="@+id/ai_title"
-                        style="@style/RobotPanelTitle"
-                        android:text="@string/panel_ai" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/divider" />
-
+                    <!--
+                      The LiDAR map, under the robot it belongs to and kept exactly as wide as it
+                      (RobotControlActivity#matchLidarWidth). The title opens the full LiDAR page.
+                    -->
                     <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:id="@+id/lidar_panel"
+                        style="@style/RobotPanel"
+                        android:tag="1">
 
                         <TextView
-                            android:id="@+id/toggle_face"
-                            style="@style/ListControlButton"
-                            android:text="@string/nav_face" />
+                            android:id="@+id/lidar_title"
+                            style="@style/RobotPanelTitle"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:text="@string/nav_lidar" />
 
-                        <TextView
-                            android:id="@+id/toggle_object"
-                            style="@style/ListControlButton"
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
                             android:layout_marginTop="8dp"
-                            android:text="@string/nav_object" />
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_table_box"
+                            android:minHeight="160dp">
 
-                        <TextView
-                            android:id="@+id/toggle_voice"
-                            style="@style/ListControlButton"
-                            android:layout_marginTop="8dp"
-                            android:text="@string/nav_voice" />
+                            <com.falcon.robot.widget.LidarMapView
+                                android:id="@+id/lidar_map"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent" />
+                        </FrameLayout>
                     </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/ai_status"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_table_box"
-                        android:minHeight="40dp"
-                        android:gravity="center_vertical"
-                        android:paddingLeft="10dp"
-                        android:paddingTop="6dp"
-                        android:paddingRight="10dp"
-                        android:paddingBottom="6dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
+                    <!--
+                      Camera Settings: its own panel, rather than a column squeezed in beside the feed
+                      where the last rows were cut off. It scrolls, so every row is reachable.
+                    -->
+                    <LinearLayout
+                        android:id="@+id/camera_settings_panel"
+                        style="@style/RobotPanel"
+                        android:tag="1.15">
 
-                <!-- Log: switched on here, and then every recognition result lands in it -->
+                        <TextView
+                            android:id="@+id/camera_settings_title"
+                            style="@style/RobotPanelTitle"
+                            android:text="@string/camera_settings" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
+
+                        <com.falcon.robot.widget.PanelScrollView
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:scrollbars="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/label_brightness"
+                                    style="@style/SettingLabel"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/brightness" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <SeekBar
+                                        android:id="@+id/seek_brightness"
+                                        android:layout_width="0dp"
+                                        android:layout_height="28dp"
+                                        android:layout_weight="1"
+                                        android:max="100"
+                                        android:maxHeight="4dp"
+                                        android:minHeight="4dp"
+                                        android:paddingStart="8dp"
+                                        android:paddingEnd="8dp"
+                                        android:progress="50"
+                                        android:progressDrawable="@drawable/progress_loading"
+                                        android:splitTrack="false"
+                                        android:thumb="@drawable/seekbar_thumb" />
+
+                                    <TextView
+                                        android:id="@+id/value_brightness"
+                                        android:layout_width="36dp"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="end"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/label_contrast"
+                                    style="@style/SettingLabel"
+                                    android:text="@string/contrast" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <SeekBar
+                                        android:id="@+id/seek_contrast"
+                                        android:layout_width="0dp"
+                                        android:layout_height="28dp"
+                                        android:layout_weight="1"
+                                        android:max="100"
+                                        android:maxHeight="4dp"
+                                        android:minHeight="4dp"
+                                        android:paddingStart="8dp"
+                                        android:paddingEnd="8dp"
+                                        android:progress="50"
+                                        android:progressDrawable="@drawable/progress_loading"
+                                        android:splitTrack="false"
+                                        android:thumb="@drawable/seekbar_thumb" />
+
+                                    <TextView
+                                        android:id="@+id/value_contrast"
+                                        android:layout_width="36dp"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="end"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    android:id="@+id/label_saturation"
+                                    style="@style/SettingLabel"
+                                    android:text="@string/saturation" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:gravity="center_vertical"
+                                    android:orientation="horizontal">
+
+                                    <SeekBar
+                                        android:id="@+id/seek_saturation"
+                                        android:layout_width="0dp"
+                                        android:layout_height="28dp"
+                                        android:layout_weight="1"
+                                        android:max="100"
+                                        android:maxHeight="4dp"
+                                        android:minHeight="4dp"
+                                        android:paddingStart="8dp"
+                                        android:paddingEnd="8dp"
+                                        android:progress="50"
+                                        android:progressDrawable="@drawable/progress_loading"
+                                        android:splitTrack="false"
+                                        android:thumb="@drawable/seekbar_thumb" />
+
+                                    <TextView
+                                        android:id="@+id/value_saturation"
+                                        android:layout_width="36dp"
+                                        android:layout_height="wrap_content"
+                                        android:gravity="end"
+                                        android:textColor="@color/text_primary"
+                                        android:textSize="11sp" />
+                                </LinearLayout>
+
+                                <TextView
+                                    style="@style/SettingLabel"
+                                    android:layout_marginTop="12dp"
+                                    android:text="@string/resolution" />
+
+                                <FrameLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp">
+
+                                    <Spinner
+                                        android:id="@+id/camera_resolution"
+                                        style="@style/Dropdown"
+                                        android:layout_height="36dp" />
+
+                                    <ImageView
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        android:layout_gravity="end|center_vertical"
+                                        android:layout_marginEnd="8dp"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_dropdown" />
+                                </FrameLayout>
+
+                                <TextView
+                                    style="@style/SettingLabel"
+                                    android:layout_marginTop="8dp"
+                                    android:text="@string/fps" />
+
+                                <FrameLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp">
+
+                                    <Spinner
+                                        android:id="@+id/camera_fps"
+                                        style="@style/Dropdown"
+                                        android:layout_height="36dp" />
+
+                                    <ImageView
+                                        android:layout_width="20dp"
+                                        android:layout_height="20dp"
+                                        android:layout_gravity="end|center_vertical"
+                                        android:layout_marginEnd="8dp"
+                                        android:contentDescription="@null"
+                                        android:src="@drawable/ic_dropdown" />
+                                </FrameLayout>
+                            </LinearLayout>
+                        </com.falcon.robot.widget.PanelScrollView>
+                    </LinearLayout>
+
+                    <!-- Log: switched on here, and then every recognition result lands in it -->
+                    <LinearLayout
+                        style="@style/RobotPanel"
+                        android:tag="1.1">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/log_title"
+                                style="@style/RobotPanelTitle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:text="@string/panel_log" />
+
+                            <TextView
+                                android:id="@+id/btn_log"
+                                android:layout_width="wrap_content"
+                                android:layout_height="34dp"
+                                android:background="@drawable/bg_control_button"
+                                android:clickable="true"
+                                android:drawablePadding="6dp"
+                                android:focusable="true"
+                                android:gravity="center"
+                                android:paddingLeft="12dp"
+                                android:paddingRight="14dp"
+                                android:singleLine="true"
+                                android:text="@string/log_start"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@color/divider" />
+
+                        <com.falcon.robot.widget.PanelScrollView
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_table_box"
+                            android:padding="8dp"
+                            android:scrollbars="vertical">
+
+                            <!-- Filled by RobotControlActivity#renderLog -->
+                            <LinearLayout
+                                android:id="@+id/log_list"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical" />
+                        </com.falcon.robot.widget.PanelScrollView>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.falcon.robot.widget.FitScrollView>
+
+        <!--
+          Actions, down the right-hand side. The sidebar is outside the scrolling page, so the
+          controls stay put wherever the panels are scrolled to, and stay in reach with a panel
+          full screen. There is more here than fits, so the list scrolls (PanelScrollView).
+        -->
+        <LinearLayout
+            android:id="@+id/action_sidebar"
+            style="@style/RobotPanel"
+            android:layout_width="@dimen/action_sidebar_width"
+            android:layout_height="match_parent"
+            android:layout_marginTop="@dimen/screen_padding"
+            android:layout_marginEnd="@dimen/screen_padding"
+            android:layout_marginBottom="@dimen/screen_padding">
+
+            <TextView
+                android:id="@+id/actions_title"
+                style="@style/RobotPanelTitle"
+                android:text="@string/panel_actions" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="6dp"
+                android:background="@color/divider" />
+
+            <com.falcon.robot.widget.PanelScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginTop="8dp"
+                android:layout_weight="1"
+                android:scrollbars="vertical">
+
                 <LinearLayout
-                    style="@style/RobotPanel"
-                    android:tag="1.25">
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/movement_title"
+                        style="@style/SettingLabel"
+                        android:text="@string/movement_control" />
+
+                    <com.falcon.robot.widget.JoystickView
+                        android:id="@+id/joystick"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/joystick_size"
+                        android:layout_marginTop="6dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="8dp"
                         android:orientation="horizontal">
 
                         <TextView
-                            android:id="@+id/log_title"
-                            style="@style/RobotPanelTitle"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:text="@string/panel_log" />
+                            android:id="@+id/move_forward"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:text="@string/act_forward" />
 
                         <TextView
-                            android:id="@+id/btn_log"
+                            android:id="@+id/move_backward"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:text="@string/act_backward" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/move_left"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:text="@string/act_turn_left" />
+
+                        <TextView
+                            android:id="@+id/move_right"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:text="@string/act_turn_right" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/move_stop"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:text="@string/act_stop" />
+
+                        <TextView
+                            android:id="@+id/move_reset"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:text="@string/act_reset" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/bg_table_box"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingLeft="10dp"
+                        android:paddingRight="10dp">
+
+                        <TextView
+                            android:id="@+id/label_speed_slider"
                             android:layout_width="wrap_content"
-                            android:layout_height="34dp"
-                            android:background="@drawable/bg_control_button"
-                            android:clickable="true"
+                            android:layout_height="wrap_content"
                             android:drawablePadding="6dp"
-                            android:focusable="true"
-                            android:gravity="center"
-                            android:paddingLeft="12dp"
-                            android:paddingRight="14dp"
-                            android:singleLine="true"
-                            android:text="@string/log_start"
+                            android:gravity="center_vertical"
+                            android:text="@string/speed"
+                            android:textColor="@color/blue_light"
+                            android:textSize="12sp" />
+
+                        <SeekBar
+                            android:id="@+id/speed_seek"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="100"
+                            android:maxHeight="4dp"
+                            android:minHeight="4dp"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="8dp"
+                            android:progress="50"
+                            android:progressDrawable="@drawable/progress_loading"
+                            android:splitTrack="false"
+                            android:thumb="@drawable/seekbar_thumb" />
+
+                        <TextView
+                            android:id="@+id/speed_value"
+                            android:layout_width="38dp"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="end"
                             android:textColor="@color/text_primary"
                             android:textSize="12sp" />
                     </LinearLayout>
 
-                    <View
+                    <TextView
+                        android:id="@+id/arm_title"
+                        style="@style/SettingLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/arm_control" />
+
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
+                        android:layout_height="42dp"
                         android:layout_marginTop="6dp"
-                        android:background="@color/divider" />
+                        android:orientation="horizontal">
 
-                    <com.falcon.robot.widget.PanelScrollView
+                        <TextView
+                            android:id="@+id/arm_left"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/arm_left" />
+
+                        <TextView
+                            android:id="@+id/arm_right"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/arm_right" />
+                    </LinearLayout>
+
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="42dp"
                         android:layout_marginTop="8dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_table_box"
-                        android:padding="8dp"
-                        android:scrollbars="vertical">
+                        android:orientation="horizontal">
 
-                        <!-- Filled by RobotControlActivity#renderLog -->
-                        <LinearLayout
-                            android:id="@+id/log_list"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical" />
-                    </com.falcon.robot.widget.PanelScrollView>
+                        <TextView
+                            android:id="@+id/arm_head"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/arm_head" />
+
+                        <TextView
+                            android:id="@+id/arm_waist"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/arm_waist" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/SettingLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/preset_pose" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="42dp"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/pose_wave"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/pose_wave" />
+
+                        <TextView
+                            android:id="@+id/pose_tpose"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/pose_t" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/quick_title"
+                        style="@style/SettingLabel"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/quick_actions" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/qa_home"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/qa_go_home" />
+
+                        <TextView
+                            android:id="@+id/qa_follow"
+                            style="@style/ControlButton"
+                            android:layout_marginStart="6dp"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/qa_follow_me" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/qa_shutdown"
+                            style="@style/ControlButton"
+                            android:minHeight="0dp"
+                            android:paddingTop="0dp"
+                            android:paddingBottom="0dp"
+                            android:text="@string/qa_shutdown" />
+                    </LinearLayout>
+
                 </LinearLayout>
-            </LinearLayout>
+            </com.falcon.robot.widget.PanelScrollView>
         </LinearLayout>
-    </com.falcon.robot.widget.FitScrollView>
-
-    <!--
-      Shown only while a panel is full screen, since the panels holding these buttons are hidden
-      then. Each one works the button it mirrors, so there is one implementation of each action.
-      Filled by RobotControlActivity#buildFullscreenBar.
-    -->
-    <HorizontalScrollView
-        android:id="@+id/fullscreen_actions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/surface"
-        android:paddingLeft="@dimen/screen_padding"
-        android:paddingTop="8dp"
-        android:paddingRight="@dimen/screen_padding"
-        android:paddingBottom="8dp"
-        android:scrollbars="none"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:id="@+id/fullscreen_action_row"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal" />
-    </HorizontalScrollView>
+    </LinearLayout>
 
     <!--
       Status bar: the last thing that happened, wherever on the page it happened. It sits outside
