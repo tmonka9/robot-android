@@ -220,8 +220,9 @@
     <string name="qa_shutdown">전원 끄기</string>
     <string name="shutdown_confirm">로봇의 전원을 끄시겠습니까?</string>
     <string name="cancel">취소</string>
-    <string name="robot_tip">가상 조이스틱이나 사전 설정 버튼으로 로봇을 제어하세요.</string>
+    <string name="robot_tip">오른쪽에서 동작을 선택하십시오. 최근 활동이 여기에 표시됩니다.</string>
     <string name="panel_actions">동작</string>
+    <string name="panel_ai">AI</string>
     <string name="panel_camera_ai">카메라 &amp; AI</string>
     <string name="panel_log">기록</string>
     <string name="log_start">기록 시작</string>

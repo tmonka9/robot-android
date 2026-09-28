@@ -220,8 +220,9 @@
     <string name="qa_shutdown">Shutdown</string>
     <string name="shutdown_confirm">Shut down the robot?</string>
     <string name="cancel">Cancel</string>
-    <string name="robot_tip">Use the virtual joystick or preset buttons to control the robot.</string>
+    <string name="robot_tip">Pick an action on the right; the latest activity shows here.</string>
     <string name="panel_actions">Actions</string>
+    <string name="panel_ai">AI</string>
     <string name="panel_camera_ai">Camera &amp; AI</string>
     <string name="panel_log">Log</string>
     <string name="log_start">Start Log</string>

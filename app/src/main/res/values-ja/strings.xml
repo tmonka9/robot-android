@@ -219,8 +219,9 @@
     <string name="qa_shutdown">シャットダウン</string>
     <string name="shutdown_confirm">ロボットをシャットダウンしますか？</string>
     <string name="cancel">キャンセル</string>
-    <string name="robot_tip">仮想ジョイスティックまたはプリセットボタンでロボットを操作します。</string>
+    <string name="robot_tip">右のアクションを選ぶと、最新の動きがここに出ます。</string>
     <string name="panel_actions">操作</string>
+    <string name="panel_ai">AI</string>
     <string name="panel_camera_ai">カメラ &amp; AI</string>
     <string name="panel_log">ログ</string>
     <string name="log_start">ログ開始</string>

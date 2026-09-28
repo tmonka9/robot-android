@@ -364,30 +364,6 @@
                                 android:textSize="12sp" />
                         </FrameLayout>
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="38dp"
-                            android:layout_marginTop="10dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/toggle_face"
-                                style="@style/RecognitionToggle"
-                                android:text="@string/feature_face" />
-
-                            <TextView
-                                android:id="@+id/toggle_object"
-                                style="@style/RecognitionToggle"
-                                android:layout_marginStart="8dp"
-                                android:text="@string/feature_object" />
-
-                            <TextView
-                                android:id="@+id/toggle_voice"
-                                style="@style/RecognitionToggle"
-                                android:layout_marginStart="8dp"
-                                android:text="@string/feature_voice" />
-                        </LinearLayout>
-
                         <TextView
                             android:id="@+id/ai_status"
                             android:layout_width="match_parent"
@@ -417,12 +393,32 @@
                         style="@style/RobotPanel"
                         android:tag="1">
 
-                        <TextView
-                            android:id="@+id/lidar_title"
-                            style="@style/RobotPanelTitle"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:text="@string/nav_lidar" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/lidar_title"
+                                style="@style/RobotPanelTitle"
+                                android:layout_width="0dp"
+                                android:layout_weight="1"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:text="@string/nav_lidar" />
+
+                            <ImageButton
+                                android:id="@+id/lidar_fullscreen"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:layout_marginStart="6dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/full_screen"
+                                android:padding="8dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_fullscreen" />
+                        </LinearLayout>
 
                         <View
                             android:layout_width="match_parent"
@@ -697,9 +693,11 @@
         </com.falcon.robot.widget.FitScrollView>
 
         <!--
-          Actions, down the right-hand side. The sidebar is outside the scrolling page, so the
-          controls stay put wherever the panels are scrolled to, and stay in reach with a panel
-          full screen. There is more here than fits, so the list scrolls (PanelScrollView).
+          Actions, down the right-hand side: the recognition switches and everything the robot
+          is asked to do, one button per row. The sidebar is outside the scrolling page, so it
+          stays put wherever the panels are scrolled to, and stays in reach with a panel full
+          screen; the list itself scrolls (PanelScrollView). Driving is the Remote Control page's
+          job, so there is no joystick or speed slider here.
         -->
         <LinearLayout
             android:id="@+id/action_sidebar"
@@ -734,249 +732,98 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/movement_title"
+                        android:id="@+id/ai_title"
                         style="@style/SettingLabel"
-                        android:text="@string/movement_control" />
+                        android:text="@string/panel_ai" />
 
-                    <com.falcon.robot.widget.JoystickView
-                        android:id="@+id/joystick"
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/joystick_size"
-                        android:layout_marginTop="6dp" />
+                    <TextView
+                        android:id="@+id/toggle_face"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/feature_face" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/toggle_object"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/feature_object" />
 
-                        <TextView
-                            android:id="@+id/move_forward"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:text="@string/act_forward" />
-
-                        <TextView
-                            android:id="@+id/move_backward"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:text="@string/act_backward" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/move_left"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:text="@string/act_turn_left" />
-
-                        <TextView
-                            android:id="@+id/move_right"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:text="@string/act_turn_right" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/move_stop"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:text="@string/act_stop" />
-
-                        <TextView
-                            android:id="@+id/move_reset"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:text="@string/act_reset" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:layout_marginTop="10dp"
-                        android:background="@drawable/bg_table_box"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingLeft="10dp"
-                        android:paddingRight="10dp">
-
-                        <TextView
-                            android:id="@+id/label_speed_slider"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:drawablePadding="6dp"
-                            android:gravity="center_vertical"
-                            android:text="@string/speed"
-                            android:textColor="@color/blue_light"
-                            android:textSize="12sp" />
-
-                        <SeekBar
-                            android:id="@+id/speed_seek"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:max="100"
-                            android:maxHeight="4dp"
-                            android:minHeight="4dp"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="8dp"
-                            android:progress="50"
-                            android:progressDrawable="@drawable/progress_loading"
-                            android:splitTrack="false"
-                            android:thumb="@drawable/seekbar_thumb" />
-
-                        <TextView
-                            android:id="@+id/speed_value"
-                            android:layout_width="38dp"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="sans-serif-medium"
-                            android:gravity="end"
-                            android:textColor="@color/text_primary"
-                            android:textSize="12sp" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/toggle_voice"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/feature_voice" />
 
                     <TextView
                         android:id="@+id/arm_title"
                         style="@style/SettingLabel"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:text="@string/arm_control" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="42dp"
+                    <TextView
+                        android:id="@+id/arm_left"
+                        style="@style/SidebarButton"
                         android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
+                        android:text="@string/arm_left" />
 
-                        <TextView
-                            android:id="@+id/arm_left"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/arm_left" />
+                    <TextView
+                        android:id="@+id/arm_right"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/arm_right" />
 
-                        <TextView
-                            android:id="@+id/arm_right"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/arm_right" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/arm_head"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/arm_head" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="42dp"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/arm_head"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/arm_head" />
-
-                        <TextView
-                            android:id="@+id/arm_waist"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/arm_waist" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/arm_waist"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/arm_waist" />
 
                     <TextView
                         style="@style/SettingLabel"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:text="@string/preset_pose" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="42dp"
+                    <TextView
+                        android:id="@+id/pose_wave"
+                        style="@style/SidebarButton"
                         android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
+                        android:text="@string/pose_wave" />
 
-                        <TextView
-                            android:id="@+id/pose_wave"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/pose_wave" />
-
-                        <TextView
-                            android:id="@+id/pose_tpose"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/pose_t" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/pose_tpose"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/pose_t" />
 
                     <TextView
                         android:id="@+id/quick_title"
                         style="@style/SettingLabel"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:text="@string/quick_actions" />
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="44dp"
+                    <TextView
+                        android:id="@+id/qa_home"
+                        style="@style/SidebarButton"
                         android:layout_marginTop="6dp"
-                        android:orientation="horizontal">
+                        android:text="@string/qa_go_home" />
 
-                        <TextView
-                            android:id="@+id/qa_home"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/qa_go_home" />
+                    <TextView
+                        android:id="@+id/qa_follow"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/qa_follow_me" />
 
-                        <TextView
-                            android:id="@+id/qa_follow"
-                            style="@style/ControlButton"
-                            android:layout_marginStart="6dp"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/qa_follow_me" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:layout_marginTop="8dp"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/qa_shutdown"
-                            style="@style/ControlButton"
-                            android:minHeight="0dp"
-                            android:paddingTop="0dp"
-                            android:paddingBottom="0dp"
-                            android:text="@string/qa_shutdown" />
-                    </LinearLayout>
-
+                    <TextView
+                        android:id="@+id/qa_shutdown"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/qa_shutdown" />
                 </LinearLayout>
             </com.falcon.robot.widget.PanelScrollView>
         </LinearLayout>

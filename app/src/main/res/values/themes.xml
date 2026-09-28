@@ -219,20 +219,19 @@
         <item name="android:textSize">14sp</item>
     </style>
 
-    <!-- Robot Control: the face / object / voice switches above the camera feed -->
-    <style name="RecognitionToggle">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">match_parent</item>
-        <item name="android:layout_weight">1</item>
+    <!-- Robot Control: the buttons in the action sidebar, one per row in a narrow column -->
+    <style name="SidebarButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">38dp</item>
         <item name="android:background">@drawable/bg_control_button</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
         <item name="android:gravity">center</item>
-        <item name="android:drawablePadding">8dp</item>
+        <item name="android:drawablePadding">6dp</item>
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
     <style name="CameraTab">

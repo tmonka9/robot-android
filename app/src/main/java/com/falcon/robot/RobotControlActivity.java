@@ -7,9 +7,6 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,7 +34,6 @@ import com.falcon.robot.widget.CoverImageView;
 import com.falcon.robot.widget.FaceOverlayView;
 import com.falcon.robot.widget.LidarMapView;
 import com.falcon.robot.widget.Robot3DView;
-import com.falcon.robot.widget.JoystickView;
 import com.falcon.robot.widget.TrackingOverlayView;
 
 import java.text.SimpleDateFormat;
@@ -49,29 +45,21 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Robot Control page (design/robot.png): robot status, camera view with image settings,
- * joystick and button movement, arm control with preset poses, quick and custom actions.
- * Robot telemetry and the camera stream are simulated until the real robot protocol exists.
+ * Robot Control page (design/robot.png): robot status, the camera feed with its image settings,
+ * the LiDAR map, and a log of what the models recognised. Robot telemetry and the camera stream
+ * are simulated until the real robot protocol exists.
  *
- * <p>The three recognition features are switched on from here as well, since this is the page the
- * robot is driven from: faces and objects are drawn over the feed, a spoken command is carried out
- * exactly as the button for it would be, and the Log panel keeps what each model reported. The
- * actions sit in the sidebar and the status bar runs along the foot; both are outside the
- * scrolling page, so they are in reach wherever the panels are scrolled to.
+ * <p>The sidebar down the right-hand side holds what the operator asks for: the three recognition
+ * switches, the arm, the preset poses and the quick actions. Driving — the joystick, the direction
+ * buttons and the speed — belongs to the Remote Control page and is deliberately not repeated
+ * here. Faces and objects are drawn over the feed, a spoken command is carried out exactly as the
+ * button for it would be, and the status bar along the foot says what happened last. The sidebar
+ * and the status bar sit outside the scrolling page, so they are in reach wherever it is scrolled.
  */
 public class RobotControlActivity extends BaseActivity {
 
     /** An OBJ export of the real robot, if one is added to the assets. */
     private static final String ROBOT_MODEL_ASSET = "xiaoao.obj";
-
-    private static final long ODOMETRY_TICK_MS = 100;
-    /**
-     * How often a held direction is repeated to the robot. A move used to last as long as the
-     * robot's own timer allowed; telling it again every second keeps it going until it is stopped.
-     */
-    private static final long KEEP_ALIVE_MS = 1000;
-    /** Metres per second at 100% speed (simulated odometry). */
-    private static final float MAX_SPEED_MPS = 1.2f;
 
     /** The robot overlay on the camera feed, in dp: width and height, then the same full screen. */
     private static final int[] OVERLAY_DP = {150, 118, 255, 200};
@@ -86,7 +74,6 @@ public class RobotControlActivity extends BaseActivity {
     private static final int MAX_LOG = 80;
 
     private final RobotSession session = RobotSession.get();
-    private final Handler handler = new Handler(Looper.getMainLooper());
     private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
 
     private TextView valueMode;
@@ -97,7 +84,6 @@ public class RobotControlActivity extends BaseActivity {
     private TextView positionY;
     private TextView positionZ;
     private TextView tip;
-    private SeekBar speedSeek;
     private CoverImageView cameraFeed;
     private Robot3DView robot3D;
     private TextView cameraInfo;
@@ -163,35 +149,6 @@ public class RobotControlActivity extends BaseActivity {
                 }
             });
 
-    // simulated odometry
-    private float posX;
-    private float posY;
-    private JoystickView joystick;
-    private float joyX;
-    private float joyY;
-    private int lastJoyX;
-    private int lastJoyY;
-
-    /** The direction button that is latched on, the command it holds, and when it was last sent. */
-    private TextView heldButton;
-    private String heldCommand;
-    private long heldSent;
-
-    private final Runnable odometry = new Runnable() {
-        @Override
-        public void run() {
-            if (session.isConnected() && (joyX != 0 || joyY != 0)) {
-                float dt = ODOMETRY_TICK_MS / 1000f;
-                float v = MAX_SPEED_MPS * speedFraction();
-                posX += joyX * v * dt;
-                posY += joyY * v * dt;
-                refreshPosition();
-            }
-            keepMoving();
-            handler.postDelayed(this, ODOMETRY_TICK_MS);
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -205,7 +162,6 @@ public class RobotControlActivity extends BaseActivity {
         setupRecognition();
         setupLidar();
         setupLog();
-        setupMovement();
         setupArm();
         setupActions();
         bindRobotService(recognitionListener);
@@ -249,14 +205,10 @@ public class RobotControlActivity extends BaseActivity {
         attachPreview();
         renderRecognition(); // the features can have been switched on elsewhere
         onConnectionChanged();
-        handler.removeCallbacks(odometry);
-        handler.post(odometry);
     }
 
     @Override
     protected void onPause() {
-        // nothing repeats the command once this page stops, so let go of it here
-        if (heldCommand != null) stopMoving();
         if (lidarMap != null) lidarMap.setScanning(false); // no sweep while the page is away
         if (robot3D != null) robot3D.onPause();
         if (feedOverlay != null) feedOverlay.onPause();
@@ -264,14 +216,7 @@ public class RobotControlActivity extends BaseActivity {
         if (service != null && previewView != null) {
             service.detachPreview(previewView.getSurfaceProvider());
         }
-        handler.removeCallbacks(odometry);
         super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        handler.removeCallbacksAndMessages(null);
-        super.onDestroy();
     }
 
     @Override
@@ -282,8 +227,8 @@ public class RobotControlActivity extends BaseActivity {
     /**
      * Every command goes past here, so the 3D robot acts out whatever was asked for: it walks on
      * a move, waves on a greeting, raises the arm that was selected. It shows the command rather
-     * than the robot's own state, the way the odometry readout does, so it still demonstrates the
-     * action while nothing is connected; the status panel is what says whether it is.
+     * than the robot's own state, so it still demonstrates the action while nothing is connected;
+     * the status panel is what says whether anything is.
      */
     @Override
     protected boolean sendCommand(String command) {
@@ -344,24 +289,44 @@ public class RobotControlActivity extends BaseActivity {
         fullscreenPanel = fullscreenPanel == panelId ? 0 : panelId;
         boolean full = fullscreenPanel != 0;
 
-        LinearLayout columns = findViewById(R.id.columns);
-        for (int i = 0; i < columns.getChildCount(); i++) {
-            View child = columns.getChildAt(i);
-            child.setVisibility(!full || child.getId() == fullscreenPanel ? View.VISIBLE : View.GONE);
-        }
-        findViewById(R.id.columns_bottom).setVisibility(full ? View.GONE : View.VISIBLE);
+        showOnlyFullscreen(R.id.columns);
+        showOnlyFullscreen(R.id.columns_bottom);
 
         boolean camera = fullscreenPanel == R.id.camera_panel;
         // the overlay is a surface drawn over the window, and a hidden ancestor does not reach it:
         // without this it would go on drawing the robot over whatever took the panel's place
         if (feedOverlay != null) {
-            feedOverlay.setVisibility(fullscreenPanel == R.id.robot_status_panel
-                    ? View.GONE : View.VISIBLE);
+            feedOverlay.setVisibility(!full || camera ? View.VISIBLE : View.GONE);
         }
         sizeFeedOverlay(camera);
+        // the LiDAR panel is pinned to the robot's width; full screen it takes the row instead
+        if (fullscreenPanel == R.id.lidar_panel) {
+            View lidar = findViewById(R.id.lidar_panel);
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) lidar.getLayoutParams();
+            lp.width = 0;
+            lp.weight = 1f;
+            lidar.setLayoutParams(lp);
+        } else {
+            matchLidarWidth();
+        }
 
         setFullscreenIcon(R.id.robot_fullscreen, R.id.robot_status_panel);
         setFullscreenIcon(R.id.camera_fullscreen, R.id.camera_panel);
+        setFullscreenIcon(R.id.lidar_fullscreen, R.id.lidar_panel);
+    }
+
+    /** Leaves one panel in a row and hides the rest — and the row too, when it holds none. */
+    private void showOnlyFullscreen(int rowId) {
+        boolean full = fullscreenPanel != 0;
+        LinearLayout row = findViewById(rowId);
+        boolean holdsIt = false;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View child = row.getChildAt(i);
+            boolean keep = !full || child.getId() == fullscreenPanel;
+            child.setVisibility(keep ? View.VISIBLE : View.GONE);
+            holdsIt |= full && keep;
+        }
+        row.setVisibility(!full || holdsIt ? View.VISIBLE : View.GONE);
     }
 
     private void setFullscreenIcon(int buttonId, int panelId) {
@@ -420,18 +385,17 @@ public class RobotControlActivity extends BaseActivity {
         valueMode.setText(connected ? getString(R.string.mode_remote) : getString(R.string.value_offline));
         valueBattery.setText(connected ? R.string.demo_battery : R.string.placeholder_value);
         valueTemperature.setText(connected ? R.string.demo_temperature : R.string.placeholder_value);
-        refreshSpeedLabel();
+        // the speed the robot reports, now that this page has no slider of its own to set it
+        valueSpeed.setText(connected ? R.string.speed_normal : R.string.placeholder_value);
     }
 
-    private void refreshSpeedLabel() {
-        if (valueSpeed == null || speedSeek == null) return;
-        int p = speedSeek.getProgress();
-        valueSpeed.setText(p < 34 ? R.string.speed_slow : p < 67 ? R.string.speed_normal : R.string.speed_fast);
-    }
-
+    /**
+     * Where the robot is. Driving happens on the Remote Control page, so nothing here moves the
+     * figures; they wait for the real protocol to report a position.
+     */
     private void refreshPosition() {
-        positionX.setText(getString(R.string.position_x, posX));
-        positionY.setText(getString(R.string.position_y, posY));
+        positionX.setText(getString(R.string.position_x, 0f));
+        positionY.setText(getString(R.string.position_y, 0f));
         positionZ.setText(getString(R.string.position_z, 0f));
     }
 
@@ -608,6 +572,7 @@ public class RobotControlActivity extends BaseActivity {
         objectOverlay = findViewById(R.id.tracking_overlay);
 
         aiStatus = findViewById(R.id.ai_status);
+        setIcon(findViewById(R.id.ai_title), R.drawable.ic_chip, 14, color(R.color.cyan), Gravity.START);
         faceButton = bindFeature(R.id.toggle_face, R.drawable.ic_face_id, FACE);
         objectButton = bindFeature(R.id.toggle_object, R.drawable.ic_cube, OBJECTS);
         voiceButton = bindFeature(R.id.toggle_voice, R.drawable.ic_mic, VOICE);
@@ -616,7 +581,7 @@ public class RobotControlActivity extends BaseActivity {
 
     private TextView bindFeature(int id, int icon, final int feature) {
         TextView button = findViewById(id);
-        setIcon(button, icon, 20, color(R.color.text_primary), Gravity.START);
+        setIcon(button, icon, 14, color(R.color.text_primary), Gravity.START);
         button.setOnClickListener(v -> toggleFeature(feature));
         return button;
     }
@@ -740,6 +705,10 @@ public class RobotControlActivity extends BaseActivity {
         title.setOnClickListener(v -> navigate(R.id.nav_lidar));
         lidarMap = findViewById(R.id.lidar_map);
 
+        ImageView full = findViewById(R.id.lidar_fullscreen);
+        full.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+        full.setOnClickListener(v -> toggleFullscreen(R.id.lidar_panel));
+
         // the panel is asked to be exactly as wide as the robot above it, which only the layout
         // knows: the two rows have a different number of gaps, so equal weights are not equal widths
         findViewById(R.id.robot_status_panel).addOnLayoutChangeListener(
@@ -751,6 +720,7 @@ public class RobotControlActivity extends BaseActivity {
         View robot = findViewById(R.id.robot_status_panel);
         View lidar = findViewById(R.id.lidar_panel);
         if (robot == null || lidar == null) return;
+        if (fullscreenPanel == R.id.lidar_panel) return; // it has the row to itself just now
         if (!getResources().getBoolean(R.bool.two_columns)) return; // stacked: both are full width
         int width = robot.getWidth();
         if (width <= 0) return;
@@ -911,149 +881,10 @@ public class RobotControlActivity extends BaseActivity {
                 : getString(result));
     }
 
-    // ---- Movement --------------------------------------------------------------------------
-
-    private void setupMovement() {
-        int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.movement_title), R.drawable.ic_crosshair, 16, 0, Gravity.START);
-        setIcon(findViewById(R.id.label_speed_slider), R.drawable.ic_run, 16, 0, Gravity.START);
-
-        bindMoveButton(R.id.move_forward, R.drawable.ic_arrow_up, "MOVE FORWARD", 0, 1);
-        bindMoveButton(R.id.move_backward, R.drawable.ic_arrow_down, "MOVE BACKWARD", 0, -1);
-        bindMoveButton(R.id.move_left, R.drawable.ic_arrow_left, "TURN LEFT", -1, 0);
-        bindMoveButton(R.id.move_right, R.drawable.ic_arrow_right, "TURN RIGHT", 1, 0);
-
-        TextView stop = findViewById(R.id.move_stop);
-        setIcon(stop, R.drawable.ic_square, 20, white, Gravity.TOP);
-        stop.setOnClickListener(v -> stopMoving());
-
-        TextView reset = findViewById(R.id.move_reset);
-        setIcon(reset, R.drawable.ic_refresh, 20, white, Gravity.TOP);
-        reset.setOnClickListener(v -> {
-            session.send("ODOMETRY RESET");
-            posX = 0;
-            posY = 0;
-            refreshPosition();
-            setTip(getString(R.string.position_reset));
-        });
-
-        speedSeek = findViewById(R.id.speed_seek);
-        final TextView speedValue = findViewById(R.id.speed_value);
-        speedValue.setText(getString(R.string.percent, speedSeek.getProgress()));
-        speedSeek.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                speedValue.setText(getString(R.string.percent, progress));
-                refreshSpeedLabel();
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                session.send("SPEED " + seekBar.getProgress());
-            }
-        });
-        refreshSpeedLabel();
-
-        joystick = findViewById(R.id.joystick);
-        joystick.setOnMoveListener(this::onJoystick);
-    }
-
-    /**
-     * A direction latches on rather than stepping once: the robot is told to go, and told again
-     * every {@link #KEEP_ALIVE_MS}, so it keeps going instead of stopping when its own timer runs
-     * out. Stop, another direction, the joystick or pressing the same button again lets go.
-     */
-    private void bindMoveButton(int id, int icon, final String command, final int dx, final int dy) {
-        final TextView button = findViewById(id);
-        setIcon(button, icon, 18, color(R.color.text_primary), Gravity.TOP);
-        button.setOnClickListener(v -> {
-            if (button.isActivated()) {
-                stopMoving();
-                return;
-            }
-            if (!sendCommand(command)) return;
-            hold(button, command, dx, dy);
-            setTip(getString(R.string.sent_command, button.getText()));
-        });
-    }
-
-    /** Latches a direction on; the odometry runs from it as it does from the joystick. */
-    private void hold(TextView button, String command, int dx, int dy) {
-        if (heldButton != null && heldButton != button) heldButton.setActivated(false);
-        heldButton = button;
-        heldCommand = command;
-        heldSent = SystemClock.elapsedRealtime();
-        button.setActivated(true); // sendCommand has already acted the order out on the figure
-        joyX = dx;
-        joyY = dy;
-    }
-
-    /** Lets go of a held direction without telling the robot: something else is taking over. */
-    private void releaseHold() {
-        if (heldButton != null) heldButton.setActivated(false);
-        heldButton = null;
-        heldCommand = null;
-        joyX = 0;
-        joyY = 0;
-    }
-
-    /** Stops: always attempted, never blocked by the connect prompt. */
-    private void stopMoving() {
-        releaseHold();
-        showOnModel("STOP");
-        session.send("STOP");
-        setTip(getString(R.string.sent_command, getString(R.string.act_stop)));
-    }
-
-    /** Repeats the held command, so a watchdog on the robot's side does not time the move out. */
-    private void keepMoving() {
-        if (heldCommand == null) return;
-        long now = SystemClock.elapsedRealtime();
-        if (now - heldSent < KEEP_ALIVE_MS) return;
-        heldSent = now;
-        showOnModel(heldCommand); // the figure goes on walking as long as the robot does
-        session.send(heldCommand);
-    }
-
-    /** The gamepad stick drives the same control as the on-screen one. */
-    @Override
-    protected void onGamepadDirection(float x, float y, float turn) {
-        joystick.setDirection(x, y);
-        onJoystick(x, y);
-    }
-
-    private void onJoystick(float x, float y) {
-        int qx = Math.round(x * 10);
-        int qy = Math.round(y * 10);
-        if (qx == lastJoyX && qy == lastJoyY) return;
-        lastJoyX = qx;
-        lastJoyY = qy;
-        releaseHold(); // the stick takes the movement over from a latched direction
-
-        if (qx == 0 && qy == 0) {
-            joyX = 0;
-            joyY = 0;
-            showOnModel("MOVE STOP");
-            session.send("MOVE STOP");
-            return;
-        }
-        if (!sendCommand(String.format(Locale.US, "MOVE %.1f %.1f", qx / 10f, qy / 10f))) {
-            joyX = 0;
-            joyY = 0;
-            return;
-        }
-        joyX = qx / 10f;
-        joyY = qy / 10f;
-    }
-
-    private float speedFraction() {
-        return speedSeek == null ? 0.5f : speedSeek.getProgress() / 100f;
-    }
-
     // ---- Arm -------------------------------------------------------------------------------
 
     private void setupArm() {
-        setIcon(findViewById(R.id.arm_title), R.drawable.ic_arm, 16, 0, Gravity.START);
+        setIcon(findViewById(R.id.arm_title), R.drawable.ic_arm, 14, 0, Gravity.START);
         int white = color(R.color.text_primary);
 
         armParts = new TextView[] {
@@ -1063,7 +894,7 @@ public class RobotControlActivity extends BaseActivity {
         final String[] partCommands = {"LEFT_ARM", "RIGHT_ARM", "HEAD", "WAIST"};
         for (int i = 0; i < armParts.length; i++) {
             final int index = i;
-            setIcon(armParts[i], R.drawable.ic_play_white, 16, white, Gravity.START);
+            setIcon(armParts[i], R.drawable.ic_play_white, 14, white, Gravity.START);
             armParts[i].setOnClickListener(v -> {
                 if (!sendCommand("ARM SELECT " + partCommands[index])) return;
                 selectOnly(armParts, armParts[index]);
@@ -1092,20 +923,19 @@ public class RobotControlActivity extends BaseActivity {
     // ---- Quick actions -----------------------------------------------------------------------
 
     private void setupActions() {
-        setIcon(findViewById(R.id.actions_title), R.drawable.ic_gamepad, 20, color(R.color.cyan), Gravity.START);
-        setIcon(findViewById(R.id.quick_title), R.drawable.ic_bolt, 16, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.quick_title), R.drawable.ic_bolt, 14, color(R.color.cyan), Gravity.START);
         setIcon(findViewById(R.id.robot_tip), R.drawable.ic_info, 16, 0, Gravity.START);
         tip = findViewById(R.id.robot_tip);
         int white = color(R.color.text_primary);
 
         TextView home = findViewById(R.id.qa_home);
-        setIcon(home, R.drawable.ic_home, 16, white, Gravity.START);
+        setIcon(home, R.drawable.ic_home, 14, white, Gravity.START);
         home.setOnClickListener(v -> {
             if (sendCommand("GO_HOME")) setTip(getString(R.string.sent_command, home.getText()));
         });
 
         follow = findViewById(R.id.qa_follow);
-        setIcon(follow, R.drawable.ic_follow, 16, white, Gravity.START);
+        setIcon(follow, R.drawable.ic_follow, 14, white, Gravity.START);
         follow.setOnClickListener(v -> {
             boolean start = !follow.isActivated();
             if (!sendCommand(start ? "FOLLOW START" : "FOLLOW STOP")) return;
@@ -1115,7 +945,7 @@ public class RobotControlActivity extends BaseActivity {
         });
 
         TextView shutdown = findViewById(R.id.qa_shutdown);
-        setIcon(shutdown, R.drawable.ic_power, 16, white, Gravity.START);
+        setIcon(shutdown, R.drawable.ic_power, 14, white, Gravity.START);
         shutdown.setOnClickListener(v -> new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
                 .setTitle(R.string.qa_shutdown)
                 .setMessage(R.string.shutdown_confirm)
