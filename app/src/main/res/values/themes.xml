@@ -222,16 +222,18 @@
     <!-- Robot Control: the buttons in the action sidebar, one per row in a narrow column -->
     <style name="SidebarButton">
         <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">38dp</item>
+        <item name="android:layout_height">32dp</item>
         <item name="android:background">@drawable/bg_control_button</item>
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
-        <item name="android:gravity">center</item>
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">6dp</item>
         <item name="android:drawablePadding">6dp</item>
         <item name="android:singleLine">true</item>
         <item name="android:ellipsize">end</item>
         <item name="android:textColor">@color/text_primary</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">11sp</item>
     </style>
 
     <style name="CameraTab">

@@ -150,7 +150,7 @@
     <string name="percent">%d%%</string>
 
     <!-- Robot Control -->
-    <string name="movement_control">Movement Control</string>
+    <string name="move_control">Move Control</string>
     <string name="speed">Speed</string>
     <string name="battery">Battery</string>
     <string name="mode">Mode</string>
@@ -162,16 +162,13 @@
     <string name="expand">Expand panel</string>
     <string name="temperature">Temperature</string>
     <string name="mode_remote">Remote Control</string>
-    <string name="speed_slow">Slow</string>
     <string name="speed_normal">Normal</string>
-    <string name="speed_fast">Fast</string>
     <string name="demo_battery">78%</string>
     <string name="demo_temperature">36°C</string>
     <string name="position">Position</string>
     <string name="position_x">X:  %.2f m</string>
     <string name="position_y">Y:  %.2f m</string>
     <string name="position_z">Z:  %.2f m</string>
-    <string name="position_reset">Position reset</string>
     <string name="camera_view">Camera View</string>
     <string name="feature_face">Face</string>
     <string name="feature_object">Objects</string>
@@ -204,7 +201,6 @@
     <string name="feed_info">%1$s  ·  %2$s FPS</string>
     <string name="act_turn_left">Turn Left</string>
     <string name="act_turn_right">Turn Right</string>
-    <string name="act_reset">Reset</string>
     <string name="arm_control">Arm Control</string>
     <string name="arm_left">Left Arm</string>
     <string name="arm_right">Right Arm</string>
@@ -213,8 +209,6 @@
     <string name="preset_pose">Preset Pose</string>
     <string name="pose_t">T-Pose</string>
     <string name="qa_go_home">Go Home</string>
-    <string name="qa_start_patrol">Start Patrol</string>
-    <string name="qa_stop_patrol">Stop Patrol</string>
     <string name="qa_follow_me">Follow Me</string>
     <string name="qa_stop_follow">Stop Following</string>
     <string name="qa_shutdown">Shutdown</string>
@@ -233,8 +227,6 @@
     <string name="log_objects">Objects: %1$s</string>
     <string name="log_voice">Voice: %1$s</string>
     <string name="status_line">%1$s  ·  %2$s</string>
-    <string name="pose_stand">Stand</string>
-    <string name="pose_sit">Sit</string>
     <string name="pose_wave">Wave</string>
 
     <!-- Remote Control -->
@@ -250,15 +242,6 @@
     <string name="map_2d">2D</string>
     <string name="map_3d">3D</string>
     <string name="legend_target">Target</string>
-    <string name="control_mode">Control Mode</string>
-    <string name="mode_manual">Manual</string>
-    <string name="mode_autonomous">Autonomous</string>
-    <string name="mode_follow">Follow</string>
-    <string name="mode_path">Path</string>
-    <string name="pose_pick">Pick</string>
-    <string name="pose_point">Point</string>
-    <string name="pose_crouch">Crouch</string>
-    <string name="pose_custom">Custom</string>
     <string name="camera_recording">Camera &amp; Recording</string>
     <string name="take_photo">Take Photo</string>
     <string name="start_video">Start Video</string>
@@ -272,12 +255,6 @@
     <string name="log_robot_connected">Robot connected successfully</string>
     <string name="log_robot_disconnected">Robot disconnected</string>
     <string name="log_camera_started">Camera stream started (%s)</string>
-    <string name="log_movement">Movement command: %s</string>
-    <string name="log_speed">Speed set to %d%%</string>
-    <string name="log_pose">Pose: %s</string>
-    <string name="log_arm">Arm control: %s</string>
-    <string name="log_mode">Control mode: %s</string>
-    <string name="log_action">Action: %s</string>
     <string name="log_photo">Photo captured: %s</string>
     <string name="log_video_started">Video recording started</string>
     <string name="log_video_saved">Video saved: %s</string>
@@ -391,14 +368,12 @@
     <string name="command">Command</string>
     <string name="result">Result</string>
     <string name="result_executed">Executed</string>
-    <string name="result_answered">Answered</string>
     <string name="result_not_sent">Not sent</string>
     <string name="advanced_settings">Advanced Settings</string>
     <string name="tab_language">Language</string>
     <string name="tab_listening">Listening</string>
     <string name="tab_audio">Audio</string>
     <string name="apply_settings">Apply Settings</string>
-    <string name="time_answer">It is %s</string>
     <string name="status_processing">Processing…</string>
     <string name="no_speech">Nothing recognised — speak a little longer, closer to the microphone</string>
     <string name="result_no_match">Unknown Command</string>
@@ -431,12 +406,10 @@
     <string name="adv_recognition_language">Recognition Language</string>
     <string-array name="adv_language_options">
         <item>English</item>
-        <item>Korean</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
-        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">Auto Detect Language</string>
     <string-array name="adv_on_off_options">
@@ -556,22 +529,23 @@
     <string name="cmd_left_desc">Robot will turn left.</string>
     <string name="cmd_right">Turn Right</string>
     <string name="cmd_right_desc">Robot will turn right.</string>
-    <string name="cmd_door">Open Door</string>
-    <string name="cmd_door_desc">Robot will open the door.</string>
-    <string name="cmd_mapping">Start Mapping</string>
-    <string name="cmd_mapping_desc">Robot will start building a map.</string>
-    <string name="cmd_stand">Stand</string>
-    <string name="cmd_stand_desc">Robot will stand up.</string>
-    <string name="cmd_sit">Sit</string>
-    <string name="cmd_sit_desc">Robot will sit down.</string>
     <string name="cmd_wave">Wave</string>
     <string name="cmd_wave_desc">Robot will wave hello.</string>
     <string name="cmd_dance">Dance</string>
     <string name="cmd_dance_desc">Robot will dance.</string>
-    <string name="cmd_follow">Follow Me</string>
-    <string name="cmd_follow_desc">Robot will follow you.</string>
-    <string name="cmd_time">Tell Time</string>
-    <string name="cmd_time_desc">Robot will tell the current time.</string>
+    <string name="cmd_arm_left">Arm Left</string>
+    <string name="cmd_arm_left_desc">Robot will select the left arm.</string>
+    <string name="cmd_arm_right">Arm Right</string>
+    <string name="cmd_arm_right_desc">Robot will select the right arm.</string>
+    <string name="cmd_hello">Hello</string>
+    <string name="cmd_hello_desc">Robot will greet you.</string>
+    <string name="cmd_tpose">T-Pose</string>
+    <string name="cmd_tpose_desc">Robot will hold the T-pose.</string>
+    <string name="cmd_no">No</string>
+    <string name="cmd_no_desc">Robot will cancel what it was asked for.</string>
+    <string name="cmd_recording">Recording</string>
+    <string name="cmd_recording_desc">Robot will start recording, and stop when told again.</string>
+    <string name="ack_ok">OK</string>
 
 
     <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
@@ -657,4 +631,24 @@
         <item>hair drier</item>
         <item>toothbrush</item>
     </string-array>
+    <!-- Remote Control page: the BLE link to the robot -->
+    <string name="ble_connection">BLE Connection</string>
+    <string name="ble_scan">Scan</string>
+    <string name="ble_stop_scan">Stop Scan</string>
+    <string name="ble_disconnect">Disconnect</string>
+    <string name="ble_devices">Devices Found</string>
+    <string name="ble_searching">Searching…</string>
+    <string name="ble_no_devices">Nothing found yet — tap Scan</string>
+    <string name="ble_scanning">Scanning for the robot…</string>
+    <string name="ble_connecting">Connecting to %1$s…</string>
+    <string name="ble_connected">Connected · %1$s</string>
+    <string name="ble_disconnected">Not connected</string>
+    <string name="ble_adapter_off">Bluetooth is off</string>
+    <string name="ble_permission_needed">Bluetooth permission is needed to find the robot</string>
+    <string name="ble_service_missing">That device does not offer the robot service (%1$s)</string>
+    <string name="ble_device_detail">%1$s · %2$d dBm</string>
+    <string name="ble_log_scanning">Scanning for the robot</string>
+    <string name="ble_log_connected">Connected to %1$s</string>
+    <string name="ble_log_disconnected">Bluetooth link dropped</string>
+    <string name="ble_log_message">Robot: %1$s</string>
 </resources>

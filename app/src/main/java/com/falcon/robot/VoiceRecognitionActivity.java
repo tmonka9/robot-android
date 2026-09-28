@@ -103,8 +103,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private final List<HistoryEntry> history = new ArrayList<>();
     private final int[][] advancedSelection = new int[ADVANCED.length][4];
 
-    /** Spoken clock, in the device format and the app language (set in onCreate). */
-    private java.text.DateFormat clock;
 
     private CustomPhrases customPhrases; // the service's copy, so both match the same phrases
     private int advancedTab;
@@ -140,7 +138,6 @@ public class VoiceRecognitionActivity extends BaseActivity {
         setupColumns(R.id.columns);
         setupColumns(R.id.columns_bottom);
 
-        clock = android.text.format.DateFormat.getTimeFormat(this);
         selectSavedLanguage();
         customPhrases = new CustomPhrases(this);
 
@@ -359,14 +356,9 @@ public class VoiceRecognitionActivity extends BaseActivity {
     private int executeAction(VoiceCommands.Action action) {
         RobotService service = getRobotService();
         if (action == null) return R.string.result_no_match;
-        if (action.command == null) {
-            if (service != null) {
-                service.speak(getString(R.string.time_answer, clock.format(new Date())));
-            }
-            return R.string.result_answered;
-        }
+        if (service != null) service.acknowledge(); // "OK": the order was understood
         if (!commandSwitch.isChecked()) return R.string.result_not_sent; // voice control is off
-        return RobotSession.get().send("VOICE_COMMAND " + action.command)
+        return RobotSession.get().send(RobotService.VOICE_PREFIX + VoiceCommands.commandFor(action))
                 ? R.string.result_executed : R.string.result_not_sent;
     }
 
@@ -459,10 +451,12 @@ public class VoiceRecognitionActivity extends BaseActivity {
         if (command.startsWith("TURN LEFT")) return R.drawable.ic_arrow_left;
         if (command.startsWith("TURN RIGHT")) return R.drawable.ic_arrow_right;
         if (command.startsWith("STOP")) return R.drawable.ic_square;
+        if (command.startsWith("CANCEL")) return R.drawable.ic_square;
         if (command.startsWith("GO_HOME")) return R.drawable.ic_home;
-        if (command.startsWith("DOOR")) return R.drawable.ic_lock_open;
-        if (command.startsWith("SLAM")) return R.drawable.ic_map;
-        if (command.startsWith("FOLLOW")) return R.drawable.ic_follow;
+        if (command.startsWith("ARM")) return R.drawable.ic_arm;
+        if (command.startsWith("POSE T_POSE")) return R.drawable.ic_tpose;
+        if (command.startsWith("POSE WAVE") || command.startsWith("GREET")) return R.drawable.ic_pose_wave;
+        if (command.startsWith("CAMERA VIDEO")) return R.drawable.ic_videocam;
         return R.drawable.ic_robot;
     }
 
@@ -592,7 +586,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
             TextView result = row.findViewById(R.id.vh_result);
             result.setText(entry.result);
             result.setTextColor(color(entry.result == R.string.result_executed ? R.color.teal
-                    : entry.result == R.string.result_answered ? R.color.blue_light : R.color.amber));
+                    : R.color.amber));
             ((TextView) row.findViewById(R.id.vh_confidence)).setText(entry.confidence >= 0
                     ? getString(R.string.similarity_value, entry.confidence)
                     : getString(R.string.placeholder_value));

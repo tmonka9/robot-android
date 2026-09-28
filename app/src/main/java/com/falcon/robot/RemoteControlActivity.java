@@ -3,20 +3,20 @@ package com.falcon.robot;
 import android.app.AlertDialog;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+
+import com.falcon.robot.ble.BleLink;
 import com.falcon.robot.widget.CompassView;
 import com.falcon.robot.widget.CoverImageView;
-import com.falcon.robot.widget.JoystickView;
 import com.falcon.robot.widget.LidarMapView;
 
 import java.text.SimpleDateFormat;
@@ -27,21 +27,20 @@ import java.util.Locale;
 
 /**
  * Remote Control page (design/remote.png): robot camera, robot status with estimated position,
- * map, joystick / button movement with control modes, arm control and preset poses, quick
- * actions, camera recording and an operation log.
+ * map, the BLE link to the robot, camera recording and an operation log.
  *
- * <p>Telemetry, odometry and the camera stream are simulated; commands go through
- * {@link RobotSession}.
+ * <p>The robot is driven over Bluetooth Low Energy, so this page is where the link is made: it
+ * finds the robot, connects to it and hands the connection to {@link RobotSession}, which every
+ * other page sends through. What the robot is asked to do is on the Robot Control page.
+ *
+ * <p>Telemetry and the camera stream are still simulated.
  */
 public class RemoteControlActivity extends BaseActivity {
 
-    private static final long ODOMETRY_TICK_MS = 100;
-    private static final float MAX_SPEED_MPS = 1.2f;
-    private static final float STEP_M = 0.25f;
     private static final int MAX_LOG_LINES = 100;
 
     private final RobotSession session = RobotSession.get();
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final BleLink ble = BleLink.get();
     private final List<String> captures = new ArrayList<>();
     private final SimpleDateFormat fileTime = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US);
 
@@ -65,41 +64,35 @@ public class RemoteControlActivity extends BaseActivity {
     private TextView map2dTab;
     private TextView map3dTab;
     private float mapZoom = 1f;
-    private SeekBar speedSeek;
-    private TextView[] modes;
-    private TextView[] armParts;
-    private TextView[] poses;
-    private TextView patrol;
-    private TextView follow;
     private TextView video;
     private TextView audio;
     private LinearLayout logList;
     private ScrollView logScroll;
 
-    // simulated odometry
+    // the position the robot reports; nothing here moves it
     private float x = 1.23f;
     private float y = 0.56f;
     private float heading;
-    private JoystickView joystick;
-    private float joyX;
-    private float joyY;
-    private int lastJoyX;
-    private int lastJoyY;
     private boolean wasConnected;
 
-    private final Runnable odometry = new Runnable() {
-        @Override
-        public void run() {
-            if (session.isConnected() && (joyX != 0 || joyY != 0)) {
-                float v = MAX_SPEED_MPS * speedFraction() * ODOMETRY_TICK_MS / 1000f;
-                x += joyX * v;
-                y += joyY * v;
-                heading = normalize((float) Math.toDegrees(Math.atan2(joyX, joyY)));
-                refreshPosition();
-            }
-            handler.postDelayed(this, ODOMETRY_TICK_MS);
-        }
-    };
+    // the BLE panel
+    private TextView bleStatus;
+    private TextView bleScan;
+    private TextView bleDisconnect;
+    private LinearLayout bleList;
+    /** Whether the link the session is holding is this page's BLE one. */
+    private boolean bleSession;
+
+    private final ActivityResultLauncher<String[]> blePermissions = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(), granted -> {
+                for (Boolean given : granted.values()) {
+                    if (!Boolean.TRUE.equals(given)) {
+                        log(LOG_WARN, getString(R.string.ble_permission_needed));
+                        return;
+                    }
+                }
+                ble.startScan(this);
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,14 +110,14 @@ public class RemoteControlActivity extends BaseActivity {
         setupCamera();
         setupStatus();
         setupMap();
-        setupMovement();
-        setupArm();
-        setupQuickActions();
-        setupRecording();
 
+        // what the log starts with, before the BLE panel reports the link it already has
         wasConnected = session.isConnected();
         if (wasConnected) log(LOG_OK, getString(R.string.log_robot_connected));
         log(LOG_OK, getString(R.string.log_camera_started, cameraTabs[camera].getText()));
+
+        setupBle();
+        setupRecording();
         refreshStatus();
     }
 
@@ -132,19 +125,18 @@ public class RemoteControlActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         onConnectionChanged();
-        handler.removeCallbacks(odometry);
-        handler.post(odometry);
+        renderBle(); // Bluetooth can have been switched on while the page was away
     }
 
     @Override
     protected void onPause() {
-        handler.removeCallbacks(odometry);
+        ble.stopScan(); // a scan nobody is watching is only a drain on the battery
         super.onPause();
     }
 
     @Override
     protected void onDestroy() {
-        handler.removeCallbacksAndMessages(null);
+        ble.removeListener(bleListener); // the link itself stays up, and other pages send over it
         super.onDestroy();
     }
 
@@ -162,11 +154,6 @@ public class RemoteControlActivity extends BaseActivity {
 
     private void log(int color, String message) {
         appendLog(logList, logScroll, color, message, MAX_LOG_LINES);
-    }
-
-    private static float normalize(float degrees) {
-        float d = degrees % 360f;
-        return d < 0 ? d + 360f : d;
     }
 
     // ---- camera ----------------------------------------------------------------------------
@@ -249,7 +236,7 @@ public class RemoteControlActivity extends BaseActivity {
     }
 
     private void refreshStatus() {
-        if (valueMode == null || modes == null) return;
+        if (valueMode == null || bleStatus == null) return;
         boolean connected = session.isConnected();
         TextView title = findViewById(R.id.status_title);
         title.setCompoundDrawablesRelativeWithIntrinsicBounds(connected ? R.drawable.dot_teal : R.drawable.dot_gray, 0, 0, 0);
@@ -257,15 +244,15 @@ public class RemoteControlActivity extends BaseActivity {
                 connected ? R.drawable.dot_teal : R.drawable.dot_gray);
         statusOnline.setTextColor(color(connected ? R.color.teal : R.color.text_secondary));
 
-        String mode = getString(R.string.mode_remote);
-        for (TextView m : modes) if (m.isActivated() && m.getId() != R.id.mode_manual) mode = m.getText().toString();
-        valueMode.setText(connected ? mode : getString(R.string.value_offline));
-        int p = speedSeek.getProgress();
-        valueSpeed.setText(p < 34 ? R.string.speed_slow : p < 67 ? R.string.speed_normal : R.string.speed_fast);
+        valueMode.setText(connected ? getString(R.string.mode_remote) : getString(R.string.value_offline));
+        // the speed the robot reports: this page no longer sets it
+        valueSpeed.setText(connected ? R.string.speed_normal : R.string.placeholder_value);
         valueBattery.setText(connected ? R.string.demo_battery : R.string.placeholder_value);
         barBattery.setProgress(connected ? 78 : 0);
         valueTemperature.setText(connected ? R.string.demo_temperature : R.string.placeholder_value);
-        valueConnection.setText(connected ? session.getHost() : getString(R.string.placeholder_value));
+        valueConnection.setText(!connected ? getString(R.string.placeholder_value)
+                : ble.isConnected() ? ble.getDeviceName() : session.getHost());
+        renderBle();
     }
 
     private void refreshPosition() {
@@ -311,229 +298,163 @@ public class RemoteControlActivity extends BaseActivity {
         mapImage.setScaleY(mapZoom);
     }
 
-    // ---- movement --------------------------------------------------------------------------
+    // ---- the BLE link ----------------------------------------------------------------------
 
-    private void setupMovement() {
+    /**
+     * The link to the robot: Scan looks for it, a row in the list connects to it, and from then
+     * on every page's commands go out over that connection ({@link RobotSession#send}).
+     */
+    private void setupBle() {
         int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.movement_title), R.drawable.ic_crosshair, 22, 0, Gravity.START);
-        setIcon(findViewById(R.id.label_speed_slider), R.drawable.ic_run, 18, 0, Gravity.START);
+        setIcon(findViewById(R.id.ble_title), R.drawable.ic_bluetooth, 22, color(R.color.blue_light),
+                Gravity.START);
+        bleStatus = findViewById(R.id.ble_status);
+        bleList = findViewById(R.id.ble_list);
 
-        bindMove(R.id.move_forward, R.drawable.ic_arrow_up, "MOVE FORWARD", 0, 1);
-        bindMove(R.id.move_backward, R.drawable.ic_arrow_down, "MOVE BACKWARD", 0, -1);
-        bindMove(R.id.move_left, R.drawable.ic_arrow_left, "TURN LEFT", -1, 0);
-        bindMove(R.id.move_right, R.drawable.ic_arrow_right, "TURN RIGHT", 1, 0);
+        bleScan = findViewById(R.id.ble_scan);
+        setIcon(bleScan, R.drawable.ic_search, 18, white, Gravity.START);
+        bleScan.setOnClickListener(v -> toggleScan());
 
-        final TextView stop = findViewById(R.id.move_stop);
-        setIcon(stop, R.drawable.ic_square, 20, white, Gravity.TOP);
-        stop.setOnClickListener(v -> {
-            session.send("STOP"); // stop is never blocked by the connect prompt
-            joyX = 0;
-            joyY = 0;
-            log(LOG_WARN, getString(R.string.log_movement, stop.getText()));
-        });
-        final TextView reset = findViewById(R.id.move_reset);
-        setIcon(reset, R.drawable.ic_refresh, 20, white, Gravity.TOP);
-        reset.setOnClickListener(v -> {
-            session.send("ODOMETRY RESET");
-            x = 0;
-            y = 0;
-            heading = 0;
-            refreshPosition();
-            log(LOG_INFO, getString(R.string.position_reset));
-        });
+        bleDisconnect = findViewById(R.id.ble_disconnect);
+        setIcon(bleDisconnect, R.drawable.ic_power, 18, white, Gravity.START);
+        bleDisconnect.setOnClickListener(v -> ble.disconnect());
 
-        speedSeek = findViewById(R.id.speed_seek);
-        final TextView speedValue = findViewById(R.id.speed_value);
-        speedValue.setText(getString(R.string.percent, speedSeek.getProgress()));
-        speedSeek.setOnSeekBarChangeListener(new SimpleSeekListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                speedValue.setText(getString(R.string.percent, progress));
-                refreshStatus();
-            }
-
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                session.send("SPEED " + seekBar.getProgress());
-                log(LOG_WARN, getString(R.string.log_speed, seekBar.getProgress()));
-            }
-        });
-
-        joystick = findViewById(R.id.joystick);
-        joystick.setOnMoveListener(this::onJoystick);
-
-        modes = new TextView[] {
-                findViewById(R.id.mode_manual), findViewById(R.id.mode_autonomous),
-                findViewById(R.id.mode_follow), findViewById(R.id.mode_path),
-        };
-        int[] modeIcons = {R.drawable.ic_person, R.drawable.ic_robot, R.drawable.ic_follow, R.drawable.ic_navigation};
-        final String[] modeCommands = {"MANUAL", "AUTONOMOUS", "FOLLOW", "PATH"};
-        for (int i = 0; i < modes.length; i++) {
-            final int index = i;
-            setIcon(modes[i], modeIcons[i], 16, white, Gravity.START);
-            modes[i].setOnClickListener(v -> {
-                if (!sendCommand("MODE " + modeCommands[index])) return;
-                selectOnly(modes, modes[index]);
-                log(LOG_INFO, getString(R.string.log_mode, modes[index].getText()));
-                refreshStatus();
-            });
-        }
-        modes[0].setActivated(true);
-        modes[0].setLayoutParams(noStartMargin(modes[0]));
+        ble.addListener(bleListener); // says the state and the devices straight back
     }
 
-    private void bindMove(int id, int icon, final String command, final int dx, final int dy) {
-        final TextView button = findViewById(id);
-        setIcon(button, icon, 20, color(R.color.text_primary), Gravity.TOP);
-        button.setOnClickListener(v -> {
-            if (!sendCommand(command)) return;
-            float step = STEP_M * speedFraction();
-            x += dx * step;
-            y += dy * step;
-            heading = normalize((float) Math.toDegrees(Math.atan2(dx, dy)));
-            refreshPosition();
-            log(LOG_OK, getString(R.string.log_movement, button.getText()));
-        });
-    }
-
-    /** The gamepad stick drives the same control as the on-screen one. */
-    @Override
-    protected void onGamepadDirection(float x, float y, float turn) {
-        joystick.setDirection(x, y);
-        onJoystick(x, y);
-    }
-
-    private void onJoystick(float jx, float jy) {
-        int qx = Math.round(jx * 10);
-        int qy = Math.round(jy * 10);
-        if (qx == lastJoyX && qy == lastJoyY) return;
-        lastJoyX = qx;
-        lastJoyY = qy;
-        if (qx == 0 && qy == 0) {
-            joyX = 0;
-            joyY = 0;
-            session.send("MOVE STOP");
+    private void toggleScan() {
+        if (ble.getState() == BleLink.State.SCANNING) {
+            ble.stopScan();
             return;
         }
-        if (!sendCommand(String.format(Locale.US, "MOVE %.1f %.1f", qx / 10f, qy / 10f))) {
-            joyX = 0;
-            joyY = 0;
+        if (!ble.isReady(this)) {
+            toast(R.string.ble_adapter_off);
             return;
         }
-        joyX = qx / 10f;
-        joyY = qy / 10f;
+        String[] missing = BleLink.missingPermissions(this);
+        if (missing.length > 0) {
+            blePermissions.launch(missing);
+            return;
+        }
+        ble.startScan(this);
+        log(LOG_INFO, getString(R.string.ble_log_scanning));
     }
 
-    private float speedFraction() {
-        return speedSeek == null ? 0.5f : speedSeek.getProgress() / 100f;
+    private void connectTo(BleLink.Found device) {
+        String[] missing = BleLink.missingPermissions(this);
+        if (missing.length > 0) {
+            blePermissions.launch(missing);
+            return;
+        }
+        log(LOG_INFO, getString(R.string.ble_connecting, device.name));
+        ble.connect(this, device.address, device.name);
     }
 
-    private static void selectOnly(TextView[] group, TextView selected) {
-        for (TextView item : group) item.setActivated(item == selected);
-    }
-
-    private static LinearLayout.LayoutParams noStartMargin(View view) {
-        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) view.getLayoutParams();
-        lp.setMarginStart(0);
-        return lp;
-    }
-
-    // ---- arm -------------------------------------------------------------------------------
-
-    private void setupArm() {
-        int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.arm_title), R.drawable.ic_arm, 22, 0, Gravity.START);
-
-        armParts = new TextView[] {
-                findViewById(R.id.arm_left), findViewById(R.id.arm_right),
-                findViewById(R.id.arm_head), findViewById(R.id.arm_waist),
-        };
-        final String[] partCommands = {"LEFT_ARM", "RIGHT_ARM", "HEAD", "WAIST"};
-        for (int i = 0; i < armParts.length; i++) {
-            final int index = i;
-            setIcon(armParts[i], R.drawable.ic_play_white, 16, white, Gravity.START);
-            armParts[i].setCompoundDrawablesRelative(armParts[i].getCompoundDrawablesRelative()[0], null,
-                    tinted(R.drawable.ic_chevron_right, 16), null);
-            armParts[i].setOnClickListener(v -> {
-                if (!sendCommand("ARM SELECT " + partCommands[index])) return;
-                selectOnly(armParts, armParts[index]);
-                log(LOG_INFO, getString(R.string.log_arm, armParts[index].getText()));
-            });
+    private final BleLink.Listener bleListener = new BleLink.Listener() {
+        @Override
+        public void onState(BleLink.State state, String device) {
+            boolean connected = state == BleLink.State.CONNECTED;
+            // the session is what every page sends through, so the BLE link hands it over — and
+            // takes back only what it gave: a link made in the connection dialog is left alone
+            if (connected && !bleSession) {
+                bleSession = true;
+                session.setBleConnected();
+                log(LOG_OK, getString(R.string.ble_log_connected, device));
+            } else if (!connected && bleSession) {
+                bleSession = false;
+                session.setConnected(false);
+                log(LOG_WARN, getString(R.string.ble_log_disconnected));
+            }
+            renderBle();
+            onConnectionChanged();
         }
 
-        poses = new TextView[] {
-                findViewById(R.id.pose_stand), findViewById(R.id.pose_sit), findViewById(R.id.pose_wave),
-                findViewById(R.id.pose_tpose), findViewById(R.id.pose_pick), findViewById(R.id.pose_point),
-                findViewById(R.id.pose_crouch), findViewById(R.id.pose_custom),
-        };
-        int[] poseIcons = {
-                R.drawable.ic_person, R.drawable.ic_pose_sit, R.drawable.ic_pose_wave, R.drawable.ic_tpose,
-                R.drawable.ic_arm, R.drawable.ic_touch, R.drawable.ic_follow, R.drawable.ic_settings,
-        };
-        final String[] poseCommands = {"STAND", "SIT", "WAVE", "T_POSE", "PICK", "POINT", "CROUCH", "CUSTOM"};
-        for (int i = 0; i < poses.length; i++) {
-            final int index = i;
-            setIcon(poses[i], poseIcons[i], 16, white, Gravity.START);
-            if (i % 4 == 0) poses[i].setLayoutParams(noStartMargin(poses[i]));
-            poses[i].setOnClickListener(v -> {
-                if (!sendCommand("POSE " + poseCommands[index])) return;
-                selectOnly(poses, poses[index]);
-                log(LOG_WARN, getString(R.string.log_pose, poses[index].getText()));
-            });
+        @Override
+        public void onDevices(List<BleLink.Found> devices) {
+            renderDevices(devices);
         }
-        poses[0].setActivated(true);
+
+        @Override
+        public void onMessage(String text) {
+            log(LOG_INFO, getString(R.string.ble_log_message, text));
+        }
+
+        @Override
+        public void onServiceMissing() {
+            log(LOG_ERROR, getString(R.string.ble_service_missing,
+                    BleLink.SERVICE.toString()));
+        }
+    };
+
+    private void renderBle() {
+        if (bleStatus == null) return;
+        BleLink.State state = ble.getState();
+        boolean ready = ble.isReady(this);
+        boolean connected = state == BleLink.State.CONNECTED;
+        CharSequence text;
+        if (!ready) {
+            text = getString(R.string.ble_adapter_off);
+        } else if (connected) {
+            text = getString(R.string.ble_connected, ble.getDeviceName());
+        } else if (state == BleLink.State.CONNECTING) {
+            text = getString(R.string.ble_connecting, ble.getDeviceName());
+        } else if (state == BleLink.State.SCANNING) {
+            text = getString(R.string.ble_scanning);
+        } else {
+            text = getString(R.string.ble_disconnected);
+        }
+        setStatus(bleStatus, text, connected ? R.drawable.dot_teal
+                : state == BleLink.State.IDLE || !ready ? R.drawable.dot_gray : R.drawable.dot_amber);
+        bleStatus.setTextColor(color(connected ? R.color.teal : R.color.text_secondary));
+
+        bleScan.setText(state == BleLink.State.SCANNING ? R.string.ble_stop_scan : R.string.ble_scan);
+        bleScan.setActivated(state == BleLink.State.SCANNING);
+        boolean linked = connected || state == BleLink.State.CONNECTING;
+        bleDisconnect.setEnabled(linked);
+        bleDisconnect.setAlpha(linked ? 1f : 0.45f);
     }
 
-    private android.graphics.drawable.Drawable tinted(int drawable, int sizeDp) {
-        android.graphics.drawable.Drawable d = getResources().getDrawable(drawable).mutate();
-        int size = Math.round(sizeDp * getResources().getDisplayMetrics().density);
-        d.setBounds(0, 0, size, size);
-        d.setColorFilter(color(R.color.text_secondary), PorterDuff.Mode.SRC_IN);
-        return d;
-    }
+    /** One row per device the scan has seen, strongest signal first; a tap connects to it. */
+    private void renderDevices(List<BleLink.Found> devices) {
+        if (bleList == null) return;
+        bleList.removeAllViews();
+        float density = getResources().getDisplayMetrics().density;
+        if (devices.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText(ble.getState() == BleLink.State.SCANNING
+                    ? R.string.ble_searching : R.string.ble_no_devices);
+            empty.setTextColor(color(R.color.text_muted));
+            empty.setTextSize(12);
+            bleList.addView(empty);
+            return;
+        }
+        int pad = Math.round(10 * density);
+        for (final BleLink.Found device : devices) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setBackgroundResource(R.drawable.bg_control_button);
+            row.setPadding(pad, pad, pad, pad);
+            row.setActivated(device.address.equals(ble.getDeviceAddress()));
+            row.setOnClickListener(v -> connectTo(device));
 
-    // ---- quick actions ---------------------------------------------------------------------
+            TextView name = new TextView(this);
+            name.setText(device.name);
+            name.setTextColor(color(R.color.text_primary));
+            name.setTextSize(13);
+            name.setSingleLine(true);
+            row.addView(name);
 
-    private void setupQuickActions() {
-        int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.quick_title), R.drawable.ic_bolt, 22, color(R.color.cyan), Gravity.START);
+            TextView detail = new TextView(this);
+            detail.setText(getString(R.string.ble_device_detail, device.address, device.rssi));
+            detail.setTextColor(color(R.color.text_secondary));
+            detail.setTextSize(11);
+            row.addView(detail);
 
-        final TextView home = findViewById(R.id.qa_home);
-        setIcon(home, R.drawable.ic_home, 22, white, Gravity.START);
-        home.setOnClickListener(v -> {
-            if (sendCommand("GO_HOME")) log(LOG_INFO, getString(R.string.log_action, home.getText()));
-        });
-
-        patrol = findViewById(R.id.qa_patrol);
-        setIcon(patrol, R.drawable.ic_shield, 22, white, Gravity.START);
-        patrol.setOnClickListener(v -> {
-            boolean start = !patrol.isActivated();
-            if (!sendCommand(start ? "PATROL START" : "PATROL STOP")) return;
-            patrol.setActivated(start);
-            patrol.setText(start ? R.string.qa_stop_patrol : R.string.qa_start_patrol);
-            log(LOG_INFO, getString(R.string.log_action, getString(start ? R.string.qa_start_patrol : R.string.qa_stop_patrol)));
-        });
-
-        follow = findViewById(R.id.qa_follow);
-        setIcon(follow, R.drawable.ic_follow, 22, white, Gravity.START);
-        follow.setOnClickListener(v -> {
-            boolean start = !follow.isActivated();
-            if (!sendCommand(start ? "FOLLOW START" : "FOLLOW STOP")) return;
-            follow.setActivated(start);
-            follow.setText(start ? R.string.qa_stop_follow : R.string.qa_follow_me);
-            log(LOG_INFO, getString(R.string.log_action, getString(start ? R.string.qa_follow_me : R.string.qa_stop_follow)));
-        });
-
-        final TextView shutdown = findViewById(R.id.qa_shutdown);
-        setIcon(shutdown, R.drawable.ic_power, 22, white, Gravity.START);
-        shutdown.setOnClickListener(v -> new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
-                .setTitle(R.string.qa_shutdown)
-                .setMessage(R.string.shutdown_confirm)
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.qa_shutdown, (d, w) -> {
-                    if (sendCommand("SHUTDOWN")) log(LOG_ERROR, getString(R.string.log_action, shutdown.getText()));
-                })
-                .show());
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            if (bleList.getChildCount() > 0) lp.topMargin = Math.round(6 * density);
+            bleList.addView(row, lp);
+        }
     }
 
     // ---- camera & recording ----------------------------------------------------------------

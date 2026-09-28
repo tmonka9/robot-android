@@ -754,6 +754,37 @@
                         android:layout_marginTop="6dp"
                         android:text="@string/feature_voice" />
 
+
+                    <TextView
+                        android:id="@+id/move_title"
+                        style="@style/SettingLabel"
+                        android:layout_marginTop="14dp"
+                        android:text="@string/move_control" />
+
+                    <TextView
+                        android:id="@+id/move_forward"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/act_forward" />
+
+                    <TextView
+                        android:id="@+id/move_backward"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/act_backward" />
+
+                    <TextView
+                        android:id="@+id/move_left"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/act_turn_left" />
+
+                    <TextView
+                        android:id="@+id/move_right"
+                        style="@style/SidebarButton"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/act_turn_right" />
+
                     <TextView
                         android:id="@+id/arm_title"
                         style="@style/SettingLabel"

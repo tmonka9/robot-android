@@ -9,6 +9,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
+import android.content.res.AssetFileDescriptor;
+import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Binder;
@@ -72,6 +75,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class RobotService extends Service implements LifecycleOwner {
 
     private static final String TAG = "RobotService";
+
+    /** What a spoken order goes out as: the prefix, then the command the button would send. */
+    public static final String VOICE_PREFIX = "VOICE_COMMAND ";
     private static final String CHANNEL_ID = "robot_recognition";
     private static final int NOTIFICATION_ID = 42;
     /** Sent by the notification's Stop action. */
@@ -279,6 +285,7 @@ public class RobotService extends Service implements LifecycleOwner {
             if (detectionAnalyzer != null) detectionAnalyzer.close();
         });
         if (tts != null) tts.shutdown();
+        releaseAck();
         final CommandRecognizer recognizer = commandRecognizer;
         commandRecognizer = null;
         speechExecutor.execute(() -> {
@@ -1095,18 +1102,74 @@ public class RobotService extends Service implements LifecycleOwner {
         int result;
         if (action == null) {
             result = R.string.result_no_match;
-        } else if (action.command == null) {
-            speak(getString(R.string.time_answer,
-                    android.text.format.DateFormat.getTimeFormat(this).format(new java.util.Date())));
-            result = R.string.result_answered;
         } else if (!commandControl) {
             result = R.string.result_not_sent;
         } else {
-            result = RobotSession.get().send("VOICE_COMMAND " + action.command)
+            result = RobotSession.get().send(VOICE_PREFIX + VoiceCommands.commandFor(action))
                     ? R.string.result_executed : R.string.result_not_sent;
         }
+        // the answer is to being understood, not to the robot obeying: the operator hears that
+        // the order was heard whether or not there is a robot on the other end just now
+        if (action != null) acknowledge();
         for (Listener listener : listeners) listener.onTranscript(text, confidence, action, result);
     }
+
+    /**
+     * Says "OK" when a command was understood. The clip is {@code assets/ok.wav}; without it the
+     * speech engine says the word instead, so the robot still answers before one is recorded.
+     */
+    public void acknowledge() {
+        if (!playAsset(OK_SOUND)) speak(getString(R.string.ack_ok));
+    }
+
+    /** Plays a sound from the assets. False when there is no such file, or it will not play. */
+    private boolean playAsset(String asset) {
+        AssetFileDescriptor fd = null;
+        try {
+            fd = getAssets().openFd(asset);
+            releaseAck();
+            ack = new MediaPlayer();
+            ack.setAudioAttributes(new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build());
+            ack.setDataSource(fd.getFileDescriptor(), fd.getStartOffset(), fd.getLength());
+            // a later sound may have taken the field over by the time this one ends
+            ack.setOnCompletionListener(player -> {
+                if (player == ack) {
+                    releaseAck();
+                } else {
+                    player.release();
+                }
+            });
+            ack.prepare();
+            ack.start();
+            return true;
+        } catch (java.io.IOException | IllegalStateException e) {
+            Log.w(TAG, "cannot play " + asset + ": " + e);
+            releaseAck();
+            return false;
+        } finally {
+            if (fd != null) {
+                try {
+                    fd.close();
+                } catch (java.io.IOException ignored) {
+                    // the player has its own copy of the descriptor by now
+                }
+            }
+        }
+    }
+
+    private void releaseAck() {
+        if (ack == null) return;
+        ack.release();
+        ack = null;
+    }
+
+    /** The sound played when a command is understood, if it is in the assets. */
+    private static final String OK_SOUND = "ok.wav";
+
+    private MediaPlayer ack;
 
     /** Says something through the device speaker, in the app language. */
     public void speak(String text) {

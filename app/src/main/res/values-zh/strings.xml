@@ -149,7 +149,7 @@
     <string name="percent">%d%%</string>
 
     <!-- Robot Control -->
-    <string name="movement_control">运动控制</string>
+    <string name="move_control">运动控制</string>
     <string name="speed">速度</string>
     <string name="battery">电量</string>
     <string name="mode">模式</string>
@@ -161,16 +161,13 @@
     <string name="expand">展开面板</string>
     <string name="temperature">温度</string>
     <string name="mode_remote">远程控制</string>
-    <string name="speed_slow">低速</string>
     <string name="speed_normal">常速</string>
-    <string name="speed_fast">高速</string>
     <string name="demo_battery">78%</string>
     <string name="demo_temperature">36°C</string>
     <string name="position">位置</string>
     <string name="position_x">X:  %.2f m</string>
     <string name="position_y">Y:  %.2f m</string>
     <string name="position_z">Z:  %.2f m</string>
-    <string name="position_reset">位置已复位</string>
     <string name="camera_view">摄像头画面</string>
     <string name="feature_face">人脸</string>
     <string name="feature_object">物体</string>
@@ -203,7 +200,6 @@
     <string name="feed_info">%1$s  ·  %2$s FPS</string>
     <string name="act_turn_left">左转</string>
     <string name="act_turn_right">右转</string>
-    <string name="act_reset">复位</string>
     <string name="arm_control">机械臂控制</string>
     <string name="arm_left">左臂</string>
     <string name="arm_right">右臂</string>
@@ -212,8 +208,6 @@
     <string name="preset_pose">预设姿态</string>
     <string name="pose_t">T 字姿态</string>
     <string name="qa_go_home">返回原点</string>
-    <string name="qa_start_patrol">开始巡逻</string>
-    <string name="qa_stop_patrol">停止巡逻</string>
     <string name="qa_follow_me">跟随我</string>
     <string name="qa_stop_follow">停止跟随</string>
     <string name="qa_shutdown">关机</string>
@@ -232,8 +226,6 @@
     <string name="log_objects">物体：%1$s</string>
     <string name="log_voice">语音：%1$s</string>
     <string name="status_line">%1$s  ·  %2$s</string>
-    <string name="pose_stand">站立</string>
-    <string name="pose_sit">坐下</string>
     <string name="pose_wave">挥手</string>
 
     <!-- Remote Control -->
@@ -249,15 +241,6 @@
     <string name="map_2d">2D</string>
     <string name="map_3d">3D</string>
     <string name="legend_target">目标点</string>
-    <string name="control_mode">控制模式</string>
-    <string name="mode_manual">手动</string>
-    <string name="mode_autonomous">自主</string>
-    <string name="mode_follow">跟随</string>
-    <string name="mode_path">路径</string>
-    <string name="pose_pick">抓取</string>
-    <string name="pose_point">指向</string>
-    <string name="pose_crouch">蹲下</string>
-    <string name="pose_custom">自定义</string>
     <string name="camera_recording">摄像与录制</string>
     <string name="take_photo">拍照</string>
     <string name="start_video">开始录像</string>
@@ -271,12 +254,6 @@
     <string name="log_robot_connected">机器人连接成功</string>
     <string name="log_robot_disconnected">机器人已断开</string>
     <string name="log_camera_started">摄像头视频流已启动（%s）</string>
-    <string name="log_movement">移动指令：%s</string>
-    <string name="log_speed">速度已设为 %d%%</string>
-    <string name="log_pose">姿态：%s</string>
-    <string name="log_arm">机械臂控制：%s</string>
-    <string name="log_mode">控制模式：%s</string>
-    <string name="log_action">动作：%s</string>
     <string name="log_photo">已拍照：%s</string>
     <string name="log_video_started">已开始录像</string>
     <string name="log_video_saved">视频已保存：%s</string>
@@ -390,14 +367,12 @@
     <string name="command">指令</string>
     <string name="result">结果</string>
     <string name="result_executed">已执行</string>
-    <string name="result_answered">已应答</string>
     <string name="result_not_sent">未发送</string>
     <string name="advanced_settings">高级设置</string>
     <string name="tab_language">语言</string>
     <string name="tab_listening">收听</string>
     <string name="tab_audio">音频</string>
     <string name="apply_settings">应用设置</string>
-    <string name="time_answer">现在是 %s</string>
     <string name="status_processing">处理中…</string>
     <string name="no_speech">未识别到语音 — 请靠近麦克风并说得久一点</string>
     <string name="result_no_match">未知命令</string>
@@ -430,12 +405,10 @@
     <string name="adv_recognition_language">识别语言</string>
     <string-array name="adv_language_options">
         <item>英语</item>
-        <item>朝鲜语</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
-        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">自动检测语言</string>
     <string-array name="adv_on_off_options">
@@ -551,22 +524,23 @@
     <string name="cmd_left_desc">机器人将向左转。</string>
     <string name="cmd_right">右转</string>
     <string name="cmd_right_desc">机器人将向右转。</string>
-    <string name="cmd_door">开门</string>
-    <string name="cmd_door_desc">机器人将打开门。</string>
-    <string name="cmd_mapping">开始建图</string>
-    <string name="cmd_mapping_desc">机器人将开始构建地图。</string>
-    <string name="cmd_stand">站立</string>
-    <string name="cmd_stand_desc">机器人将站起来。</string>
-    <string name="cmd_sit">坐下</string>
-    <string name="cmd_sit_desc">机器人将坐下。</string>
     <string name="cmd_wave">挥手</string>
     <string name="cmd_wave_desc">机器人将挥手致意。</string>
     <string name="cmd_dance">跳舞</string>
     <string name="cmd_dance_desc">机器人将跳舞。</string>
-    <string name="cmd_follow">跟随我</string>
-    <string name="cmd_follow_desc">机器人将跟随您。</string>
-    <string name="cmd_time">报时</string>
-    <string name="cmd_time_desc">机器人将播报当前时间。</string>
+    <string name="cmd_arm_left">左臂</string>
+    <string name="cmd_arm_left_desc">机器人将选择左臂。</string>
+    <string name="cmd_arm_right">右臂</string>
+    <string name="cmd_arm_right_desc">机器人将选择右臂。</string>
+    <string name="cmd_hello">问候</string>
+    <string name="cmd_hello_desc">机器人将向您问好。</string>
+    <string name="cmd_tpose">T 姿势</string>
+    <string name="cmd_tpose_desc">机器人将保持 T 姿势。</string>
+    <string name="cmd_no">取消</string>
+    <string name="cmd_no_desc">机器人将取消刚才的指令。</string>
+    <string name="cmd_recording">录像</string>
+    <string name="cmd_recording_desc">机器人将开始录像，再说一次即停止。</string>
+    <string name="ack_ok">好的</string>
 
     <string-array name="coco_labels">
         <item>人</item>
@@ -650,4 +624,24 @@
         <item>吹风机</item>
         <item>牙刷</item>
     </string-array>
+    <!-- Remote Control page: the BLE link to the robot -->
+    <string name="ble_connection">BLE 连接</string>
+    <string name="ble_scan">扫描</string>
+    <string name="ble_stop_scan">停止扫描</string>
+    <string name="ble_disconnect">断开连接</string>
+    <string name="ble_devices">发现的设备</string>
+    <string name="ble_searching">正在搜索…</string>
+    <string name="ble_no_devices">尚未发现设备 — 请点击扫描</string>
+    <string name="ble_scanning">正在搜索机器人…</string>
+    <string name="ble_connecting">正在连接 %1$s…</string>
+    <string name="ble_connected">已连接 · %1$s</string>
+    <string name="ble_disconnected">未连接</string>
+    <string name="ble_adapter_off">蓝牙已关闭</string>
+    <string name="ble_permission_needed">搜索机器人需要蓝牙权限</string>
+    <string name="ble_service_missing">该设备没有机器人服务 (%1$s)</string>
+    <string name="ble_device_detail">%1$s · %2$d dBm</string>
+    <string name="ble_log_scanning">正在搜索机器人</string>
+    <string name="ble_log_connected">已连接到 %1$s</string>
+    <string name="ble_log_disconnected">蓝牙连接已断开</string>
+    <string name="ble_log_message">机器人：%1$s</string>
 </resources>

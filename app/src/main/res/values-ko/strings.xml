@@ -150,7 +150,7 @@
     <string name="percent">%d%%</string>
 
     <!-- Robot Control -->
-    <string name="movement_control">이동 제어</string>
+    <string name="move_control">이동 제어</string>
     <string name="speed">속도</string>
     <string name="battery">배터리</string>
     <string name="mode">모드</string>
@@ -162,16 +162,13 @@
     <string name="expand">패널 펼치기</string>
     <string name="temperature">온도</string>
     <string name="mode_remote">원격 제어</string>
-    <string name="speed_slow">느림</string>
     <string name="speed_normal">보통</string>
-    <string name="speed_fast">빠름</string>
     <string name="demo_battery">78%</string>
     <string name="demo_temperature">36°C</string>
     <string name="position">위치</string>
     <string name="position_x">X:  %.2f m</string>
     <string name="position_y">Y:  %.2f m</string>
     <string name="position_z">Z:  %.2f m</string>
-    <string name="position_reset">위치 초기화</string>
     <string name="camera_view">카메라 화면</string>
     <string name="feature_face">얼굴</string>
     <string name="feature_object">물체</string>
@@ -204,7 +201,6 @@
     <string name="feed_info">%1$s  ·  %2$s FPS</string>
     <string name="act_turn_left">왼쪽 회전</string>
     <string name="act_turn_right">오른쪽 회전</string>
-    <string name="act_reset">초기화</string>
     <string name="arm_control">팔 제어</string>
     <string name="arm_left">왼팔</string>
     <string name="arm_right">오른팔</string>
@@ -213,8 +209,6 @@
     <string name="preset_pose">사전 설정 자세</string>
     <string name="pose_t">T 자세</string>
     <string name="qa_go_home">홈으로 복귀</string>
-    <string name="qa_start_patrol">순찰 시작</string>
-    <string name="qa_stop_patrol">순찰 중지</string>
     <string name="qa_follow_me">따라오기</string>
     <string name="qa_stop_follow">따라오기 중지</string>
     <string name="qa_shutdown">전원 끄기</string>
@@ -233,8 +227,6 @@
     <string name="log_objects">물체: %1$s</string>
     <string name="log_voice">음성: %1$s</string>
     <string name="status_line">%1$s  ·  %2$s</string>
-    <string name="pose_stand">서기</string>
-    <string name="pose_sit">앉기</string>
     <string name="pose_wave">손 흔들기</string>
 
     <!-- Remote Control -->
@@ -250,15 +242,6 @@
     <string name="map_2d">2D</string>
     <string name="map_3d">3D</string>
     <string name="legend_target">목표</string>
-    <string name="control_mode">제어 모드</string>
-    <string name="mode_manual">수동</string>
-    <string name="mode_autonomous">자율</string>
-    <string name="mode_follow">따라가기</string>
-    <string name="mode_path">경로</string>
-    <string name="pose_pick">집기</string>
-    <string name="pose_point">가리키기</string>
-    <string name="pose_crouch">웅크리기</string>
-    <string name="pose_custom">사용자 정의</string>
     <string name="camera_recording">카메라 및 녹화</string>
     <string name="take_photo">사진 촬영</string>
     <string name="start_video">녹화 시작</string>
@@ -272,12 +255,6 @@
     <string name="log_robot_connected">로봇 연결 완료</string>
     <string name="log_robot_disconnected">로봇 연결 해제됨</string>
     <string name="log_camera_started">카메라 스트림 시작 (%s)</string>
-    <string name="log_movement">이동 명령: %s</string>
-    <string name="log_speed">속도를 %d%%로 설정</string>
-    <string name="log_pose">자세: %s</string>
-    <string name="log_arm">팔 제어: %s</string>
-    <string name="log_mode">제어 모드: %s</string>
-    <string name="log_action">동작: %s</string>
     <string name="log_photo">사진 촬영됨: %s</string>
     <string name="log_video_started">영상 녹화 시작</string>
     <string name="log_video_saved">영상 저장됨: %s</string>
@@ -391,14 +368,12 @@
     <string name="command">명령</string>
     <string name="result">결과</string>
     <string name="result_executed">실행됨</string>
-    <string name="result_answered">응답함</string>
     <string name="result_not_sent">전송되지 않음</string>
     <string name="advanced_settings">고급 설정</string>
     <string name="tab_language">언어</string>
     <string name="tab_listening">청취</string>
     <string name="tab_audio">오디오</string>
     <string name="apply_settings">설정 적용</string>
-    <string name="time_answer">지금은 %s 입니다</string>
     <string name="status_processing">처리 중…</string>
     <string name="no_speech">인식하지 못했습니다 — 조금 더 길게, 마이크에 가까이 말씀하세요</string>
     <string name="result_no_match">알 수 없는 명령</string>
@@ -431,12 +406,10 @@
     <string name="adv_recognition_language">인식 언어</string>
     <string-array name="adv_language_options">
         <item>영어</item>
-        <item>조선말</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
-        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">언어 자동 감지</string>
     <string-array name="adv_on_off_options">
@@ -552,22 +525,23 @@
     <string name="cmd_left_desc">로봇이 왼쪽으로 회전합니다.</string>
     <string name="cmd_right">오른쪽 회전</string>
     <string name="cmd_right_desc">로봇이 오른쪽으로 회전합니다.</string>
-    <string name="cmd_door">문 열기</string>
-    <string name="cmd_door_desc">로봇이 문을 엽니다.</string>
-    <string name="cmd_mapping">지도 작성 시작</string>
-    <string name="cmd_mapping_desc">로봇이 지도 작성을 시작합니다.</string>
-    <string name="cmd_stand">서기</string>
-    <string name="cmd_stand_desc">로봇이 일어섭니다.</string>
-    <string name="cmd_sit">앉기</string>
-    <string name="cmd_sit_desc">로봇이 앉습니다.</string>
     <string name="cmd_wave">손 흔들기</string>
     <string name="cmd_wave_desc">로봇이 손을 흔들어 인사합니다.</string>
     <string name="cmd_dance">춤추기</string>
     <string name="cmd_dance_desc">로봇이 춤을 춥니다.</string>
-    <string name="cmd_follow">따라오기</string>
-    <string name="cmd_follow_desc">로봇이 따라옵니다.</string>
-    <string name="cmd_time">시간 알려주기</string>
-    <string name="cmd_time_desc">로봇이 현재 시간을 알려줍니다.</string>
+    <string name="cmd_arm_left">왼팔</string>
+    <string name="cmd_arm_left_desc">로봇이 왼팔을 선택합니다.</string>
+    <string name="cmd_arm_right">오른팔</string>
+    <string name="cmd_arm_right_desc">로봇이 오른팔을 선택합니다.</string>
+    <string name="cmd_hello">인사</string>
+    <string name="cmd_hello_desc">로봇이 인사를 합니다.</string>
+    <string name="cmd_tpose">T 자세</string>
+    <string name="cmd_tpose_desc">로봇이 T 자세를 취합니다.</string>
+    <string name="cmd_no">아니</string>
+    <string name="cmd_no_desc">로봇이 요청을 취소합니다.</string>
+    <string name="cmd_recording">록화</string>
+    <string name="cmd_recording_desc">로봇이 록화를 시작하고 다시 말하면 멈춥니다.</string>
+    <string name="ack_ok">알았습니다</string>
 
 
     <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
@@ -653,4 +627,24 @@
         <item>헤어드라이어</item>
         <item>칫솔</item>
     </string-array>
+    <!-- Remote Control page: the BLE link to the robot -->
+    <string name="ble_connection">BLE 련결</string>
+    <string name="ble_scan">찾기</string>
+    <string name="ble_stop_scan">찾기 중지</string>
+    <string name="ble_disconnect">련결 끊기</string>
+    <string name="ble_devices">발견된 장치</string>
+    <string name="ble_searching">찾는 중…</string>
+    <string name="ble_no_devices">아직 없습니다 — 찾기를 누르십시오</string>
+    <string name="ble_scanning">로보트를 찾는 중…</string>
+    <string name="ble_connecting">%1$s 에 련결하는 중…</string>
+    <string name="ble_connected">련결됨 · %1$s</string>
+    <string name="ble_disconnected">련결되지 않음</string>
+    <string name="ble_adapter_off">블루투스가 꺼져 있습니다</string>
+    <string name="ble_permission_needed">로보트를 찾으려면 블루투스 권한이 필요합니다</string>
+    <string name="ble_service_missing">이 장치에는 로보트 봉사가 없습니다 (%1$s)</string>
+    <string name="ble_device_detail">%1$s · %2$d dBm</string>
+    <string name="ble_log_scanning">로보트를 찾는 중</string>
+    <string name="ble_log_connected">%1$s 에 련결되였습니다</string>
+    <string name="ble_log_disconnected">블루투스 련결이 끊어졌습니다</string>
+    <string name="ble_log_message">로보트: %1$s</string>
 </resources>

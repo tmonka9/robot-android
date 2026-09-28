@@ -60,7 +60,6 @@ public class ObjectDetectionActivity extends BaseActivity {
     private Switch maskSwitch;
     private Switch trackSwitch;
 
-    private boolean permissionAsked;
     private boolean fullscreen;
     private boolean lensChosen; // the operator picked a camera, so stop claiming the back one
     private boolean binding; // true while the switches are being set from the service
@@ -263,8 +262,8 @@ public class ObjectDetectionActivity extends BaseActivity {
                 == PackageManager.PERMISSION_GRANTED) {
             service.setDetectionEnabled(true);
             service.attachPreview(previewView.getSurfaceProvider());
-        } else if (!permissionAsked) {
-            permissionAsked = true;
+        } else if (!cameraPermissionAsked()) {
+            noteCameraPermissionAsked();
             cameraPermission.launch(Manifest.permission.CAMERA);
         } else {
             // the system stops showing the dialog after repeated denials: open app settings

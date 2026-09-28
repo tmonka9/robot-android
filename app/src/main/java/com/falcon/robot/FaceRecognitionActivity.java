@@ -86,7 +86,6 @@ public class FaceRecognitionActivity extends BaseActivity {
     private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
 
     private FaceDatabase database; // the service's, so both see the same people
-    private boolean permissionAsked;
     private boolean binding; // true while the switches are being set from the service
 
     private int totalFaces;
@@ -281,8 +280,8 @@ public class FaceRecognitionActivity extends BaseActivity {
                 == PackageManager.PERMISSION_GRANTED) {
             service.setFaceEnabled(true);
             service.attachPreview(previewView.getSurfaceProvider());
-        } else if (!permissionAsked) {
-            permissionAsked = true;
+        } else if (!cameraPermissionAsked()) {
+            noteCameraPermissionAsked();
             cameraPermission.launch(Manifest.permission.CAMERA);
         } else {
             // the system stops showing the dialog after repeated denials: open app settings

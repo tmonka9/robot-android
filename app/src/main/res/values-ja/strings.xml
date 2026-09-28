@@ -149,7 +149,7 @@
     <string name="percent">%d%%</string>
 
     <!-- Robot Control -->
-    <string name="movement_control">移動制御</string>
+    <string name="move_control">移動制御</string>
     <string name="speed">速度</string>
     <string name="battery">バッテリー</string>
     <string name="mode">モード</string>
@@ -161,16 +161,13 @@
     <string name="expand">パネルを展開</string>
     <string name="temperature">温度</string>
     <string name="mode_remote">遠隔操作</string>
-    <string name="speed_slow">低速</string>
     <string name="speed_normal">標準</string>
-    <string name="speed_fast">高速</string>
     <string name="demo_battery">78%</string>
     <string name="demo_temperature">36°C</string>
     <string name="position">位置</string>
     <string name="position_x">X:  %.2f m</string>
     <string name="position_y">Y:  %.2f m</string>
     <string name="position_z">Z:  %.2f m</string>
-    <string name="position_reset">位置をリセットしました</string>
     <string name="camera_view">カメラ映像</string>
     <string name="feature_face">顔</string>
     <string name="feature_object">物体</string>
@@ -203,7 +200,6 @@
     <string name="feed_info">%1$s  ·  %2$s FPS</string>
     <string name="act_turn_left">左旋回</string>
     <string name="act_turn_right">右旋回</string>
-    <string name="act_reset">リセット</string>
     <string name="arm_control">アーム制御</string>
     <string name="arm_left">左アーム</string>
     <string name="arm_right">右アーム</string>
@@ -212,8 +208,6 @@
     <string name="preset_pose">プリセット姿勢</string>
     <string name="pose_t">Tポーズ</string>
     <string name="qa_go_home">ホームへ戻る</string>
-    <string name="qa_start_patrol">巡回開始</string>
-    <string name="qa_stop_patrol">巡回停止</string>
     <string name="qa_follow_me">追従開始</string>
     <string name="qa_stop_follow">追従停止</string>
     <string name="qa_shutdown">シャットダウン</string>
@@ -232,8 +226,6 @@
     <string name="log_objects">物体: %1$s</string>
     <string name="log_voice">音声: %1$s</string>
     <string name="status_line">%1$s  ·  %2$s</string>
-    <string name="pose_stand">起立</string>
-    <string name="pose_sit">着座</string>
     <string name="pose_wave">手を振る</string>
 
     <!-- Remote Control -->
@@ -249,15 +241,6 @@
     <string name="map_2d">2D</string>
     <string name="map_3d">3D</string>
     <string name="legend_target">目的地</string>
-    <string name="control_mode">制御モード</string>
-    <string name="mode_manual">手動</string>
-    <string name="mode_autonomous">自律</string>
-    <string name="mode_follow">追従</string>
-    <string name="mode_path">経路</string>
-    <string name="pose_pick">ピック</string>
-    <string name="pose_point">指差し</string>
-    <string name="pose_crouch">しゃがむ</string>
-    <string name="pose_custom">カスタム</string>
     <string name="camera_recording">カメラ・録画</string>
     <string name="take_photo">写真撮影</string>
     <string name="start_video">録画開始</string>
@@ -271,12 +254,6 @@
     <string name="log_robot_connected">ロボットに接続しました</string>
     <string name="log_robot_disconnected">ロボットとの接続を切断しました</string>
     <string name="log_camera_started">カメラ映像を開始しました (%s)</string>
-    <string name="log_movement">移動コマンド: %s</string>
-    <string name="log_speed">速度を %d%% に設定しました</string>
-    <string name="log_pose">姿勢: %s</string>
-    <string name="log_arm">アーム制御: %s</string>
-    <string name="log_mode">制御モード: %s</string>
-    <string name="log_action">動作: %s</string>
     <string name="log_photo">写真を保存しました: %s</string>
     <string name="log_video_started">録画を開始しました</string>
     <string name="log_video_saved">動画を保存しました: %s</string>
@@ -390,14 +367,12 @@
     <string name="command">コマンド</string>
     <string name="result">結果</string>
     <string name="result_executed">実行済み</string>
-    <string name="result_answered">応答済み</string>
     <string name="result_not_sent">未送信</string>
     <string name="advanced_settings">詳細設定</string>
     <string name="tab_language">言語</string>
     <string name="tab_listening">リスニング</string>
     <string name="tab_audio">オーディオ</string>
     <string name="apply_settings">設定を適用</string>
-    <string name="time_answer">現在 %s です</string>
     <string name="status_processing">処理中…</string>
     <string name="no_speech">音声を認識できません — マイクに近づき、少し長めに話してください</string>
     <string name="result_no_match">不明なコマンド</string>
@@ -430,12 +405,10 @@
     <string name="adv_recognition_language">認識言語</string>
     <string-array name="adv_language_options">
         <item>英語</item>
-        <item>朝鮮語</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
-        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">言語の自動検出</string>
     <string-array name="adv_on_off_options">
@@ -551,22 +524,23 @@
     <string name="cmd_left_desc">ロボットが左に旋回します。</string>
     <string name="cmd_right">右旋回</string>
     <string name="cmd_right_desc">ロボットが右に旋回します。</string>
-    <string name="cmd_door">ドアを開ける</string>
-    <string name="cmd_door_desc">ロボットがドアを開けます。</string>
-    <string name="cmd_mapping">マッピング開始</string>
-    <string name="cmd_mapping_desc">ロボットがマップの作成を開始します。</string>
-    <string name="cmd_stand">起立</string>
-    <string name="cmd_stand_desc">ロボットが立ち上がります。</string>
-    <string name="cmd_sit">着座</string>
-    <string name="cmd_sit_desc">ロボットが座ります。</string>
     <string name="cmd_wave">手を振る</string>
     <string name="cmd_wave_desc">ロボットが手を振って挨拶します。</string>
     <string name="cmd_dance">ダンス</string>
     <string name="cmd_dance_desc">ロボットがダンスをします。</string>
-    <string name="cmd_follow">追従</string>
-    <string name="cmd_follow_desc">ロボットがあなたに追従します。</string>
-    <string name="cmd_time">時刻を伝える</string>
-    <string name="cmd_time_desc">ロボットが現在の時刻を伝えます。</string>
+    <string name="cmd_arm_left">左腕</string>
+    <string name="cmd_arm_left_desc">ロボットが左腕を選択します。</string>
+    <string name="cmd_arm_right">右腕</string>
+    <string name="cmd_arm_right_desc">ロボットが右腕を選択します。</string>
+    <string name="cmd_hello">挨拶</string>
+    <string name="cmd_hello_desc">ロボットが挨拶をします。</string>
+    <string name="cmd_tpose">Tポーズ</string>
+    <string name="cmd_tpose_desc">ロボットがTポーズを取ります。</string>
+    <string name="cmd_no">いいえ</string>
+    <string name="cmd_no_desc">ロボットが指示を取り消します。</string>
+    <string name="cmd_recording">録画</string>
+    <string name="cmd_recording_desc">ロボットが録画を開始し、もう一度言うと停止します。</string>
+    <string name="ack_ok">はい</string>
 
 
     <!-- COCO classes, in the order YOLOv8 reports them (see CocoLabels). -->
@@ -652,4 +626,24 @@
         <item>ドライヤー</item>
         <item>歯ブラシ</item>
     </string-array>
+    <!-- Remote Control page: the BLE link to the robot -->
+    <string name="ble_connection">BLE 接続</string>
+    <string name="ble_scan">検索</string>
+    <string name="ble_stop_scan">検索停止</string>
+    <string name="ble_disconnect">切断</string>
+    <string name="ble_devices">見つかった機器</string>
+    <string name="ble_searching">検索中…</string>
+    <string name="ble_no_devices">まだ見つかりません — 検索を押してください</string>
+    <string name="ble_scanning">ロボットを検索中…</string>
+    <string name="ble_connecting">%1$s に接続中…</string>
+    <string name="ble_connected">接続済み · %1$s</string>
+    <string name="ble_disconnected">未接続</string>
+    <string name="ble_adapter_off">Bluetooth がオフです</string>
+    <string name="ble_permission_needed">ロボットを検索するには Bluetooth の許可が必要です</string>
+    <string name="ble_service_missing">この機器にはロボットのサービスがありません (%1$s)</string>
+    <string name="ble_device_detail">%1$s · %2$d dBm</string>
+    <string name="ble_log_scanning">ロボットを検索中</string>
+    <string name="ble_log_connected">%1$s に接続しました</string>
+    <string name="ble_log_disconnected">Bluetooth 接続が切れました</string>
+    <string name="ble_log_message">ロボット: %1$s</string>
 </resources>

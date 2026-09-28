@@ -224,6 +224,23 @@ public abstract class BaseActivity extends ComponentActivity {
                 if (!granted) toast(R.string.notification_permission_needed);
             });
 
+    /** Shared with {@link RobotService}: one settings file for the whole app. */
+    private static final String PREFS = "settings";
+    private static final String KEY_CAMERA_ASKED = "camera_permission_asked";
+
+    /**
+     * Whether the operator has already been asked for the camera. Every page is its own activity,
+     * so a flag held by one page told the next page nothing and the prompt came back on each
+     * screen switch; this answer is remembered for the app, and survives a restart.
+     */
+    protected boolean cameraPermissionAsked() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(KEY_CAMERA_ASKED, false);
+    }
+
+    protected void noteCameraPermissionAsked() {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putBoolean(KEY_CAMERA_ASKED, true).apply();
+    }
+
     /**
      * Android 13 and newer ask before the service may show the notification that comes with
      * background camera and microphone use.
@@ -420,10 +437,12 @@ public abstract class BaseActivity extends ComponentActivity {
         dialog.show();
     }
 
-    /** e.g. "Connected · Wi-Fi". */
+    /** e.g. "Connected · 192.168.11.1:8080", or the robot's name when it is on BLE. */
     protected String connectionLabel() {
         RobotSession session = RobotSession.get();
-        return getString(R.string.connected_via, session.getHost() + ":" + session.getPort());
+        com.falcon.robot.ble.BleLink ble = com.falcon.robot.ble.BleLink.get();
+        return getString(R.string.connected_via, ble.isConnected() ? ble.getDeviceName()
+                : session.getHost() + ":" + session.getPort());
     }
 
     /** Binds a status line to the connection state; tapping it opens the connection dialog. */

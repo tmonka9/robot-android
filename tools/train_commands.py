@@ -68,8 +68,8 @@ SILENCE = "_silence"
 UNKNOWN = "_unknown"
 
 DEFAULT_ACTIONS = [
-    "Stop", "Go Home", "Move Forward", "Move Backward", "Turn Left", "Turn Right",
-    "Open Door", "Start Mapping", "Stand", "Sit", "Wave", "Dance", "Follow Me", "Tell Time",
+    "Go Home", "Move Forward", "Move Backward", "Stop", "Turn Left", "Turn Right",
+    "Wave", "Dance", "Arm Left", "Arm Right", "Hello", "T-Pose", "No", "Recording",
 ]
 
 
@@ -285,7 +285,7 @@ SPEECH_COMMANDS_WORDS = {
     "right": "Turn Right",
     "stop": "Stop",
     "go": "Go Home",
-    "follow": "Follow Me",
+    "no": "No",
 }
 
 NOISE_FOLDER = "_background_noise_"

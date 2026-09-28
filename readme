@@ -17,21 +17,37 @@ python tools/train_commands.py record --label "Wave" --count 30 --data data/comm
 #   app/src/main/cpp/whisper.cpp/        git clone --depth 1 --branch v1.7.4 https://github.com/ggerganov/whisper.cpp
 
 # speech (app/src/main/assets/moonshine/)
-# The Voice page offers English and Korean, and Moonshine has one model per language, downloaded
-# with their python package:
+# The Voice page offers English only, and Moonshine has one model per language, downloaded with
+# their python package:
 #   pip install moonshine-voice
 #   python -m moonshine_voice.download --language en --stt --model-arch 0   # tiny-en, 43 MB
-#   python -m moonshine_voice.download --language ko --stt --model-arch 0   # tiny-ko, 72 MB
 #   copy encoder_model.ort decoder_model_merged.ort tokenizer.bin from the download cache into
-#   assets/moonshine/tiny-en/ and assets/moonshine/tiny-ko/ (both are in git already)
-# MoonshineEngine picks tiny-en for English and, for Korean, tiny-kp when that folder exists and
-# tiny-ko otherwise -- drop a North Korean model in assets/moonshine/tiny-kp and it is used.
+#   assets/moonshine/tiny-en/
+# MoonshineEngine still knows the Korean models (tiny-kp, then tiny-ko) and assets/moonshine/
+# tiny-ko is still in git: put "ko" back in adv_language_codes/adv_language_options and Korean
+# is offered again. Nothing selects it as it stands, so deleting that folder saves ~69 MB.
 # --model-arch 1 is the base model (three times the size, a little more accurate): put it in
 # assets/moonshine/base-en and name it in MoonshineEngine.java.
 #
 # LICENCES: the English models are MIT. tiny-ko is under Moonshine's Community Licence, which is
 # non-commercial -- shipping it in a product needs their permission.
 # The library itself comes from Maven (ai.moonshine:moonshine-voice) and needs minSdk 26.
+
+# "OK" after a command is understood (app/src/main/assets/ok.wav)
+# RobotService.acknowledge() plays that file whenever a command is recognised, on whichever page.
+# What is in git is a placeholder: two short tones, generated, not a voice. Replace it with a
+# recording of the word -- any mono WAV plays, and it is kept uncompressed in the APK
+# (build.gradle noCompress). With the file removed the speech engine says the word instead.
+
+# the robot link (Bluetooth Low Energy)
+# The Remote Control page finds the robot, connects to it and hands the link to RobotSession, so
+# every page's commands go out over it (com.falcon.robot.ble.BleLink). The robot is expected to
+# offer the Nordic UART Service -- a serial link over BLE:
+#   service 6e400001-b5a3-f393-e0a9-e50e24dcca9e
+#   write   6e400002-b5a3-f393-e0a9-e50e24dcca9e   commands, one per line, UTF-8
+#   notify  6e400003-b5a3-f393-e0a9-e50e24dcca9e   whatever the robot answers, into the log
+# Change those UUIDs in BleLink.java if the firmware uses its own. Android 12 and newer ask for
+# BLUETOOTH_SCAN and BLUETOOTH_CONNECT; older ones ask for the location permission instead.
 
 # fine-tuning on your own recordings (the English model; --base for another)
 pip install torch transformers "optimum[onnxruntime]" jiwer soundfile

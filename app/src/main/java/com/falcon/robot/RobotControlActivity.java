@@ -7,6 +7,8 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,9 +52,7 @@ import java.util.Map;
  * are simulated until the real robot protocol exists.
  *
  * <p>The sidebar down the right-hand side holds what the operator asks for: the three recognition
- * switches, the arm, the preset poses and the quick actions. Driving — the joystick, the direction
- * buttons and the speed — belongs to the Remote Control page and is deliberately not repeated
- * here. Faces and objects are drawn over the feed, a spoken command is carried out exactly as the
+ * switches, the four directions, the arm, the preset poses and the quick actions. Faces and objects are drawn over the feed, a spoken command is carried out exactly as the
  * button for it would be, and the status bar along the foot says what happened last. The sidebar
  * and the status bar sit outside the scrolling page, so they are in reach wherever it is scrolled.
  */
@@ -72,6 +72,16 @@ public class RobotControlActivity extends BaseActivity {
 
     /** How many lines the Log panel keeps; it scrolls, and older than this is of no use. */
     private static final int MAX_LOG = 80;
+
+    /**
+     * How often the direction that is latched on is sent again. A move used to last only as long
+     * as the robot's own timer allowed; repeating it keeps the robot going until it is stopped.
+     */
+    private static final long KEEP_ALIVE_MS = 1000;
+
+    /** The four sidebar directions, in button order. */
+    private static final String[] MOVE_COMMANDS =
+            {"MOVE FORWARD", "MOVE BACKWARD", "TURN LEFT", "TURN RIGHT"};
 
     private final RobotSession session = RobotSession.get();
     private final SimpleDateFormat clock = new SimpleDateFormat("HH:mm:ss", Locale.US);
@@ -93,6 +103,11 @@ public class RobotControlActivity extends BaseActivity {
     private SeekBar saturation;
     private Spinner resolution;
     private Spinner fps;
+    private TextView[] moveButtons;
+    /** The direction latched on, and the command it repeats; null when the robot is not moving. */
+    private TextView heldButton;
+    private String heldCommand;
+    private final Handler handler = new Handler(Looper.getMainLooper());
     private TextView[] armParts;
     private TextView[] poses;
     private TextView follow;
@@ -127,7 +142,6 @@ public class RobotControlActivity extends BaseActivity {
     /** The robot laid over the camera feed, doing whatever the full figure does. */
     private Robot3DView feedOverlay;
     private PreviewView previewView;
-    private boolean permissionAsked;
 
     private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
@@ -162,6 +176,7 @@ public class RobotControlActivity extends BaseActivity {
         setupRecognition();
         setupLidar();
         setupLog();
+        setupMovement();
         setupArm();
         setupActions();
         bindRobotService(recognitionListener);
@@ -189,9 +204,10 @@ public class RobotControlActivity extends BaseActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
             service.attachPreview(previewView.getSurfaceProvider());
-        } else if (!permissionAsked) {
-            // without it the design artwork stays in the panel, which is still a usable page
-            permissionAsked = true;
+        } else if (!cameraPermissionAsked()) {
+            // asked once, and never again on the way back to this page: without the camera the
+            // design artwork stays in the panel, which is still a usable page
+            noteCameraPermissionAsked();
             cameraPermission.launch(Manifest.permission.CAMERA);
         }
     }
@@ -209,6 +225,7 @@ public class RobotControlActivity extends BaseActivity {
 
     @Override
     protected void onPause() {
+        if (heldCommand != null) stopMoving(); // nothing repeats the command once this page stops
         if (lidarMap != null) lidarMap.setScanning(false); // no sweep while the page is away
         if (robot3D != null) robot3D.onPause();
         if (feedOverlay != null) feedOverlay.onPause();
@@ -598,6 +615,7 @@ public class RobotControlActivity extends BaseActivity {
                 ? Manifest.permission.RECORD_AUDIO : Manifest.permission.CAMERA;
         if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
             pendingFeature = feature;
+            if (feature != VOICE) noteCameraPermissionAsked();
             (feature == VOICE ? microphonePermission : cameraPermission).launch(permission);
             return;
         }
@@ -871,14 +889,95 @@ public class RobotControlActivity extends BaseActivity {
                 : result == R.string.no_speech ? getString(R.string.no_speech)
                 : getString(R.string.result_no_match)));
         if (!heard) return; // nothing was ordered, so there is nothing for the robot to show
-        if (action.command == null) { // the robot answers instead of moving, such as the time
-            setTip(getString(R.string.result_answered));
-            return;
-        }
         showOnModel(action.command);
+        if (result == R.string.result_executed) followVoice(action);
         setTip(result == R.string.result_executed
                 ? getString(R.string.sent_command, getString(action.labelRes))
                 : getString(result));
+    }
+
+    // ---- Move ------------------------------------------------------------------------------
+
+    /**
+     * Move Control: the four directions, one button each. A press latches the button on and the
+     * command is repeated every second, so the robot keeps going; pressing the lit button again,
+     * or leaving the page, stops it. There is no Stop button because the lit button is the stop.
+     */
+    private void setupMovement() {
+        setIcon(findViewById(R.id.move_title), R.drawable.ic_crosshair, 14, 0, Gravity.START);
+        int white = color(R.color.text_primary);
+
+        moveButtons = new TextView[] {
+                findViewById(R.id.move_forward), findViewById(R.id.move_backward),
+                findViewById(R.id.move_left), findViewById(R.id.move_right),
+        };
+        int[] icons = {R.drawable.ic_arrow_up, R.drawable.ic_arrow_down,
+                R.drawable.ic_arrow_left, R.drawable.ic_arrow_right};
+        for (int i = 0; i < moveButtons.length; i++) {
+            final int index = i;
+            setIcon(moveButtons[i], icons[i], 14, white, Gravity.START);
+            moveButtons[i].setOnClickListener(v -> hold(index, MOVE_COMMANDS[index], true));
+        }
+    }
+
+    /**
+     * Latches a direction on and repeats {@code command} until something stops it. {@code send}
+     * is false when the command has already gone out: a spoken order is sent by the service, and
+     * the page only takes the repeating over — with the wording the robot was first told, prefix
+     * and all, so what it hears every second is what it heard to begin with.
+     */
+    private void hold(int index, String command, boolean send) {
+        TextView button = moveButtons[index];
+        if (heldButton == button && send) { // pressing the lit button again is how it is stopped
+            stopMoving();
+            return;
+        }
+        if (send && !sendCommand(command)) return;
+        heldButton = button;
+        heldCommand = command;
+        selectOnly(moveButtons, button);
+        if (send) setTip(getString(R.string.sent_command, button.getText()));
+        handler.removeCallbacks(keepAlive);
+        handler.postDelayed(keepAlive, KEEP_ALIVE_MS);
+    }
+
+    /** Ends the movement: the robot is told to stop and the button goes out. */
+    private void stopMoving() {
+        releaseHold();
+        session.send("STOP"); // stop is never held up by the connect prompt
+        setTip(getString(R.string.sent_command, getString(R.string.act_stop)));
+    }
+
+    /** Lets go of the latch without ordering anything, for when something else has taken over. */
+    private void releaseHold() {
+        handler.removeCallbacks(keepAlive);
+        heldButton = null;
+        heldCommand = null;
+        if (moveButtons != null) selectOnly(moveButtons, null);
+    }
+
+    private final Runnable keepAlive = new Runnable() {
+        @Override
+        public void run() {
+            if (heldCommand == null) return;
+            session.send(heldCommand); // silently: the prompt was answered when it was pressed
+            handler.postDelayed(this, KEEP_ALIVE_MS);
+        }
+    };
+
+    /**
+     * A spoken order takes the sidebar's latch over, so "Forward" keeps the robot going exactly
+     * as the button does and "Stop" ends it. Anything else leaves the latch alone.
+     */
+    private void followVoice(VoiceCommands.Action action) {
+        if (action == null || action.command == null || moveButtons == null) return;
+        for (int i = 0; i < MOVE_COMMANDS.length; i++) {
+            if (MOVE_COMMANDS[i].equals(action.command)) {
+                hold(i, RobotService.VOICE_PREFIX + action.command, false);
+                return;
+            }
+        }
+        if ("STOP".equals(action.command)) releaseHold();
     }
 
     // ---- Arm -------------------------------------------------------------------------------
@@ -906,8 +1005,10 @@ public class RobotControlActivity extends BaseActivity {
                 findViewById(R.id.pose_wave), findViewById(R.id.pose_tpose),
         };
         final String[] poseCommands = {"WAVE", "T_POSE"};
+        int[] poseIcons = {R.drawable.ic_pose_wave, R.drawable.ic_tpose};
         for (int i = 0; i < poses.length; i++) {
             final int index = i;
+            setIcon(poses[i], poseIcons[i], 14, white, Gravity.START);
             poses[i].setOnClickListener(v -> {
                 if (!sendCommand("POSE " + poseCommands[index])) return;
                 selectOnly(poses, poses[index]);
