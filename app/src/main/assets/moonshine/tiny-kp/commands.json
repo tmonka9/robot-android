@@ -1,0 +1,129 @@
+{
+  "language": "ko",
+  "threshold": 0.7,
+  "commands": [
+    {
+      "id": "cmujxirzeugme",
+      "name": "Go Home",
+      "phrases": [
+        "자기위치로",
+        "집으로",
+        "첫위치로 가시오.",
+        "본래 위치로 가시오."
+      ]
+    },
+    {
+      "id": "cmujxkzildlfc",
+      "name": "Sit",
+      "phrases": [
+        "앉으시오.",
+        "앉었",
+        "앉으십시오.",
+        "앉으라"
+      ]
+    },
+    {
+      "id": "cmujxm8deni94",
+      "name": "Start mapping",
+      "phrases": [
+        "지도를 작성하시오",
+        "지도작성",
+        "지도를 작성하십시오"
+      ]
+    },
+    {
+      "id": "cmujxnfrzp8xt",
+      "name": "Turn Left",
+      "phrases": [
+        "왼쪽으로 도시오.",
+        "왼쪽으로 돌앗",
+        "왼쪽으로 도십시오"
+      ]
+    },
+    {
+      "id": "cmukkd4ldqnvo",
+      "name": "Follow me",
+      "phrases": [
+        "날따라오시오",
+        "날 따라",
+        "날따라올것",
+        "날 따라와",
+        "나를 따르시오"
+      ]
+    },
+    {
+      "id": "cmukkf6q3k9ns",
+      "name": "Face Recognize",
+      "phrases": [
+        "얼굴인식가동",
+        "얼굴인식",
+        "얼굴인식 시작",
+        "얼굴인식 동작하시오.",
+        "얼굴을 추적하시오"
+      ]
+    },
+    {
+      "id": "cmukkgy81dmyq",
+      "name": "Object Detect",
+      "phrases": [
+        "대상추적",
+        "대상을 추적하시오",
+        "대상추적 시작"
+      ]
+    },
+    {
+      "id": "cmukkidrdpnx3",
+      "name": "Go Forward",
+      "phrases": [
+        "앞으로",
+        "앞으롯",
+        "앞으로 갓",
+        "가시오.",
+        "갓"
+      ]
+    },
+    {
+      "id": "cmukkl3whrcwg",
+      "name": "Stop",
+      "phrases": [
+        "섯",
+        "스톱",
+        "정지"
+      ]
+    },
+    {
+      "id": "cmukkm8h4qytj",
+      "name": "Left Arm",
+      "phrases": [
+        "오른팔",
+        "오른팔들엇"
+      ]
+    },
+    {
+      "id": "cmukkoejsp7r3",
+      "name": "Right Arm",
+      "phrases": [
+        "오른팔",
+        "오른팔들엇"
+      ]
+    },
+    {
+      "id": "cmukkozmkomsn",
+      "name": "Wave",
+      "phrases": [
+        "뒤로돌앗",
+        "뒤로",
+        "뒤로갓"
+      ]
+    },
+    {
+      "id": "cmukks7dlrr53",
+      "name": "Backward",
+      "phrases": [
+        "뒤로돌앗",
+        "뒤로",
+        "뒤로갓"
+      ]
+    }
+  ]
+}

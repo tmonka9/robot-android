@@ -33,7 +33,7 @@ public final class MoonshineEngine {
     private static final String TAG = "MoonshineEngine";
 
     /** The bundled model: a folder of .ort files, as Moonshine's downloader lays them out. */
-    public static final String MODEL = "tiny-en";
+    public static final String MODEL = "tiny-kp";
     private static final String ASSETS = "moonshine";
     private static final int ARCH = JNI.MOONSHINE_MODEL_ARCH_TINY;
     private static final String[] FILES = {
