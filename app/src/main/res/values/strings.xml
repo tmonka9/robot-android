@@ -406,10 +406,12 @@
     <string name="adv_recognition_language">Recognition Language</string>
     <string-array name="adv_language_options">
         <item>English</item>
+        <item>Korean</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
+        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">Auto Detect Language</string>
     <string-array name="adv_on_off_options">
@@ -651,4 +653,16 @@
     <string name="ble_log_connected">Connected to %1$s</string>
     <string name="ble_log_disconnected">Bluetooth link dropped</string>
     <string name="ble_log_message">Robot: %1$s</string>
+    <!-- Robot Control page: recording the camera view -->
+    <string name="record_video">Record</string>
+    <string name="stop_recording">Stop Recording</string>
+    <string name="recording_started">Recording…</string>
+    <string name="recording_stopped">Recording stopped</string>
+    <string name="recording_saved">Recording saved: %1$s</string>
+    <string name="recording_failed">The recording could not be made</string>
+    <string name="recording_interrupted">Recording stopped: the camera was set up again</string>
+    <string name="recording_no_camera">The camera is not running yet</string>
+    <string name="open_recordings">Recordings</string>
+    <string name="no_recordings">Nothing has been recorded yet</string>
+    <string name="no_video_player">Nothing here plays %1$s</string>
 </resources>

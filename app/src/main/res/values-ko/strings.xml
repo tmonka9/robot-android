@@ -406,10 +406,12 @@
     <string name="adv_recognition_language">인식 언어</string>
     <string-array name="adv_language_options">
         <item>영어</item>
+        <item>조선말</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
+        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">언어 자동 감지</string>
     <string-array name="adv_on_off_options">
@@ -647,4 +649,16 @@
     <string name="ble_log_connected">%1$s 에 련결되였습니다</string>
     <string name="ble_log_disconnected">블루투스 련결이 끊어졌습니다</string>
     <string name="ble_log_message">로보트: %1$s</string>
+    <!-- Robot Control page: recording the camera view -->
+    <string name="record_video">록화</string>
+    <string name="stop_recording">록화 정지</string>
+    <string name="recording_started">록화 중…</string>
+    <string name="recording_stopped">록화를 멈추었습니다</string>
+    <string name="recording_saved">록화 보관됨: %1$s</string>
+    <string name="recording_failed">록화할 수 없습니다</string>
+    <string name="recording_interrupted">카메라를 다시 설정하여 록화를 멈추었습니다</string>
+    <string name="recording_no_camera">카메라가 아직 동작하지 않습니다</string>
+    <string name="open_recordings">록화 파일</string>
+    <string name="no_recordings">아직 록화한 것이 없습니다</string>
+    <string name="no_video_player">%1$s 을(를) 재생할 프로그람이 없습니다</string>
 </resources>

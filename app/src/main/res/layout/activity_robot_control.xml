@@ -233,22 +233,22 @@
 
                             <ImageButton
                                 android:id="@+id/robot_fullscreen"
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:contentDescription="@string/full_screen"
-                                android:padding="8dp"
+                                android:padding="5dp"
                                 android:scaleType="fitCenter"
                                 android:src="@drawable/ic_fullscreen" />
 
                             <ImageButton
                                 android:id="@+id/robot_collapse"
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
                                 android:layout_marginStart="2dp"
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:contentDescription="@string/collapse"
-                                android:padding="7dp"
+                                android:padding="5dp"
                                 android:scaleType="fitCenter"
                                 android:src="@drawable/ic_chevron_up" />
                         </LinearLayout>
@@ -282,12 +282,12 @@
 
                             <ImageButton
                                 android:id="@+id/camera_fullscreen"
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
                                 android:layout_marginStart="6dp"
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:contentDescription="@string/full_screen"
-                                android:padding="8dp"
+                                android:padding="5dp"
                                 android:scaleType="fitCenter"
                                 android:src="@drawable/ic_fullscreen" />
                         </LinearLayout>
@@ -328,6 +328,40 @@
                                 android:id="@+id/face_overlay"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent" />
+
+                            <!--
+                              Recording, over the top right corner: the red button starts and
+                              stops it, Open lists what has been recorded.
+                            -->
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="top|end"
+                                android:layout_margin="8dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <ImageButton
+                                    android:id="@+id/camera_open"
+                                    android:layout_width="34dp"
+                                    android:layout_height="34dp"
+                                    android:layout_marginEnd="8dp"
+                                    android:background="@drawable/bg_feed_button"
+                                    android:contentDescription="@string/open_recordings"
+                                    android:padding="7dp"
+                                    android:scaleType="fitCenter"
+                                    android:src="@drawable/ic_folder_open" />
+
+                                <ImageButton
+                                    android:id="@+id/camera_record"
+                                    android:layout_width="34dp"
+                                    android:layout_height="34dp"
+                                    android:background="@drawable/bg_feed_button"
+                                    android:contentDescription="@string/record_video"
+                                    android:padding="4dp"
+                                    android:scaleType="fitCenter"
+                                    android:src="@drawable/ic_record_dot" />
+                            </LinearLayout>
 
                             <!-- which camera the feed comes from; tapping it offers the others -->
                             <TextView
@@ -409,13 +443,24 @@
                                 android:text="@string/nav_lidar" />
 
                             <ImageButton
+                                android:id="@+id/lidar_load_map"
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
+                                android:layout_marginStart="6dp"
+                                android:background="?android:attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/load_map"
+                                android:padding="5dp"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_folder_open" />
+
+                            <ImageButton
                                 android:id="@+id/lidar_fullscreen"
-                                android:layout_width="36dp"
-                                android:layout_height="36dp"
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
                                 android:layout_marginStart="6dp"
                                 android:background="?android:attr/selectableItemBackgroundBorderless"
                                 android:contentDescription="@string/full_screen"
-                                android:padding="8dp"
+                                android:padding="5dp"
                                 android:scaleType="fitCenter"
                                 android:src="@drawable/ic_fullscreen" />
                         </LinearLayout>
@@ -651,7 +696,7 @@
                             <TextView
                                 android:id="@+id/btn_log"
                                 android:layout_width="wrap_content"
-                                android:layout_height="34dp"
+                                android:layout_height="26dp"
                                 android:background="@drawable/bg_control_button"
                                 android:clickable="true"
                                 android:drawablePadding="6dp"

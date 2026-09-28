@@ -16,6 +16,7 @@ import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -33,6 +34,14 @@ import androidx.camera.core.UseCase;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.camera.lifecycle.ProcessCameraProvider;
+import androidx.camera.video.FallbackStrategy;
+import androidx.camera.video.FileOutputOptions;
+import androidx.camera.video.Quality;
+import androidx.camera.video.QualitySelector;
+import androidx.camera.video.Recorder;
+import androidx.camera.video.Recording;
+import androidx.camera.video.VideoCapture;
+import androidx.camera.video.VideoRecordEvent;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LifecycleRegistry;
@@ -51,7 +60,10 @@ import com.falcon.robot.voice.VoiceCommands;
 import com.falcon.robot.voice.WhisperEngine;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -181,6 +193,10 @@ public class RobotService extends Service implements LifecycleOwner {
 
     // vision
     private ProcessCameraProvider cameraProvider;
+    /** The video use case, bound only while a recording is running, and the recording itself. */
+    private VideoCapture<Recorder> videoCapture;
+    private Recording recording;
+    private boolean recordingWanted;
     private FaceDatabase faceDatabase;
     private FaceEmbedder embedder;
     private FaceAnalyzer faceAnalyzer;
@@ -276,6 +292,7 @@ public class RobotService extends Service implements LifecycleOwner {
 
     @Override
     public void onDestroy() {
+        stopRecording(); // close the file before the camera is let go, not after
         stopVision();
         stopVoice();
         lifecycle.setCurrentState(Lifecycle.State.DESTROYED);
@@ -353,8 +370,10 @@ public class RobotService extends Service implements LifecycleOwner {
 
     /** True while nothing is switched on, so the service can be left to stop. */
     private boolean idle() {
-        // a page showing the picture counts: the camera is running for it
-        return !faceEnabled && !detectionEnabled && !voiceEnabled && surfaceProvider == null;
+        // a page showing the picture counts: the camera is running for it, and so does a
+        // recording, which goes on while the operator is on another page
+        return !faceEnabled && !detectionEnabled && !voiceEnabled && surfaceProvider == null
+                && !recordingWanted;
     }
 
     // ---- foreground notification -----------------------------------------------------------
@@ -378,7 +397,7 @@ public class RobotService extends Service implements LifecycleOwner {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 int type = 0;
-                if (faceEnabled || detectionEnabled || surfaceProvider != null) {
+                if (faceEnabled || detectionEnabled || surfaceProvider != null || recordingWanted) {
                     type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
                 }
                 if (voiceEnabled) type |= ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
@@ -537,10 +556,16 @@ public class RobotService extends Service implements LifecycleOwner {
 
     private void bindCamera() {
         if (cameraProvider == null) return;
+        // rebinding takes the video use case away with everything else, so a recording that is
+        // running is finished first rather than being cut off mid-file
+        if (recording != null) {
+            message(getString(R.string.recording_interrupted));
+            stopRecording();
+        }
         cameraProvider.unbindAll();
         // a page showing the picture is reason enough to run the camera, even with both models off
         boolean analysing = faceEnabled || detectionEnabled;
-        if (!analysing && surfaceProvider == null) return;
+        if (!analysing && surfaceProvider == null && !recordingWanted) return;
 
         CameraSelector selector = new CameraSelector.Builder().requireLensFacing(lensFacing).build();
         try {
@@ -574,12 +599,120 @@ public class RobotService extends Service implements LifecycleOwner {
             analysis.setAnalyzer(cameraExecutor, this::analyze);
             uses.add(analysis);
         }
+        if (recordingWanted) {
+            Recorder recorder = new Recorder.Builder()
+                    .setQualitySelector(QualitySelector.from(Quality.HD,
+                            FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
+                    .build();
+            videoCapture = VideoCapture.withOutput(recorder);
+            uses.add(videoCapture);
+        } else {
+            videoCapture = null;
+        }
 
         try {
             cameraProvider.bindToLifecycle(this, selector, uses.toArray(new UseCase[0]));
         } catch (Exception e) {
             Log.w(TAG, "Could not bind the camera", e);
+            if (videoCapture != null) {
+                // more use cases than this camera allows: the picture and the models matter
+                // more than the recording, so that is what is given up
+                videoCapture = null;
+                recordingWanted = false;
+                message(getString(R.string.recording_failed));
+                bindCamera(); // once more without it; recordingWanted is false, so no loop
+            }
         }
+    }
+
+    // ---- recording -------------------------------------------------------------------------
+
+    /** Where the recordings go: the app's own folder, so no storage permission is needed. */
+    public File recordingDir() {
+        File dir = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+        return dir != null ? dir : new File(getFilesDir(), Environment.DIRECTORY_MOVIES);
+    }
+
+    /** The recordings that have been made, newest first. */
+    public List<File> recordings() {
+        File[] files = recordingDir().listFiles((dir, name) -> name.endsWith(".mp4"));
+        List<File> list = new ArrayList<>();
+        if (files != null) Collections.addAll(list, files);
+        Collections.sort(list, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+        return list;
+    }
+
+    public boolean isRecording() {
+        return recording != null;
+    }
+
+    /**
+     * Records what the camera sees. There is no sound in it: the microphone belongs to the voice
+     * recognition, and taking it would stop the robot listening. The camera is rebound to add the
+     * video use case, which is why the picture blinks as a recording starts and stops.
+     */
+    public void setRecording(boolean on) {
+        if (on == isRecording()) return;
+        if (!on) {
+            stopRecording();
+            return;
+        }
+        if (cameraProvider == null) {
+            message(getString(R.string.recording_no_camera));
+            return;
+        }
+        recordingWanted = true;
+        bindCamera(); // binds the video use case; nothing else here can
+        if (videoCapture == null) {
+            recordingWanted = false;
+            message(getString(R.string.recording_failed));
+            return;
+        }
+        startRecording();
+        updateForeground();
+    }
+
+    private void startRecording() {
+        final File file = new File(recordingDir(),
+                "VID_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
+                        .format(new java.util.Date()) + ".mp4");
+        File dir = file.getParentFile();
+        if (dir != null && !dir.exists() && !dir.mkdirs()) {
+            recordingWanted = false;
+            message(getString(R.string.recording_failed));
+            return;
+        }
+        FileOutputOptions options = new FileOutputOptions.Builder(file).build();
+        try {
+            recording = videoCapture.getOutput().prepareRecording(this, options)
+                    .start(main::post, event -> {
+                        if (!(event instanceof VideoRecordEvent.Finalize)) return;
+                        VideoRecordEvent.Finalize done = (VideoRecordEvent.Finalize) event;
+                        recording = null;
+                        recordingWanted = false;
+                        message(done.hasError()
+                                ? getString(R.string.recording_failed)
+                                : getString(R.string.recording_saved, file.getName()));
+                        bindCamera(); // the video use case has nothing left to do
+                        updateForeground();
+                        notifyState();
+                    });
+        } catch (Exception e) {
+            Log.w(TAG, "Could not start recording", e);
+            recording = null;
+            recordingWanted = false;
+            message(getString(R.string.recording_failed));
+        }
+        notifyState();
+    }
+
+    /** Ends the recording; the file is closed by the Finalize event, which tells the pages. */
+    private void stopRecording() {
+        Recording active = recording;
+        recording = null;
+        recordingWanted = false;
+        if (active != null) active.stop();
+        notifyState();
     }
 
     /** One frame, decoded once and given to whichever models are on. */

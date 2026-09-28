@@ -17,15 +17,19 @@ python tools/train_commands.py record --label "Wave" --count 30 --data data/comm
 #   app/src/main/cpp/whisper.cpp/        git clone --depth 1 --branch v1.7.4 https://github.com/ggerganov/whisper.cpp
 
 # speech (app/src/main/assets/moonshine/)
-# The Voice page offers English only, and Moonshine has one model per language, downloaded with
-# their python package:
+# The Voice page offers English and Korean, and Moonshine has one model per language, downloaded
+# with their python package:
 #   pip install moonshine-voice
 #   python -m moonshine_voice.download --language en --stt --model-arch 0   # tiny-en, 43 MB
+#   python -m moonshine_voice.download --language ko --stt --model-arch 0   # tiny-ko, 72 MB
 #   copy encoder_model.ort decoder_model_merged.ort tokenizer.bin from the download cache into
-#   assets/moonshine/tiny-en/
-# MoonshineEngine still knows the Korean models (tiny-kp, then tiny-ko) and assets/moonshine/
-# tiny-ko is still in git: put "ko" back in adv_language_codes/adv_language_options and Korean
-# is offered again. Nothing selects it as it stands, so deleting that folder saves ~69 MB.
+#   assets/moonshine/tiny-en/ and assets/moonshine/tiny-ko/
+# MoonshineEngine loads tiny-en for English and, for Korean, tiny-kp when that folder is there
+# and tiny-ko otherwise. assets/moonshine/tiny-kp is the fine-tune on North Korean commands
+# (robot-cmd-kp-2, 44 MB), so Korean uses it and tiny-ko is only the fallback -- delete tiny-ko
+# to save ~69 MB in the APK.
+# VoiceCommands matches its Korean phrases as substrings; tiny-kp also ships a commands.json of
+# what it was trained on, which nothing reads yet.
 # --model-arch 1 is the base model (three times the size, a little more accurate): put it in
 # assets/moonshine/base-en and name it in MoonshineEngine.java.
 #
@@ -38,6 +42,15 @@ python tools/train_commands.py record --label "Wave" --count 30 --data data/comm
 # What is in git is a placeholder: two short tones, generated, not a voice. Replace it with a
 # recording of the word -- any mono WAV plays, and it is kept uncompressed in the APK
 # (build.gradle noCompress). With the file removed the speech engine says the word instead.
+
+# recording the camera view (Robot Control page)
+# The red button over the picture records what the camera sees, through CameraX's VideoCapture
+# in RobotService -- no sound, because the microphone is the voice recognition's. Files land in
+#   /sdcard/Android/data/com.falcon.robot/files/Movies/VID_<date>_<time>.mp4
+# which is the app's own folder, so no storage permission is asked for; the Open button beside it
+# lists them and hands one to a video player through the FileProvider in the manifest. Recording
+# needs the camera to take a third use case (preview + analysis + video): where it cannot, the
+# picture is kept and the recording is refused with a message.
 
 # the robot link (Bluetooth Low Energy)
 # The Remote Control page finds the robot, connects to it and hands the link to RobotSession, so

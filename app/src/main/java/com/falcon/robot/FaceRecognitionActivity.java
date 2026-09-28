@@ -457,7 +457,7 @@ public class FaceRecognitionActivity extends BaseActivity {
         }
         title.setText(titleText);
         title.setTextColor(color(titleColor));
-        setIcon(title, titleIcon, 26, color(titleColor), Gravity.START);
+        setIcon(title, titleIcon, 16, color(titleColor), Gravity.START);
 
         FaceDatabase.Record r = selected;
         Bitmap photo = resultCrop != null ? resultCrop : r != null ? photoOf(r) : null;
@@ -506,7 +506,7 @@ public class FaceRecognitionActivity extends BaseActivity {
     // ---- database --------------------------------------------------------------------------
 
     private void setupDatabase() {
-        setIcon(findViewById(R.id.db_title), R.drawable.ic_face_id, 22, color(R.color.blue_light), Gravity.START);
+        setIcon(findViewById(R.id.db_title), R.drawable.ic_face_id, 16, color(R.color.blue_light), Gravity.START);
         ((ImageView) findViewById(R.id.db_add)).setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
         findViewById(R.id.db_add).setOnClickListener(v -> showAddFaceDialog());
 
@@ -610,9 +610,9 @@ public class FaceRecognitionActivity extends BaseActivity {
     // ---- history & statistics ------------------------------------------------------------
 
     private void setupHistory() {
-        setIcon(findViewById(R.id.history_title), R.drawable.ic_face_id, 22, color(R.color.cyan), Gravity.START);
-        setIcon(findViewById(R.id.stats_title), R.drawable.ic_bar_chart, 22, color(R.color.blue_light), Gravity.START);
-        setIcon(findViewById(R.id.today_title), R.drawable.ic_scan, 20, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.history_title), R.drawable.ic_face_id, 16, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.stats_title), R.drawable.ic_bar_chart, 16, color(R.color.blue_light), Gravity.START);
+        setIcon(findViewById(R.id.today_title), R.drawable.ic_scan, 16, color(R.color.cyan), Gravity.START);
         ((ImageView) findViewById(R.id.today_recognized_icon)).setColorFilter(color(R.color.blue_light), PorterDuff.Mode.SRC_IN);
         historyList = findViewById(R.id.history_list);
         findViewById(R.id.btn_view_all).setOnClickListener(v -> showAllHistory());
@@ -680,7 +680,7 @@ public class FaceRecognitionActivity extends BaseActivity {
     // ---- settings --------------------------------------------------------------------------
 
     private void setupSettings() {
-        setIcon(findViewById(R.id.settings_title), R.drawable.ic_settings, 22, color(R.color.blue_light), Gravity.START);
+        setIcon(findViewById(R.id.settings_title), R.drawable.ic_settings, 16, color(R.color.blue_light), Gravity.START);
         int cyan = color(R.color.cyan);
         ((ImageView) findViewById(R.id.icon_detection)).setColorFilter(cyan, PorterDuff.Mode.SRC_IN);
         ((ImageView) findViewById(R.id.icon_recognition)).setColorFilter(cyan, PorterDuff.Mode.SRC_IN);

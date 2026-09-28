@@ -91,7 +91,7 @@ public class ObjectDetectionActivity extends BaseActivity {
         feedInfo = findViewById(R.id.feed_info);
         ((TextView) findViewById(R.id.feed_live))
                 .setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.dot_red, 0, 0, 0);
-        setIcon(findViewById(R.id.settings_title), R.drawable.ic_crosshair, 22, 0, Gravity.START);
+        setIcon(findViewById(R.id.settings_title), R.drawable.ic_crosshair, 16, 0, Gravity.START);
 
         previewView = findViewById(R.id.camera_preview);
         previewView.setScaleType(PreviewView.ScaleType.FILL_CENTER);

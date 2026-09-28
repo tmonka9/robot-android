@@ -15,6 +15,9 @@ import java.util.Set;
  * Forward, Backward, Stop, Turn Left, Turn Right, Wave, Dance, Arm Left, Arm Right, Hello,
  * T-Pose, No and Recording. The pages show the same set as buttons.
  *
+ * <p>The Korean phrases include the ones the tiny-kp model in the assets was trained to say,
+ * which is what the Voice page hears when Korean is chosen.
+ *
  * <p>English is matched by keyword, so small recognition errors ("move forward please", "go
  * forwards") still work. Chinese, Japanese and Korean are matched as substrings instead: the
  * first two put no spaces between words, and Korean glues endings onto the verb, so "왼쪽으로"
@@ -93,7 +96,7 @@ public final class VoiceCommands {
                 new String[] {"home", "dock", "base"})
                 .zh("回家", "返回原点", "充电座")
                 .ja("ホーム", "帰還", "充電ドック")
-                .ko("집으로", "복귀", "도킹", "충전"));
+                .ko("집으로", "자기위치", "첫위치", "본래 위치", "복귀", "도킹", "충전"));
         add(new Rule(new Action("Move Forward", R.string.cmd_forward, R.string.cmd_forward_desc, "MOVE FORWARD"),
                 new String[] {"forward", "forwards", "ahead", "straight"})
                 .zh("前进", "向前", "往前")
@@ -108,7 +111,7 @@ public final class VoiceCommands {
                 new String[] {"stop", "halt", "freeze"})
                 .zh("停止", "停下", "别动")
                 .ja("停止", "止まれ", "ストップ")
-                .ko("정지", "멈춰", "그만"));
+                .ko("정지", "멈춰", "스톱", "그만"));
         add(new Rule(new Action("Turn Left", R.string.cmd_left, R.string.cmd_left_desc, "TURN LEFT"),
                 new String[] {"left"})
                 .not("arm", "手", "腕", "팔")

@@ -405,10 +405,12 @@
     <string name="adv_recognition_language">認識言語</string>
     <string-array name="adv_language_options">
         <item>英語</item>
+        <item>朝鮮語</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
+        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">言語の自動検出</string>
     <string-array name="adv_on_off_options">
@@ -646,4 +648,16 @@
     <string name="ble_log_connected">%1$s に接続しました</string>
     <string name="ble_log_disconnected">Bluetooth 接続が切れました</string>
     <string name="ble_log_message">ロボット: %1$s</string>
+    <!-- Robot Control page: recording the camera view -->
+    <string name="record_video">録画</string>
+    <string name="stop_recording">録画停止</string>
+    <string name="recording_started">録画中…</string>
+    <string name="recording_stopped">録画を停止しました</string>
+    <string name="recording_saved">録画を保存しました: %1$s</string>
+    <string name="recording_failed">録画できませんでした</string>
+    <string name="recording_interrupted">カメラを設定し直したため録画を停止しました</string>
+    <string name="recording_no_camera">カメラがまだ動作していません</string>
+    <string name="open_recordings">録画ファイル</string>
+    <string name="no_recordings">まだ録画がありません</string>
+    <string name="no_video_player">%1$s を再生できるアプリがありません</string>
 </resources>

@@ -405,10 +405,12 @@
     <string name="adv_recognition_language">识别语言</string>
     <string-array name="adv_language_options">
         <item>英语</item>
+        <item>朝鲜语</item>
     </string-array>
     <!-- whisper language codes, matching adv_language_options -->
     <string-array name="adv_language_codes">
         <item>en</item>
+        <item>ko</item>
     </string-array>
     <string name="adv_auto_detect">自动检测语言</string>
     <string-array name="adv_on_off_options">
@@ -644,4 +646,16 @@
     <string name="ble_log_connected">已连接到 %1$s</string>
     <string name="ble_log_disconnected">蓝牙连接已断开</string>
     <string name="ble_log_message">机器人：%1$s</string>
+    <!-- Robot Control page: recording the camera view -->
+    <string name="record_video">录像</string>
+    <string name="stop_recording">停止录像</string>
+    <string name="recording_started">录像中…</string>
+    <string name="recording_stopped">已停止录像</string>
+    <string name="recording_saved">录像已保存：%1$s</string>
+    <string name="recording_failed">无法录像</string>
+    <string name="recording_interrupted">相机重新设置，录像已停止</string>
+    <string name="recording_no_camera">相机尚未启动</string>
+    <string name="open_recordings">录像文件</string>
+    <string name="no_recordings">尚未录制任何内容</string>
+    <string name="no_video_player">没有可播放 %1$s 的应用</string>
 </resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  What the app may hand to another app through FileProvider: the camera recordings, which live
+  in the app's own external files folder (RobotService#recordingDir).
+-->
+<paths>
+    <external-files-path
+        name="recordings"
+        path="Movies/" />
+    <!-- where they go on a tablet with no external storage at all -->
+    <files-path
+        name="recordings_internal"
+        path="Movies/" />
+</paths>

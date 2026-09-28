@@ -382,8 +382,8 @@ public class VoiceRecognitionActivity extends BaseActivity {
     // ---- result + command action -----------------------------------------------------------
 
     private void setupResult() {
-        setIcon(findViewById(R.id.result_title), R.drawable.ic_check_circle, 22, color(R.color.teal), Gravity.START);
-        setIcon(findViewById(R.id.action_title), R.drawable.ic_robot, 22, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.result_title), R.drawable.ic_check_circle, 16, color(R.color.teal), Gravity.START);
+        setIcon(findViewById(R.id.action_title), R.drawable.ic_robot, 16, color(R.color.cyan), Gravity.START);
         int white = color(R.color.text_primary);
         ((ImageView) findViewById(R.id.btn_speak)).setColorFilter(white, PorterDuff.Mode.SRC_IN);
         ((ImageView) findViewById(R.id.btn_execute)).setColorFilter(white, PorterDuff.Mode.SRC_IN);
@@ -463,7 +463,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
     // ---- voice command list ----------------------------------------------------------------
 
     private void setupCommands() {
-        setIcon(findViewById(R.id.voice_db_title), R.drawable.ic_mic, 22, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.voice_db_title), R.drawable.ic_mic, 16, color(R.color.cyan), Gravity.START);
         commandList = findViewById(R.id.voice_db_list);
         commandSearch = findViewById(R.id.voice_search);
         setIcon(commandSearch, R.drawable.ic_search, 18, color(R.color.text_secondary), Gravity.START);
@@ -536,7 +536,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
     // ---- voice control ---------------------------------------------------------------------
 
     private void setupVoiceControl() {
-        setIcon(findViewById(R.id.control_title), R.drawable.ic_settings, 22, color(R.color.text_primary), Gravity.START);
+        setIcon(findViewById(R.id.control_title), R.drawable.ic_settings, 16, color(R.color.text_primary), Gravity.START);
         LinearLayout toggles = findViewById(R.id.voice_toggles);
         commandSwitch = addToggle(toggles, R.drawable.ic_mic, R.string.vc_command, R.string.vc_command_sub, true);
         continuousSwitch = addToggle(toggles, R.drawable.ic_refresh, R.string.vc_continuous, R.string.vc_continuous_sub, true);
@@ -567,7 +567,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
     // ---- history ---------------------------------------------------------------------------
 
     private void setupHistory() {
-        setIcon(findViewById(R.id.history_title), R.drawable.ic_history, 22, color(R.color.text_primary), Gravity.START);
+        setIcon(findViewById(R.id.history_title), R.drawable.ic_history, 16, color(R.color.text_primary), Gravity.START);
         historyList = findViewById(R.id.voice_history_list);
         findViewById(R.id.btn_clear_history).setOnClickListener(v -> {
             history.clear();
@@ -597,7 +597,7 @@ public class VoiceRecognitionActivity extends BaseActivity {
     // ---- advanced settings -----------------------------------------------------------------
 
     private void setupAdvanced() {
-        setIcon(findViewById(R.id.advanced_title), R.drawable.ic_tune, 22, color(R.color.text_primary), Gravity.START);
+        setIcon(findViewById(R.id.advanced_title), R.drawable.ic_tune, 16, color(R.color.text_primary), Gravity.START);
         advancedRows = findViewById(R.id.adv_rows);
         advancedTabs = new TextView[] {
                 findViewById(R.id.adv_tab_language), findViewById(R.id.adv_tab_hotword),

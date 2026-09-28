@@ -2,7 +2,10 @@ package com.falcon.robot;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
@@ -27,6 +30,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 
 import com.falcon.robot.detect.CocoLabels;
 import com.falcon.robot.detect.ObjectTracker;
@@ -38,6 +42,7 @@ import com.falcon.robot.widget.LidarMapView;
 import com.falcon.robot.widget.Robot3DView;
 import com.falcon.robot.widget.TrackingOverlayView;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -98,6 +103,7 @@ public class RobotControlActivity extends BaseActivity {
     private Robot3DView robot3D;
     private TextView cameraInfo;
     private TextView cameraSource;
+    private ImageView recordButton;
     private SeekBar brightness;
     private SeekBar contrast;
     private SeekBar saturation;
@@ -186,6 +192,7 @@ public class RobotControlActivity extends BaseActivity {
     protected void onRobotServiceReady(RobotService service) {
         attachPreview();
         renderRecognition();
+        renderRecording();
         // whatever the models found while the page was elsewhere, so the feed is not blank
         faceOverlay.setFaces(service.getLastFaces(), service.getFrameWidth(),
                 service.getFrameHeight(), frontCamera());
@@ -419,8 +426,8 @@ public class RobotControlActivity extends BaseActivity {
     // ---- Camera ----------------------------------------------------------------------------
 
     private void setupCamera() {
-        setIcon(findViewById(R.id.camera_title), R.drawable.ic_camera, 20, color(R.color.cyan), Gravity.START);
-        setIcon(findViewById(R.id.camera_settings_title), R.drawable.ic_tune, 20,
+        setIcon(findViewById(R.id.camera_title), R.drawable.ic_camera, 16, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.camera_settings_title), R.drawable.ic_tune, 16,
                 color(R.color.blue_light), Gravity.START);
         cameraFeed = findViewById(R.id.camera_feed);
         cameraFeed.setFocus(0.25f, 0.2f, 0.75f, 1f); // keep the robot in frame
@@ -432,6 +439,11 @@ public class RobotControlActivity extends BaseActivity {
 
         cameraSource = findViewById(R.id.camera_source);
         cameraSource.setOnClickListener(this::showCameraMenu);
+
+        recordButton = findViewById(R.id.camera_record);
+        recordButton.setOnClickListener(v -> toggleRecording());
+        findViewById(R.id.camera_open).setOnClickListener(v -> showRecordings());
+        renderRecording();
 
         previewView = findViewById(R.id.camera_preview);
         // a view in the hierarchy rather than a surface of its own: the artwork behind shows
@@ -547,6 +559,67 @@ public class RobotControlActivity extends BaseActivity {
     }
 
     /** Which camera the feed comes from; the lens belongs to the service, and pages share it. */
+    /**
+     * Records what the camera shows. It is the service that does it, so the recording goes on
+     * while the operator is on another page, and the button says so when they come back.
+     */
+    private void toggleRecording() {
+        RobotService service = getRobotService();
+        if (service == null) return;
+        boolean start = !service.isRecording();
+        if (start && ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            attachPreview(); // asks for the camera, once, exactly as the picture does
+            toast(R.string.camera_permission_needed);
+            return;
+        }
+        service.setRecording(start);
+        // what actually happened: starting can fail, and the service says why in a message
+        boolean now = service.isRecording();
+        setTip(getString(now ? R.string.recording_started : R.string.recording_stopped));
+        renderRecording();
+    }
+
+    private void renderRecording() {
+        if (recordButton == null) return;
+        RobotService service = getRobotService();
+        boolean recording = service != null && service.isRecording();
+        recordButton.setImageResource(recording
+                ? R.drawable.ic_record_stop : R.drawable.ic_record_dot);
+        recordButton.setContentDescription(getString(recording
+                ? R.string.stop_recording : R.string.record_video));
+    }
+
+    /** The recordings, newest first; picking one hands it to whatever plays video. */
+    private void showRecordings() {
+        RobotService service = getRobotService();
+        final List<File> files = service == null ? new ArrayList<File>() : service.recordings();
+        if (files.isEmpty()) {
+            toast(R.string.no_recordings);
+            return;
+        }
+        CharSequence[] names = new CharSequence[files.size()];
+        for (int i = 0; i < files.size(); i++) names[i] = files.get(i).getName();
+        new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
+                .setTitle(R.string.open_recordings)
+                .setItems(names, (d, which) -> play(files.get(which)))
+                .setNegativeButton(R.string.close, null)
+                .show();
+    }
+
+    private void play(File file) {
+        try {
+            Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
+            startActivity(new Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(uri, "video/mp4")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION));
+        } catch (ActivityNotFoundException | IllegalArgumentException e) {
+            // no video player, or a file outside what the provider shares: it is still on the
+            // tablet either way, and the name says where to look for it
+            toast(getString(R.string.no_video_player, file.getName()));
+        }
+    }
+
     private void showCameraMenu(View anchor) {
         final RobotService service = getRobotService();
         if (service == null) return;
@@ -719,9 +792,13 @@ public class RobotControlActivity extends BaseActivity {
      */
     private void setupLidar() {
         TextView title = findViewById(R.id.lidar_title);
-        setIcon(title, R.drawable.ic_lidar, 20, color(R.color.cyan), Gravity.START);
+        setIcon(title, R.drawable.ic_lidar, 16, color(R.color.cyan), Gravity.START);
         title.setOnClickListener(v -> navigate(R.id.nav_lidar));
         lidarMap = findViewById(R.id.lidar_map);
+
+        ImageView loadMap = findViewById(R.id.lidar_load_map);
+        loadMap.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
+        loadMap.setOnClickListener(v -> showMaps());
 
         ImageView full = findViewById(R.id.lidar_fullscreen);
         full.setColorFilter(color(R.color.text_primary), PorterDuff.Mode.SRC_IN);
@@ -732,6 +809,19 @@ public class RobotControlActivity extends BaseActivity {
         findViewById(R.id.robot_status_panel).addOnLayoutChangeListener(
                 (v, l, top, r, b, ol, ot, or_, ob) -> matchLidarWidth());
         matchLidarWidth();
+    }
+
+    /** The saved maps, as the LiDAR page lists them; picking one asks the robot to load it. */
+    private void showMaps() {
+        final String[] maps = getResources().getStringArray(R.array.saved_maps);
+        new AlertDialog.Builder(this, R.style.Theme_RobotControl_Dialog)
+                .setTitle(R.string.load_map)
+                .setItems(maps, (d, which) -> {
+                    if (!sendCommand("SLAM LOAD_MAP " + maps[which])) return;
+                    setTip(getString(R.string.log_map_loaded, maps[which]));
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
     }
 
     private void matchLidarWidth() {
@@ -757,7 +847,7 @@ public class RobotControlActivity extends BaseActivity {
      * log nobody asked for is only noise on a driving screen.
      */
     private void setupLog() {
-        setIcon(findViewById(R.id.log_title), R.drawable.ic_history, 20,
+        setIcon(findViewById(R.id.log_title), R.drawable.ic_history, 16,
                 color(R.color.text_primary), Gravity.START);
         logList = findViewById(R.id.log_list);
         logButton = findViewById(R.id.btn_log);
@@ -867,6 +957,7 @@ public class RobotControlActivity extends BaseActivity {
         @Override
         public void onServiceState() {
             renderRecognition();
+            renderRecording();
         }
 
         @Override

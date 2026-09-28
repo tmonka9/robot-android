@@ -105,7 +105,7 @@ public class RemoteControlActivity extends BaseActivity {
         logList = findViewById(R.id.log_list);
         logScroll = findViewById(R.id.log_scroll);
         findViewById(R.id.btn_clear_log).setOnClickListener(v -> logList.removeAllViews());
-        setIcon(findViewById(R.id.log_title), R.drawable.ic_note, 20, color(R.color.blue_light), Gravity.START);
+        setIcon(findViewById(R.id.log_title), R.drawable.ic_note, 16, color(R.color.blue_light), Gravity.START);
 
         setupCamera();
         setupStatus();
@@ -160,7 +160,7 @@ public class RemoteControlActivity extends BaseActivity {
 
     private void setupCamera() {
         cameraTitle = findViewById(R.id.camera_title);
-        setIcon(cameraTitle, R.drawable.ic_camera, 20, color(R.color.cyan), Gravity.START);
+        setIcon(cameraTitle, R.drawable.ic_camera, 16, color(R.color.cyan), Gravity.START);
         CoverImageView feed = findViewById(R.id.camera_feed);
         feed.setFocus(0.25f, 0.1f, 0.75f, 1f); // keep the robot in frame
         findViewById(R.id.feed_frame).setClipToOutline(true);
@@ -265,7 +265,7 @@ public class RemoteControlActivity extends BaseActivity {
     // ---- map -------------------------------------------------------------------------------
 
     private void setupMap() {
-        setIcon(findViewById(R.id.map_title), R.drawable.ic_lidar, 22, color(R.color.blue_light), Gravity.START);
+        setIcon(findViewById(R.id.map_title), R.drawable.ic_lidar, 16, color(R.color.blue_light), Gravity.START);
         setIcon(findViewById(R.id.legend_robot), R.drawable.ic_navigation, 16, color(R.color.blue), Gravity.START);
         findViewById(R.id.map_frame).setClipToOutline(true);
         mapImage = findViewById(R.id.map_image);
@@ -306,7 +306,7 @@ public class RemoteControlActivity extends BaseActivity {
      */
     private void setupBle() {
         int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.ble_title), R.drawable.ic_bluetooth, 22, color(R.color.blue_light),
+        setIcon(findViewById(R.id.ble_title), R.drawable.ic_bluetooth, 16, color(R.color.blue_light),
                 Gravity.START);
         bleStatus = findViewById(R.id.ble_status);
         bleList = findViewById(R.id.ble_list);
@@ -461,7 +461,7 @@ public class RemoteControlActivity extends BaseActivity {
 
     private void setupRecording() {
         int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.recording_title), R.drawable.ic_camera, 22, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.recording_title), R.drawable.ic_camera, 16, color(R.color.cyan), Gravity.START);
 
         TextView photo = findViewById(R.id.rec_photo);
         setIcon(photo, R.drawable.ic_camera, 16, white, Gravity.START);

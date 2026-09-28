@@ -277,7 +277,7 @@ public class LidarSlamActivity extends BaseActivity {
     // ---- map view + legend -----------------------------------------------------------------
 
     private void setupMapPanel() {
-        setIcon(findViewById(R.id.map_title), R.drawable.ic_map, 22, color(R.color.cyan), Gravity.START);
+        setIcon(findViewById(R.id.map_title), R.drawable.ic_map, 16, color(R.color.cyan), Gravity.START);
         findViewById(R.id.map_frame).setClipToOutline(true);
         map2d = findViewById(R.id.map_2d);
         int white = color(R.color.text_primary);
@@ -352,7 +352,7 @@ public class LidarSlamActivity extends BaseActivity {
     // ---- settings --------------------------------------------------------------------------
 
     private void setupSettings() {
-        setIcon(findViewById(R.id.settings_title), R.drawable.ic_settings, 22, color(R.color.text_primary), Gravity.START);
+        setIcon(findViewById(R.id.settings_title), R.drawable.ic_settings, 16, color(R.color.text_primary), Gravity.START);
         rangeSeek = findViewById(R.id.seek_range);
         final TextView rangeValue = findViewById(R.id.value_range);
         rangeValue.setText(getString(R.string.meters, rangeMeters()));
@@ -398,13 +398,13 @@ public class LidarSlamActivity extends BaseActivity {
         bindStatusRow(R.id.status_navigation, R.string.lidar_navigation, R.drawable.ic_navigation);
         bindStatusRow(R.id.status_quality, R.string.map_quality, R.drawable.ic_star);
 
-        setIcon(findViewById(R.id.pose_title), R.drawable.ic_robot, 24, color(R.color.blue_light), Gravity.START);
+        setIcon(findViewById(R.id.pose_title), R.drawable.ic_robot, 16, color(R.color.blue_light), Gravity.START);
         poseX = findViewById(R.id.pose_x);
         poseY = findViewById(R.id.pose_y);
         poseYaw = findViewById(R.id.pose_yaw);
         compass = findViewById(R.id.pose_compass);
 
-        setIcon(findViewById(R.id.lidar_title), R.drawable.ic_lidar, 22, 0, Gravity.START);
+        setIcon(findViewById(R.id.lidar_title), R.drawable.ic_lidar, 16, 0, Gravity.START);
         lidarRange = findViewById(R.id.lidar_range);
         lidarRange.setText(getString(R.string.lidar_range_label, rangeMeters()));
         lidarPoints = findViewById(R.id.lidar_points);
@@ -444,9 +444,9 @@ public class LidarSlamActivity extends BaseActivity {
 
     private void setupControls() {
         int white = color(R.color.text_primary);
-        setIcon(findViewById(R.id.control_title), R.drawable.ic_crosshair, 22, 0, Gravity.START);
-        setIcon(findViewById(R.id.log_title), R.drawable.ic_note, 20, white, Gravity.START);
-        setIcon(findViewById(R.id.target_title), R.drawable.ic_place, 18, 0, Gravity.START);
+        setIcon(findViewById(R.id.control_title), R.drawable.ic_crosshair, 16, 0, Gravity.START);
+        setIcon(findViewById(R.id.log_title), R.drawable.ic_note, 16, white, Gravity.START);
+        setIcon(findViewById(R.id.target_title), R.drawable.ic_place, 16, 0, Gravity.START);
 
         startMapping = findViewById(R.id.btn_start_mapping);
         startMapping.setOnClickListener(v -> {
